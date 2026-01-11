@@ -1,3 +1,10 @@
+---
+name: pr_faq
+description: "Amazon-style PR/FAQ workflow for project initiation, vague ideas, or new phases. Use this when the user says 'I have an idea' or 'Start a new project'."
+intent: ["init", "start", "idea", "phase"]
+version: 1.0.0
+---
+
 # Module: Amazon Style PR/FAQ (Project Initiation)
 
 ## Purpose

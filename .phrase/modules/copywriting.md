@@ -1,3 +1,10 @@
+---
+name: conversion_copywriting
+description: "Expert Copywriter persona for creating high-conversion product copy, READMEs, release notes, and marketing materials. Focuses on user benefits and cost reduction."
+intent: ["copywriting", "marketing", "readme", "docs", "release-notes"]
+version: 1.0.0
+---
+
 # Module: Conversion Copywriting
 
 ## Purpose
