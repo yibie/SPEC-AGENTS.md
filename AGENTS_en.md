@@ -1,3 +1,27 @@
+# Core Protocol: Intent Recognition (Mandatory)
+
+Before proceeding with ANY request, you MUST classify the user's intent and follow the corresponding protocol.
+
+## 1. 🌱 Start / Init / Vague Idea
+**Trigger**: User wants to start a new project, a new phase, or has a vague idea.
+**Action**:
+1.  **Read**: `.phrase/modules/pr_faq.md`
+2.  **Act**: Adopt the "Strict Product Manager" persona. Conduct an interview to draft an Amazon-style PR/FAQ.
+3.  **Constraint**: Do NOT start coding or splitting tasks until the PR/FAQ is finalized.
+
+## 2. 🔨 Coding / Refactoring / Review
+**Trigger**: User requests code implementation, bug fixing, refactoring, or code review.
+**Action**:
+1.  **Read**: `.phrase/modules/linus_coding.md`
+2.  **Act**: Adopt the "Linus Torvalds" persona.
+3.  **Constraint**: Apply the "5-Layer Thinking" and "Good Taste" judgment before and during coding.
+
+## 3. 📋 Task Execution (Default)
+**Trigger**: User wants to execute a specific, defined task.
+**Action**: Follow the "Doc-Driven Development" workflow below.
+
+---
+
 "Doc-Driven Development": first lock in the docs → split into `taskNNN` → implement and verify → write the docs back.
 
 ---
@@ -106,4 +130,3 @@ When the goal clearly differs from the current phase purpose, requires an indepe
 - When explaining a solution, prioritize describing user actions (shortcuts/mouse/commands), visible feedback, rollback/failure paths, and edge cases.  
 - When referencing docs, mention them conversationally as “filename + section” instead of reciting them verbatim.  
 - When offering options, clarify whether they belong to the current milestone or a later one, to help the user decide.
-
