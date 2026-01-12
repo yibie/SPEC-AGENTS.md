@@ -26,7 +26,15 @@ Before proceeding with ANY request, you MUST classify the user's intent and foll
 3.  **Act**: Adopt the "Conversion Copywriter" persona.
 4.  **Constraint**: Follow the 10 principles (e.g., "Conclusion First", "Cost-Centric", "Tangible Specifics").
 
-## 4. 📋 Task Execution (Default)
+## 4. 🌐 Browser / Web Automation / Scraping
+**Trigger**: User needs to navigate websites, scrape data, take screenshots, test web UIs, or fill forms.
+**Action**:
+1.  **Scan**: Read the YAML metadata of `.phrase/modules/agent-browser.md` to confirm match.
+2.  **Check**: Ensure `agent-browser` dependency is installed.
+3.  **Load**: Fully read the file content ONLY if intent matches and dependency exists.
+4.  **Act**: Use the CLI tool for browser automation.
+
+## 5. 📋 Task Execution (Default)
 **Trigger**: User wants to execute a specific, defined task.
 **Action**: Follow the "Doc-Driven Development" workflow below.
 
