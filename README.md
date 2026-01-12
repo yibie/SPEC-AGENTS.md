@@ -6,14 +6,58 @@ This project is inspired by Spec-kit, OpenSpec, and Stack Workflow. It combines 
 
 ## Features
 
-- Zero configuration
-- Natural-language interaction
-- Small footprint, token efficient
-- Production-grade software development workflow
-- Supports multiple coding tools
-- Project-level memory
+- **Intent Recognition**: Automatically switches between PM, Coder, and Copywriter personas.
+- **Zero Configuration**: Just one command to init.
+- **Natural Language Interaction**: No complex JSON/YAML configs.
+- **Production-Grade Workflow**: Enforces rigorous spec/plan/task lifecycles.
+- **Project Memory**: AI remembers context across sessions.
 
-Using SPEC-AGENTS effectively gives your development project “memory”. You no longer need to worry that switching tools will make it hard for the AI to understand where you are in the process. As long as the AI reads the documents, it can quickly recover the current project context and development progress.
+## Installation (CLI)
+
+Spec-AGENTS v2 provides a CLI tool for easy installation and management.
+
+### 1. Download & Link
+
+Clone the repository and link the binary to your system path:
+
+```bash
+git clone https://github.com/your-repo/SPEC-AGENTS.git
+cd SPEC-AGENTS
+chmod +x link_to_system.sh
+./link_to_system.sh
+```
+
+Now you can use the `spec-agents` command globally.
+
+### 2. Initialize in Your Project
+
+Go to your project directory and run:
+
+```bash
+cd ~/MyProject
+spec-agents init        # Install Chinese version (Default)
+# OR
+spec-agents init en     # Install English version
+```
+
+This will automatically create the `AGENTS.md` file and the `.phrase/` directory structure with all intelligent modules.
+
+## Usage
+
+### 1. Configure Your AI Tool
+
+- **Cursor / Copilot**: Just ensure `AGENTS.md` is in the root.
+- **Claude Code**: Add `@AGENTS.md` to your `CLAUDE.md`.
+- **Gemini CLI**: Add `@AGENTS.md` to your `GEMINI.md`.
+
+### 2. Start Chatting (Intent Routing)
+
+Just talk to your AI. The system will automatically route your intent:
+
+*   **"I have a new idea..."** $\rightarrow$ Triggers **PR/FAQ Module** (Product Manager Mode).
+*   **"Implement this feature..."** $\rightarrow$ Triggers **Linus Coding Module** (Strict Engineering Mode).
+*   **"Write a release note..."** $\rightarrow$ Triggers **Copywriting Module** (Marketing Mode).
+*   **"Scrape this website..."** $\rightarrow$ Triggers **Browser Automation Module**.
 
 ## Principles
 
@@ -33,7 +77,7 @@ With this set of constraints, SPEC-AGENTS compresses the traditional spec / task
 
 ## Workflow (How It Works)
 
-The diagram below shows a typical workflow for SPEC-AGENTS.md within a project (ASCII diagram in English, with brief comments):
+The diagram below shows a typical workflow for SPEC-AGENTS.md within a project:
 
 ```
 ┌────────────────────┐      Draft / update specs (write spec_/plan_ in natural language)
@@ -62,77 +106,31 @@ The diagram below shows a typical workflow for SPEC-AGENTS.md within a project (
 └────────────────────┘
 ```
 
-In short:
-
-1. Agree with the LLM to enter a new development phase, then draft or update specs and plans (`spec_/plan_`) in natural language under `.phrase/phases/`.  
-2. Work with the AI to break the work into atomic `taskNNN` items, iterating until scope and acceptance criteria are clear.  
-3. Implement and verify strictly following the docs, with each conversation focusing on a single task.  
-4. When done, write back to `task_*`, `change_*`, `spec_*`, `issue_*`, `adr_*`, so every code change can be traced back to its original written intent.
-
 ## Real-world Example
 
 Here is a minimal natural-language dialogue that shows how SPEC-AGENTS.md works in a real session:
 
 **1. User describes a request**
-
-> User:  
-> I want to add a “Dark Mode” toggle to the project that can be switched via menu or shortcut. Please guide me through this once using the SPEC-AGENTS workflow.
+> User: I want to add a “Dark Mode” toggle to the project that can be switched via menu or shortcut. Please guide me through this once using the SPEC-AGENTS workflow.
 
 **2. The AI goes back to the docs and locks in a task**
-
-> AI:  
-> Sure. I won’t write code yet. According to `AGENTS.md`, I’ll first update the docs under the current phase:  
-> - In `.phrase/phases/phase-ui-20250101/plan_ui.md`, I’ll add this milestone: support dark-mode toggling.  
-> - In `.phrase/phases/phase-ui-20250101/task_ui.md`, I’ll add:  
->   - `task003 [ ] Dark mode toggle (verification: manual toggle + UI refresh check)`.  
+> AI: Sure. I won’t write code yet. According to `AGENTS.md`, I’ll first update the docs under the current phase:
+> - In `plan_ui.md`, I’ll add this milestone: support dark-mode toggling.
+> - In `task_ui.md`, I’ll add: `task003 [ ] Dark mode toggle (verification: manual toggle + UI refresh check)`.
 > Once you confirm this task description and verification method, we’ll move on to implementation.
 
 **3. Align task boundaries**
-
-> User:  
-> That works. We don’t need persistence yet; as long as I can toggle it back and forth in the current session, that’s enough.
->
-> AI:  
-> Got it. I’ll change the verification for `task003` to “manually toggle twice and confirm the UI updates correctly”, and leave persistence for a follow-up `task004`.
+> User: That works. We don’t need persistence yet; as long as I can toggle it back and forth in the current session, that’s enough.
+> AI: Got it. I’ll change the verification for `task003` to “manually toggle twice and confirm the UI updates correctly”, and leave persistence for a follow-up `task004`.
 
 **4. AI implements and verifies**
-
-> (Roughly what the AI does behind the scenes)  
-> 1. Locate the UI entry point in the code (for example, window or menu definitions under `App/` or `UI/`).  
-> 2. Add a “Dark Mode” menu item or shortcut handler following the existing style.  
-> 3. Reuse or introduce the core theme-switching logic (ideally in the Core/Shared layer).  
-> 4. Run tests and/or start the app manually, toggling dark mode twice according to `task003` and recording the results.
+> (AI performs coding and testing...)
 
 **5. Write back to the docs and close the loop**
-
-> AI:  
-> Implementation and verification are complete. Following `AGENTS.md`, I’ll write back to the docs:  
-> - In `.phrase/phases/phase-ui-20250101/task_ui.md`, mark `task003` as `[x]`.  
-> - In `.phrase/phases/phase-ui-20250101/change_ui.md`, add a record describing the date, file paths, Add/Modify type, behavioral impact, and risks.  
-> - Update `spec_ui.md` if needed to reflect the “user action → feedback → fallback” flow.  
-> After that, we can open a new `task004` specifically for “remembering the dark-mode setting”.
-
-## Usage
-
-### Using Codex
-
-Copy `SPEC-AGENTS.md` into your project folder and rename it to `AGENTS.md`. Codex will automatically read this file and follow the specification.
-
-### Using Claude Code
-
-In your project folder, edit `CLAUDE.md` to contain:
-
-```text
-@AGENTS.md
-```
-
-### Using Gemini CLI
-
-In your project folder, edit `GEMINI.md` to contain:
-
-```text
-@AGENTS.md
-```
+> AI: Implementation and verification are complete. Following `AGENTS.md`, I’ll write back to the docs:
+> - Mark `task003` as `[x]`.
+> - Add a record to `change_ui.md`.
+> - Update `spec_ui.md` if needed.
 
 ---
 
@@ -141,14 +139,59 @@ In your project folder, edit `GEMINI.md` to contain:
 本项目受 Spec-kit、OpenSpec、Stack Workflow 启发而来，兼具「规范驱动开发」和「阶段性开发」的优势，通过简单的配置，让普通小白在氛围编程（Vibe Coding）时，提升 AI 执行任务的准确性，减少与 AI 重复输（chao）入（jia）的次数，同时享受成熟的软件开发流程的稳定、便利。
 
 ## 特点
-- 零配置
-- 自然语言沟通
-- 体积小，节省 TOKEN
-- 成熟的软件项目开发流程 
-- 支持多个编程工具
-- 项目记忆
 
-使用 SPEC-AGENTS 还相当于你的开发项目拥有了「记忆」，而不必担心切换开发工具之后，就很难再进行当前的开发进度。只要让 AI 通过阅读文档，就能够清楚地知道当前的项目状况，以及开发进度。
+- **意图识别**：自动在产品经理、Linus 风格程序员、文案专家之间切换。
+- **零配置**：一行命令即可初始化。
+- **自然语言沟通**：无需复杂的 JSON/YAML 配置。
+- **成熟的开发流程**：强制执行严格的 Spec/Plan/Task 生命周期。
+- **项目记忆**：AI 能够跨会话记住项目上下文。
+
+## 安装 (CLI)
+
+Spec-AGENTS v2 提供了一个 CLI 工具，方便一键安装。
+
+### 1. 下载并连接
+
+下载本仓库，并运行连接脚本（将工具注册到系统路径）：
+
+```bash
+git clone https://github.com/your-repo/SPEC-AGENTS.git
+cd SPEC-AGENTS
+chmod +x link_to_system.sh
+./link_to_system.sh
+```
+
+现在你可以全局使用 `spec-agents` 命令了。
+
+### 2. 在项目中初始化
+
+进入你的新项目目录，运行：
+
+```bash
+cd ~/MyProject
+spec-agents init        # 安装中文版（默认）
+# 或
+spec-agents init en     # 安装英文版
+```
+
+这会自动创建 `AGENTS.md` 和 `.phrase/` 目录结构（包含所有智能模块）。
+
+## 用法
+
+### 1. 配置 AI 工具
+
+- **Cursor / Copilot**: 确保 `AGENTS.md` 在项目根目录即可。
+- **Claude Code**: 在 `CLAUDE.md` 中添加 `@AGENTS.md`。
+- **Gemini CLI**: 在 `GEMINI.md` 中添加 `@AGENTS.md`。
+
+### 2. 意图路由（直接对话）
+
+只需与 AI 自然对话，系统会自动路由你的意图：
+
+*   **"我想做个新功能..."** $\rightarrow$ 触发 **PR/FAQ 模块**（产品经理模式）。
+*   **"帮我写代码..."** $\rightarrow$ 触发 **Linus 编程模块**（严格工程模式）。
+*   **"写个文案..."** $\rightarrow$ 触发 **文案模块**（营销模式）。
+*   **"抓取这个网页..."** $\rightarrow$ 触发 **浏览器自动化模块**。
 
 ## 原理
 
@@ -163,7 +206,7 @@ In your project folder, edit `GEMINI.md` to contain:
 
 ## 工作流程（How It Works）
 
-下面是 SPEC-AGENTS.md 协议在一个项目中的典型工作流示意图（英文画图，右侧为中文注释）：
+下面是 SPEC-AGENTS.md 协议在一个项目中的典型工作流示意图：
 
 ```
 ┌────────────────────┐      起草 / 更新规范（用自然语言写 spec_/plan_）
@@ -197,68 +240,30 @@ In your project folder, edit `GEMINI.md` to contain:
 1. 与 LLM 确定进入新的开发阶段，在 `.phrase/phases/` 里用自然语言起草或更新规范和计划（spec_/plan_）；  
 2. 和 AI 一起把需求拆成若干原子 `taskNNN`，来回修改直到双方对范围和验收标准达成一致；  
 3. 按照这些文档驱动实现和验证，每次对话聚焦一个任务；  
-4. 完成后回写 `task_*` / `change_*` / `spec_*` / `issue_*` / `adr_*`，让所有改动都能从代码追溯回最初的文字意图。
+4. 完成后回写 `task_*` / `change_*` / `spec_*` / `issue_*`，让所有改动都能从代码追溯回最初的文字意图。
 
 ## 实际案例
 
 下面是一个极简的自然对话示例，展示 SPEC-AGENTS.md 在真实会话中的使用方式：
 
 **1. 用户提出需求**
-
-> 用户：  
-> 我想给项目加一个「深色模式」开关，用菜单或快捷键切换就行。
+> 用户：我想给项目加一个「深色模式」开关，用菜单或快捷键切换就行。
 
 **2. AI 回到文档，先锁定任务**
-
-> AI：  
-> 好，我先不直接写代码，而是根据 `AGENTS.md` 先更新当前 phase 下的文档：  
-> - 在 `.phrase/phases/phase-ui-20250101/plan_ui.md` 补充本次里程碑：支持深色模式切换；  
-> - 在 `.phrase/phases/phase-ui-20250101/task_ui.md` 中新增：  
->   - `task003 [ ] 深色模式开关（验证：手动切换 + 界面刷新检查）`。  
+> AI：好，我先不直接写代码，而是根据 `AGENTS.md` 先更新当前 phase 下的文档：
+> - 在 `plan_ui.md` 补充本次里程碑：支持深色模式切换；
+> - 在 `task_ui.md` 中新增：`task003 [ ] 深色模式开关（验证：手动切换 + 界面刷新检查）`。
 > 等你确认这个任务描述和验证方式，我们再进入实现。
 
 **3. 对齐任务边界**
-
-> 用户：  
-> 可以，先不做持久化，只要当前会话能来回切换就够了。
->
-> AI：  
-> 好的，我会把 `task003` 的验证方式改成「手动切换两次，确认 UI 正确刷新」，持久化部分留到后续的 `task004`。
+> 用户：可以，先不做持久化，只要当前会话能来回切换就够了。
+> AI：好的，我会把 `task003` 的验证方式改成「手动切换两次，确认 UI 正确刷新」，持久化部分留到后续的 `task004`。
 
 **4. AI 执行实现与验证**
-
-> （AI 内部大致会这样工作）  
-> 1. 在代码中查找 UI 层入口（如 `App/` 或 `UI/` 下的窗口或菜单定义）；  
-> 2. 按现有风格添加一个「Dark Mode」菜单项或快捷键处理函数；  
-> 3. 复用或新增切换主题的核心逻辑（尽量放在 Core/Shared 层）；  
-> 4. 运行测试 / 手动启动应用，按 `task003` 的验证方式切换两次，并记录结果。
+> （AI 内部在 App/UI 层添加代码，并手动/自动运行验证...）
 
 **5. 回写文档，完成闭环**
-
-> AI：  
-> 代码和验证已经完成，我会按照 `AGENTS.md` 的要求回写文档：  
-> - 在 `.phrase/phases/phase-ui-20250101/task_ui.md` 中将 `task003` 勾选为 `[x]`；  
-> - 在 `.phrase/phases/phase-ui-20250101/change_ui.md` 增加一条记录，说明日期、修改的文件路径、变更类型（Add/Modify）、影响的行为和风险；  
-> - 如有必要，补充或更新对应的 `spec_ui.md` 中的「用户操作 → 反馈 → 回退」描述。  
-> 之后可以开一个新的 `task004` 专门处理「记住深色模式设置」这一需求。
-
-## 用法
-
-### 使用 Codex
-将 SPEC-AGENTS.md 复制到项目文件夹，同时改名为 AGENTS.md。Codex 会自动读取该文件，并遵循该规范。
-
-### 使用 Claude Code
-将项目文件夹下的 CLAUDE.md 内容，修改成：
-
-```text
-@AGENTS.md
-```
-
-### 使用 Gemini CLI 
-
-将项目文件夹下的 GEMINI.md 内容，修改成：
-
-```text
-@AGENTS.md
-```
-
+> AI：代码和验证已经完成，我会按照 `AGENTS.md` 的要求回写文档：
+> - 在 `task_ui.md` 中将 `task003` 勾选为 `[x]`；
+> - 在 `change_ui.md` 增加变更记录；
+> - 如有必要，补充 `spec_ui.md`。
