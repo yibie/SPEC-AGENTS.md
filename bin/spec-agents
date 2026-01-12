@@ -1,0 +1,88 @@
+#!/bin/bash
+set -e
+
+# Spec-AGENTS CLI
+# 自动定位仓库根目录（即脚本所在目录的上一级）
+# 兼容 macOS/Linux 的 readlink 问题
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+REPO_ROOT="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
+
+# CLI Argument Parsing
+COMMAND="$1"
+TARGET_DIR="${2:-.}" # Default to current directory
+LANG="${3:-cn}"      # Default to Chinese
+
+show_help() {
+  echo "🤖 Spec-AGENTS CLI v2.2.0"
+  echo ""
+  echo "Usage:"
+  echo "  spec-agents init [lang]         Initialize in current directory"
+  echo "  spec-agents install <path> [lang] Install to specific directory"
+  echo ""
+  echo "Arguments:"
+  echo "  lang: cn (default) | en"
+  echo ""
+  echo "Examples:"
+  echo "  spec-agents init"
+  echo "  spec-agents init en"
+  echo "  spec-agents install ../my-new-project cn"
+}
+
+if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
+  show_help
+  exit 0
+fi
+
+# Normalize Target Directory
+if [ "$COMMAND" == "init" ]; then
+    TARGET_DIR="."
+    LANG="${2:-cn}"
+elif [ "$COMMAND" == "install" ]; then
+    if [ -z "$2" ]; then
+        echo "❌ Error: Please specify target path for 'install' command."
+        exit 1
+    fi
+    TARGET_DIR="$2"
+    LANG="${3:-cn}"
+else
+    echo "❌ Unknown command: $COMMAND"
+    show_help
+    exit 1
+fi
+
+# Execution Logic
+echo "🚀 Initializing Spec-AGENTS v2..."
+echo "   📂 Source: $REPO_ROOT"
+echo "   🎯 Target: $TARGET_DIR"
+
+if [ ! -d "$TARGET_DIR" ]; then
+  echo "   ⚠️  Target directory does not exist. Creating..."
+  mkdir -p "$TARGET_DIR"
+fi
+
+# 1. Install Modules
+echo "   📦 Copying intelligent modules..."
+mkdir -p "$TARGET_DIR/.phrase/modules"
+mkdir -p "$TARGET_DIR/.phrase/docs"
+mkdir -p "$TARGET_DIR/.phrase/phases"
+cp -R "$REPO_ROOT/.phrase/modules/"* "$TARGET_DIR/.phrase/modules/"
+
+# 2. Install Core Protocol
+echo "   📄 Copying AGENTS.md..."
+if [ "$LANG" == "en" ]; then
+  cp "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+  echo "   🌐 Language: English"
+else
+  cp "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+  echo "   🌐 Language: Chinese"
+fi
+
+echo ""
+echo "✨ Done! Spec-AGENTS is ready."
+echo "   To start, simply tell your AI Agent: 'Read AGENTS.md'"
