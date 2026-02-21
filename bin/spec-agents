@@ -17,21 +17,32 @@ REPO_ROOT="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 COMMAND="$1"
 TARGET_DIR="${2:-.}" # Default to current directory
 LANG="${3:-cn}"      # Default to Chinese
+USE_LINK=false       # Default to copy mode
+
+# Parse optional flags (don't shift to preserve positional args)
+for arg in "$@"; do
+  case "$arg" in
+    --link|-l)
+      USE_LINK=true
+      ;;
+  esac
+done
 
 show_help() {
   echo "🤖 Spec-AGENTS CLI v2.2.0"
   echo ""
   echo "Usage:"
-  echo "  spec-agents init [lang]         Initialize in current directory"
-  echo "  spec-agents install <path> [lang] Install to specific directory"
+  echo "  spec-agents init [lang] [--link|-l]    Initialize in current directory"
+  echo "  spec-agents install <path> [lang] [--link|-l] Install to specific directory"
   echo ""
   echo "Arguments:"
   echo "  lang: cn (default) | en"
+  echo "  --link, -l: Use symbolic links instead of copying files"
   echo ""
   echo "Examples:"
   echo "  spec-agents init"
-  echo "  spec-agents init en"
-  echo "  spec-agents install ../my-new-project cn"
+  echo "  spec-agents init en --link"
+  echo "  spec-agents install ../my-new-project cn -l"
 }
 
 if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
@@ -42,14 +53,36 @@ fi
 # Normalize Target Directory
 if [ "$COMMAND" == "init" ]; then
     TARGET_DIR="."
-    LANG="${2:-cn}"
+    # Check if $2 is a language or a flag
+    if [[ "${2:-}" == --* ]] || [[ "${2:-}" == -* ]]; then
+      LANG="cn"
+    else
+      LANG="${2:-cn}"
+    fi
+    # Check for --link flag in remaining args
+    for arg in "${@:2}"; do
+      if [[ "$arg" == "--link" ]] || [[ "$arg" == "-l" ]]; then
+        USE_LINK=true
+      fi
+    done
 elif [ "$COMMAND" == "install" ]; then
     if [ -z "$2" ]; then
         echo "❌ Error: Please specify target path for 'install' command."
         exit 1
     fi
     TARGET_DIR="$2"
-    LANG="${3:-cn}"
+    # Check if $3 is a language or a flag
+    if [[ "${3:-}" == --* ]] || [[ "${3:-}" == -* ]]; then
+      LANG="cn"
+    else
+      LANG="${3:-cn}"
+    fi
+    # Check for --link flag in remaining args
+    for arg in "${@:3}"; do
+      if [[ "$arg" == "--link" ]] || [[ "$arg" == "-l" ]]; then
+        USE_LINK=true
+      fi
+    done
 else
     echo "❌ Unknown command: $COMMAND"
     show_help
@@ -66,21 +99,86 @@ if [ ! -d "$TARGET_DIR" ]; then
   mkdir -p "$TARGET_DIR"
 fi
 
+# Interactive mode: ask user if not specified via flag
+if [ "$USE_LINK" == false ] && [ -t 0 ]; then
+  echo ""
+  echo "📋 Select installation mode:"
+  echo "   [1] Copy files (default) - Independent, can customize locally"
+  echo "   [2] Symbolic link - Auto-sync with updates, saves space"
+  echo ""
+  read -p "   Choice (1/2): " choice
+  if [ "$choice" == "2" ]; then
+    USE_LINK=true
+  fi
+fi
+
 # 1. Install Modules
-echo "   📦 Copying intelligent modules..."
+if [ "$USE_LINK" == true ]; then
+  echo "   🔗 Linking intelligent modules (symlink mode)..."
+else
+  echo "   📦 Copying intelligent modules..."
+fi
+
 mkdir -p "$TARGET_DIR/.phrase/modules"
 mkdir -p "$TARGET_DIR/.phrase/docs"
 mkdir -p "$TARGET_DIR/.phrase/phases"
-cp -R "$REPO_ROOT/.phrase/modules/"* "$TARGET_DIR/.phrase/modules/"
+
+if [ "$USE_LINK" == true ]; then
+  # Use symlinks for modules
+  for item in "$REPO_ROOT/.phrase/modules/"*; do
+    if [ -e "$item" ]; then
+      basename_item=$(basename "$item")
+      ln -sf "$item" "$TARGET_DIR/.phrase/modules/$basename_item"
+    fi
+  done
+else
+  cp -R "$REPO_ROOT/.phrase/modules/"* "$TARGET_DIR/.phrase/modules/"
+fi
+
+# 3. Install Claude Code commands (.claude/commands/)
+if [ -d "$REPO_ROOT/.phrase/commands" ]; then
+  mkdir -p "$TARGET_DIR/.claude/commands"
+  if [ "$USE_LINK" == true ]; then
+    echo "   🔗 Linking Claude commands (symlink mode)..."
+    for item in "$REPO_ROOT/.phrase/commands/"*; do
+      if [ -e "$item" ]; then
+        basename_item=$(basename "$item")
+        ln -sf "$item" "$TARGET_DIR/.claude/commands/$basename_item"
+      fi
+    done
+  else
+    echo "   📋 Installing Claude commands..."
+    cp "$REPO_ROOT/.phrase/commands/"* "$TARGET_DIR/.claude/commands/"
+  fi
+fi
 
 # 2. Install Core Protocol
-echo "   📄 Copying AGENTS.md..."
+if [ "$USE_LINK" == true ]; then
+  echo "   🔗 Linking AGENTS.md (symlink mode)..."
+else
+  echo "   📄 Copying AGENTS.md..."
+fi
+
 if [ "$LANG" == "en" ]; then
-  cp "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+  if [ "$USE_LINK" == true ]; then
+    ln -sf "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+  else
+    cp "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+  fi
   echo "   🌐 Language: English"
 else
-  cp "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+  if [ "$USE_LINK" == true ]; then
+    ln -sf "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+  else
+    cp "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+  fi
   echo "   🌐 Language: Chinese"
+fi
+
+if [ "$USE_LINK" == true ]; then
+  echo ""
+  echo "   ⚠️  Note: Using symbolic links. Changes to source files will affect this project."
+  echo "      Source: $REPO_ROOT"
 fi
 
 echo ""

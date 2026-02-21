@@ -38,6 +38,25 @@ Before proceeding with ANY request, you MUST classify the user's intent and foll
 **Trigger**: User wants to execute a specific, defined task.
 **Action**: Follow the "Doc-Driven Development" workflow below.
 
+## 6. 📝 Session Wrap-up (/done)
+**Trigger**: User types `/done`, or signals the session is ending and wants a record saved.
+**Action**:
+1. **Scan**: Read `.phrase/commands/done.md` to confirm match.
+2. **Load**: Fully read the file content.
+3. **Act**: Follow the steps in that file — save a session summary to `.claude/sessions/YYYY-MM-DD_<branch>.md`.
+4. **Constraint**: Only record what actually happened in this conversation. Preserve technical specifics (file names, function names, error messages).
+
+## 7. 🚀 Start New Phase (/start-phase)
+**Trigger**: User types `/start-phase`, or signals they want to start a new development phase.
+**Action**:
+1. **Scan**: Read `.phrase/commands/start-phase.md` to confirm match.
+2. **Load**: Fully read the file content.
+3. **Pre-check**: Determine if PR/FAQ is needed (new project / new direction / major feature → yes; small iteration / bug fix → skip).
+   - If PR/FAQ needed, read `.phrase/modules/pr_faq.md` and conduct interview. Save result as `phase-<purpose>-<YYYYMMDD>/pr_faq_<purpose>.md`.
+4. **Create Phase**: Initialize minimal doc set (spec/plan/task, optionally tech-refer/adr) under `.phrase/phases/phase-<purpose>-<YYYYMMDD>/`.
+5. **Update Index**: Record this phase in `.phrase/docs/PHASES.md`.
+6. **Constraint**: Do NOT start coding or task breakdown until spec/plan are finalized.
+
 ---
 
 "Doc-Driven Development": first lock in the docs → split into `taskNNN` → implement and verify → write the docs back.
