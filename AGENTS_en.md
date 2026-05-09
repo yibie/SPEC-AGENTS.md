@@ -1,169 +1,285 @@
-# Core Protocol: Intent Recognition (Mandatory)
+# SPEC-AGENTS v3: Evidence-Calibrated Agent Workflow
 
-Before proceeding with ANY request, you MUST classify the user's intent and follow the corresponding protocol.
+Before handling any request, classify the user's intent and use the lightest
+protocol that can complete the work safely.
 
-## 1. 🌱 Start / Init / Vague Idea
-**Trigger**: User wants to start a new project, a new phase, or has a vague idea.
-**Action**:
-1.  **Scan**: Read the YAML metadata of `.phrase/modules/pr_faq.md` to confirm match.
-2.  **Load**: Fully read the file content ONLY if the intent matches.
-3.  **Act**: Adopt the "Strict Product Manager" persona. Conduct an interview to draft an Amazon-style PR/FAQ.
-4.  **Constraint**: Do NOT start coding or splitting tasks until the PR/FAQ is finalized.
+Core principle:
 
-## 2. 🔨 Coding / Refactoring / Review
-**Trigger**: User requests code implementation, bug fixing, refactoring, or code review.
-**Action**:
-1.  **Scan**: Read the YAML metadata of `.phrase/modules/linus_coding.md` to confirm match.
-2.  **Load**: Fully read the file content ONLY if the intent matches.
-3.  **Act**: Adopt the "Linus Torvalds" persona.
-4.  **Constraint**: Apply the "5-Layer Thinking" and "Good Taste" judgment before and during coding.
+> Minimal context, evidence-driven phases, verified execution, and durable
+> decisions only.
 
-## 3. ✍️ Copywriting / Marketing / Docs
-**Trigger**: User needs to write READMEs, release notes, product intros, or marketing copy.
-**Action**:
-1.  **Scan**: Read the YAML metadata of `.phrase/modules/copywriting.md` to confirm match.
-2.  **Load**: Fully read the file content ONLY if the intent matches.
-3.  **Act**: Adopt the "Conversion Copywriter" persona.
-4.  **Constraint**: Follow the 10 principles (e.g., "Conclusion First", "Cost-Centric", "Tangible Specifics").
-
-## 4. 🌐 Browser / Web Automation / Scraping
-**Trigger**: User needs to navigate websites, scrape data, take screenshots, test web UIs, or fill forms.
-**Action**:
-1.  **Scan**: Read the YAML metadata of `.phrase/modules/agent-browser.md` to confirm match.
-2.  **Check**: Ensure `agent-browser` dependency is installed.
-3.  **Load**: Fully read the file content ONLY if intent matches and dependency exists.
-4.  **Act**: Use the CLI tool for browser automation.
-
-## 5. 📋 Task Execution (Default)
-**Trigger**: User wants to execute a specific, defined task.
-**Action**: Follow the "Doc-Driven Development" workflow below.
-
-## 6. 📝 Session Wrap-up (/done)
-**Trigger**: User types `/done`, or signals the session is ending and wants a record saved.
-**Action**:
-1. **Scan**: Read `.phrase/commands/done.md` to confirm match.
-2. **Load**: Fully read the file content.
-3. **Act**: Follow the steps in that file — save a session summary to `.claude/sessions/YYYY-MM-DD_<branch>.md`.
-4. **Constraint**: Only record what actually happened in this conversation. Preserve technical specifics (file names, function names, error messages).
-
-## 7. 🚀 Start New Phase (/start-phase)
-**Trigger**: User types `/start-phase`, or signals they want to start a new development phase.
-**Action**:
-1. **Scan**: Read `.phrase/commands/start-phase.md` to confirm match.
-2. **Load**: Fully read the file content.
-3. **Pre-check**: Determine if PR/FAQ is needed (new project / new direction / major feature → yes; small iteration / bug fix → skip).
-   - If PR/FAQ needed, read `.phrase/modules/pr_faq.md` and conduct interview. Save result as `phase-<purpose>-<YYYYMMDD>/pr_faq_<purpose>.md`.
-4. **Create Phase**: Initialize minimal doc set (spec/plan/task, optionally tech-refer/adr) under `.phrase/phases/phase-<purpose>-<YYYYMMDD>/`.
-5. **Update Index**: Record this phase in `.phrase/docs/PHASES.md`.
-6. **Constraint**: Do NOT start coding or task breakdown until spec/plan are finalized.
+SPEC-AGENTS no longer requires agents to read or maintain full historical
+documentation by default. Read only the current decision context, then let the
+previous phase's evidence shape the next phase.
 
 ---
 
-"Doc-Driven Development": first lock in the docs → split into `taskNNN` → implement and verify → write the docs back.
+## 1. Intent Recognition
+
+### Start / Init / Vague Idea
+
+Trigger: the user wants to start a new project, direction, or phase, or only has
+a vague idea.
+
+Action:
+- Read `.phrase/decision.md`, `.phrase/roadmap.md`, and `.phrase/current.md`.
+- If direction is unclear, scan YAML metadata in `.phrase/modules/pr_faq.md`;
+  fully load it only when it matches.
+- The interview should clarify the current phase's decision framework, evidence
+  rules, scope, and acceptance gate.
+- Do not split distant future work into task lists.
+
+### Coding / Refactoring / Review
+
+Trigger: implementation, bug fixing, refactoring, or review.
+
+Action:
+- Read `.phrase/decision.md`, `.phrase/roadmap.md`, and `.phrase/current.md`.
+- Read `.phrase/evidence.md` or `.phrase/archive/` only when the current issue
+  needs historical support.
+- Execute the smallest current phase task slice, verify it, then record an
+  evidence delta.
+- For code judgment, scan `.phrase/modules/linus_coding.md`; fully load it only
+  when it matches.
+
+### Copywriting / Marketing / Docs
+
+Trigger: README, release notes, product copy, marketing copy, or documentation
+rewrite.
+
+Action:
+- Scan `.phrase/modules/copywriting.md`; fully load it only when it matches.
+- Output must still obey the current phase boundary and evidence rules.
+
+### Browser / Web Automation / Scraping
+
+Trigger: browsing, scraping, screenshots, Web UI testing, or form filling.
+
+Action:
+- Scan `.phrase/modules/agent-browser.md`; fully load it only when it matches
+  and dependencies are available.
+- If browser output changes future judgment, record it in `.phrase/evidence.md`.
+
+### Default Task Execution
+
+Trigger: the user gives a specific, defined task.
+
+Action: follow the EDPP v3 workflow below.
+
+### Session Wrap-Up: `/done`
+
+Trigger: the user types `/done` or signals the session is ending.
+
+Action:
+- Read `.phrase/commands/done.md`.
+- Record only what actually happened.
+- If the session produced facts that change the next step, update
+  `.phrase/evidence.md` instead of only writing a session diary.
+
+### Start Phase: `/start-phase`
+
+Trigger: the user types `/start-phase` or explicitly wants a new phase.
+
+Action:
+- Read `.phrase/commands/start-phase.md`.
+- Generate the next `.phrase/current.md` from the previous phase's evidence.
+- Plan only the current phase. Do not pre-split distant tasks.
+
+### Legacy Migration: `/migrate-v3`
+
+Trigger: the project already has the old `.phrase/phases/`, `spec_*`, `plan_*`,
+`task_*`, `change_*`, or `issue_*` workflow.
+
+Action:
+- Read `.phrase/commands/migrate-v3.md`.
+- Archive old material under `.phrase/archive/legacy-v2/`.
+- Promote only durable rules, current phase context, unresolved blockers,
+  verification results, and next-phase recommendations into v3 files.
+- Do not mechanically convert old records, and do not let old docs remain in
+  the default context path.
 
 ---
 
-## 0. Principles (by priority)
+## 2. Default Read Rule
 
-- Existing repository conventions take precedence over this document. When they conflict, follow `README`, `STYLEGUIDE`, etc., and record the decision in `issue_*` / `change_*`.  
-- Docs are the source of truth: requirements, interactions, and interfaces must come only from `spec` / `plan` / `tech-refer` / `adr`.  
-- Each session handles only one atomic task; every change must be traceable to a `taskNNN` and its origin (`spec` / `issue` / `adr`).  
-- Every `taskNNN` must describe how it will be validated (tests or manual steps).  
-- After implementation, you must write back to `task_*` and `change_*`, and update `spec_*` / `issue_*` / `adr_*` when needed.
+At the start of ordinary work, read only:
 
----
+```text
+.phrase/decision.md
+.phrase/roadmap.md
+.phrase/current.md
+```
 
-## 1. Repo structure & docs
+Read `.phrase/evidence.md` when:
 
-- Code roots: `App/`, `Core/`, `UI/`, `Shared/`, `Tests/`, `Assets/`, `Samples/`, `Schemas/`, `StackWM-Bridging-Header.h`. Keep layers clear; `Tests/` should mirror core modules.  
-- Docs root: `.phrase/`  
-  - Phases: `.phrase/phases/phase-<purpose>-<YYYYMMDD>/`  
-  - Global indexes: `.phrase/docs/`  
-- `Docs/` is for external documents and can continue to be used independently.
+- choosing the next phase
+- deciding whether a plan has been disproven by new facts
+- checking blocker or risk classification
+- verifying phase closure
 
----
+Read `.phrase/archive/` only when:
 
-## 2. Phase workflow
+- current files link to a specific archived item
+- a regression requires historical comparison
+- the user explicitly asks for old context
 
-1. **Phase Gate** (only when the user explicitly starts a new phase): in a new `phase-*` directory, create the minimal set `spec_*`, `plan_*`, `task_*`, and add `tech-refer_*` / `adr_*` as needed. `issue_*` can come later.  
-2. **In-Phase Loop** (default):  
-   - New requirement → update the current `plan_*` → break it down into `taskNNN`.  
-   - Implementation → add/update and execute the corresponding items in `task_*`.  
-   - Bug → register `issueNNN` in `.phrase/docs/ISSUES.md`, write a detailed issue file under the phase, then create `taskNNN`.  
-   - Irreversible decision → write an `adr_*` first, or add a “Decision” section to `tech-refer_*`.  
-3. **Task closure**: when finished, you must  
-   1) mark the corresponding `task_*` item as `[x]`  
-   2) add an entry to the phase’s `change_*` file and add an index to `.phrase/docs/CHANGE.md`  
-   3) update the relevant `spec_*` if interactions are affected  
-   4) update `ISSUES.md` and the issue detail file (including validation results) if a problem is resolved.
-
-When the goal clearly differs from the current phase purpose, requires an independent milestone, or involves major architectural refactoring, you may suggest starting a new phase, but this must be confirmed by the user.
-
-### Phase lifecycle
-
-- Start a phase: create `spec/plan/task/...` under `.phrase/phases/phase-<purpose>-<date>/`.  
-- Close a phase: after user confirmation, rename the entire directory to `DONE-phase-<purpose>-<date>/`, and rename the main docs following the same pattern (`DONE-PLAN-*`, `DONE-TASK-*`, etc.), so the completed status is obvious at a glance.
+Do not load full history by default. Token reduction is part of the protocol.
 
 ---
 
-## 3. Task / Issue conventions
+## 3. File Authority Order
 
-- `taskNNN` is a three-digit increasing ID (starting at `task001`) that must not be reordered or reused. When splitting/merging tasks, create a new ID and record how it relates to the original task.  
-- Any addition, deletion, modification, or checkbox change in `task_*` must be recorded once in the current phase’s `change_*`. You can batch changes, but they must remain traceable.  
-- Atomic task criteria: completable in one work session, observable output, independently verifiable, neither too fine-grained nor too coarse.  
-- Issues:  
-  - Global index: `.phrase/docs/ISSUES.md` uses `issueNNN [ ]/[x]` and links to phase-specific details.  
-  - Detail files `issue_<purpose>_<YYYYMMDD>.md` must include environment, reproduction steps, investigation, root cause, fix, verification, and related `taskNNN` / commits.  
-  - For user-visible issues, you must obtain confirmation before marking `[x]`, and record `Resolved At/By/Commit`.
+When files disagree, use this order:
 
----
+1. `.phrase/decision.md`, `.phrase/adr/`, `.phrase/protocol/`
+2. Fresh evidence
+3. `.phrase/current.md`
+4. `.phrase/roadmap.md`
+5. `.phrase/archive/`
 
-## 4. Build / Test / Dev
-
-- Prefer repository-provided entry points (Xcode schemes, SwiftPM, `Scripts/` tools, etc.). If there is no unified entry, add a minimal script and record it in `plan_*`.  
-- Build: `swift build` (or `swift build -c release`). Run: `swift run StackWM`. Test: `swift test` (optionally with `--enable-code-coverage`).  
-- Optional tools: `swiftformat .` → `swiftlint` (when available and allowed).
+If fresh evidence conflicts with the current phase, update `current.md`. If
+fresh evidence challenges a durable boundary, update `decision.md`, an ADR, or
+a protocol explicitly instead of silently changing implementation.
 
 ---
 
-## 5. Coding & verification
+## 4. EDPP v3 Workflow
 
-- Style: Swift 5.9+ / macOS 13+; 4-space indentation, ≤120 columns; types in PascalCase, functions/properties in lowerCamelCase, global constants in UPPER_SNAKE_CASE. Prefer value types and immutability; mark things `final` when possible.  
-- Follow existing error-handling, logging frameworks, and module boundaries. Unless the task is explicitly “cleanup”, do not bulk-reorder imports or reformat large areas.  
-- Add diagnosable logging to critical paths (following the project’s logging approach).  
-- Prioritize tests for core logic; for UI/system glue, manual verification steps are acceptable. Tests must be deterministic; inject dependencies or use mocks as needed.
+1. **Confirm the decision framework.**
+   Define evidence rules, durable boundaries, verification standards, and phase
+   gates.
+
+2. **Maintain the roadmap.**
+   Keep direction visible at phase granularity only: status, entry condition,
+   acceptance gate, and major out-of-scope.
+
+3. **Select the current phase from evidence.**
+   Use the last phase result to decide what comes next. Do not continue an old
+   sequence merely because it was written earlier.
+
+4. **Update the current phase brief.**
+   `current.md` must state the goal, scope, out of scope, acceptance gate,
+   active task slice, verification method, and known blockers.
+
+5. **Discover before broad implementation.**
+   When blocker shape is uncertain, run the smallest useful experiment, trace,
+   prototype, benchmark, audit, user test, or harness first.
+
+6. **Classify blockers before fixing them.**
+   Use project-fit labels: local fix, shared mechanism, workflow boundary,
+   platform divergence, product ambiguity, operational dependency, data quality,
+   and so on.
+
+7. **Execute only the measured slice.**
+   Do not expand into adjacent problems. Record unrelated findings as evidence
+   for later phases.
+
+8. **Verify.**
+   Run the proof required by the phase gate; broaden checks when blast radius
+   warrants it.
+
+9. **Record an evidence delta.**
+   Record only facts that change future judgment: verification result, failed
+   assumption, remaining blockers, rejected path, and next phase recommendation.
+
+10. **Update durable decisions only when needed.**
+    Update `decision.md`, ADR, or protocol only when a long-lived rule or
+    boundary changes.
+
+11. **Prepare the next phase.**
+    Update roadmap/current from the latest evidence. Move obsolete phase-local
+    detail into archive.
 
 ---
 
-## 6. Docs & changelog
+## 5. Minimal File Structure
 
-- `change_*`: real change records within a phase. Each completed `taskNNN` should have at least one entry including date, file/path, Add|Modify|Delete, affected functions, behavioral changes/risks, and should be ordered newest first.  
-- `.phrase/docs/CHANGE.md`: only an index and summary pointing to phase `change_*` entries; can be updated in batches per work session.  
-- `spec_*` / `plan_*` / `tech-refer_*` / `adr_*` / `issue_*` must all be updated along with changes (incrementally), keeping a single source of truth.
+```text
+.phrase/
+  decision.md
+  roadmap.md
+  current.md
+  evidence.md
+  archive/
+
+  adr/          # optional durable decisions
+  protocol/     # optional stable contracts
+  runbooks/     # optional repeated manual procedures
+  modules/      # optional intent modules
+  commands/     # optional command docs
+```
+
+### `decision.md`
+
+Long-lived principles, evidence rules, durable boundaries, verification
+standards, phase gates, ADR/protocol update triggers, and rejected paths that
+should not be rediscovered.
+
+### `roadmap.md`
+
+Phase-level direction only: phase goal, status, entry condition, acceptance
+gate, and major out-of-scope.
+
+### `current.md`
+
+Default context. Keep only what the current phase needs. It must be short enough
+to read every session.
+
+### `evidence.md`
+
+Evidence deltas. Not a diary and not a full changelog. Separate observation,
+interpretation, and recommended next action.
+
+### `archive/`
+
+Old phases, specs, tasks, and notes. Do not read by default.
 
 ---
 
-## 7. Commits, PRs & safety
+## 6. Task Rules
 
-- Use Conventional Commits by default (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, etc.), with each commit focused on a single `taskNNN`.  
-- PR descriptions must list related `taskNNN` / `issueNNN`, motivation, behavioral changes, verification method, risks/rollback plan, and attach screenshots/GIFs when there are UI changes.  
-- Never commit secrets, tokens, certificates, or real user data. For tasks involving permissions/configuration, describe failure modes, API boundaries, and troubleshooting methods clearly in `spec_*` and `tech-refer_*`.
+Tasks serve only the current phase. Do not pre-split tasks for distant roadmap
+phases.
 
----
+Recommended format:
 
-## 8. Template cheatsheet
+```text
+taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
+```
 
-- `spec`: Summary / Goals & Non-goals / User Flows (action → feedback → fallback) / Edge Cases / Acceptance Criteria  
-- `plan`: Milestones / Scope / Priorities / Risks & Dependencies / (optional) Rollback  
-- `tech-refer`: Options / Proposed Approach / Interfaces & APIs / Trade-offs / Risks & Mitigations  
-- `task`: `task001 [ ] output + verification method + impact scope`  
-- `issue`: `issueNNN [ ] Summary + Environment + Repro + Expected vs Actual + Investigation + Fix + Verification + User Confirmation + Resolved At/By/Commit`  
-- `adr`: Context / Decision / Alternatives / Consequences / Rollback
+If execution reveals a different blocker type, stop expanding the
+implementation, update evidence, then decide whether the phase must change.
 
 ---
 
-## 9. Collaboration tips
+## 7. Completion Contract
 
-- When explaining a solution, prioritize describing user actions (shortcuts/mouse/commands), visible feedback, rollback/failure paths, and edge cases.  
-- When referencing docs, mention them conversationally as “filename + section” instead of reciting them verbatim.  
-- When offering options, clarify whether they belong to the current milestone or a later one, to help the user decide.
+Before claiming a task or phase is complete:
+
+- acceptance gate has been checked
+- verification evidence exists
+- remaining blockers are recorded
+- next phase recommendation is written
+- durable decisions were updated if long-lived rules changed
+- obsolete local context is archived or marked stale
+
+---
+
+## 8. Commits & Safety
+
+- Commit messages should explain why the change exists, what was verified, and
+  what risk remains.
+- Commits do not need to bind to `taskNNN`, but they must trace back to the
+  current phase and evidence.
+- Never commit secrets, tokens, certificates, or real user data.
+- For permissions, configuration, external APIs, and data migration risks, write
+  the boundary and verification method in `current.md` or `decision.md`.
+
+---
+
+## 9. Collaboration Style
+
+- Explain current phase, evidence, and next step first.
+- Reference documents by filename and section; do not recite whole files.
+- When offering options, say whether they belong to the current phase, a future
+  phase, or a durable decision.

@@ -2,20 +2,20 @@
 name: pr_faq
 description: "Amazon-style PR/FAQ workflow for project initiation, vague ideas, or new phases. Use this when the user says 'I have an idea' or 'Start a new project'."
 intent: ["init", "start", "idea", "phase"]
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Module: Amazon Style PR/FAQ (Project Initiation)
 
 ## Purpose
-This module is activated when the user wants to start a new project, a new phase, or has a vague idea that needs clarification. Your goal is to act as a **Strict Product Manager** to guide the user in completing an Amazon-style PR/FAQ document *before* any technical planning or coding begins.
+This module is activated when the user wants to start a new project, a new phase, or has a vague idea that needs clarification. Your goal is to act as a **Strict Product Manager** to clarify the evidence rules, target user, problem, and phase boundary before technical planning or coding begins.
 
 ## Workflow
 
-1.  **Interview Mode**: Do not just ask the user to "fill in the template". Conduct an interview. Ask probing questions about the target customer, the specific problem, and the solution.
+1.  **Interview Mode**: Do not just ask the user to "fill in the template". Conduct an interview. Ask probing questions about the target customer, the specific problem, the evidence needed, and the smallest phase that can reduce uncertainty.
 2.  **Drafting**: Based on the user's answers, draft the PR/FAQ using the template below.
-3.  **Review**: refined the draft with the user until it is sharp, clear, and inspiring.
-4.  **Decomposition**: ONLY after the PR/FAQ is finalized, split the content into `spec_*.md` (Requirements) and `plan_*.md` (Milestones/Tasks).
+3.  **Review**: Refine the draft with the user until it is sharp, clear, and bounded.
+4.  **Promotion**: ONLY after the PR/FAQ is finalized, promote its durable rules into `.phrase/decision.md`, phase direction into `.phrase/roadmap.md`, the active slice into `.phrase/current.md`, and any factual observations into `.phrase/evidence.md`.
 
 ## Template
 

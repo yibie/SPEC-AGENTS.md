@@ -1,24 +1,38 @@
 # SPEC-AGENTS.md
 
-## Overview
+SPEC-AGENTS v3 is an evidence-calibrated agent workflow.
 
-This project is inspired by Spec-kit, OpenSpec, and Stack Workflow. It combines the advantages of spec-driven development and phased development. With a small amount of configuration, it helps everyday developers, especially in “vibe coding” sessions, improve the accuracy of AI execution, reduce repeated copy-pasting into the AI, and still enjoy the stability and convenience of mature software engineering workflows.
+It combines Evidence-Driven Phase Planning (EDPP) with a minimal execution protocol for AI coding agents. The goal is to reduce token load and stale memory while keeping planning, verification, and decision records reliable.
+
+## Core Idea
+
+Old SPEC-AGENTS used a static doc-driven loop:
+
+```text
+spec -> plan -> task -> implementation -> change log
+```
+
+v3 uses a smaller evidence-driven loop:
+
+```text
+decision framework -> roadmap -> current phase
+        -> discovery / implementation -> verification
+        -> evidence delta -> next phase
+```
+
+The agent should read less, but read the right things.
 
 ## Features
 
-- **Intent Recognition**: Automatically switches between PM, Coder, and Copywriter personas.
-- **Zero Configuration**: Just one command to init.
-- **Natural Language Interaction**: No complex JSON/YAML configs.
-- **Production-Grade Workflow**: Enforces rigorous spec/plan/task lifecycles.
-- **Project Memory**: AI remembers context across sessions.
+- **Minimal Context**: default reads only `decision.md`, `roadmap.md`, and  `current.md`.
+- **Evidence-Driven Phases**: the next phase is chosen from the previous phase's evidence.
+- **Phase-Local Tasks**: tasks exist only for the active phase, not distant roadmap items.
+- **Durable Decisions Only**: ADR/protocol files are used only for long-lived rules and contracts.
+- **Intent Modules**: optional modules still support product interviews, coding judgment, copywriting, and browser automation.
 
-## Installation (CLI)
+## Installation
 
-Spec-AGENTS v2 provides a CLI tool for easy installation and management.
-
-### 1. Download & Link
-
-Clone the repository and link the binary to your system path:
+Clone and link the CLI:
 
 ```bash
 git clone https://github.com/your-repo/SPEC-AGENTS.git
@@ -27,243 +41,264 @@ chmod +x link_to_system.sh
 ./link_to_system.sh
 ```
 
-Now you can use the `spec-agents` command globally.
-
-### 2. Initialize in Your Project
-
-Go to your project directory and run:
+Initialize a project:
 
 ```bash
 cd ~/MyProject
-spec-agents init        # Install Chinese version (Default)
-# OR
-spec-agents init en     # Install English version
+spec-agents init        # Chinese AGENTS.md by default
+spec-agents init en     # English AGENTS.md
 ```
 
-This will automatically create the `AGENTS.md` file and the `.phrase/` directory structure with all intelligent modules.
+The installer creates:
 
-## Usage
-
-### 1. Configure Your AI Tool
-
-- **Cursor / Copilot**: Just ensure `AGENTS.md` is in the root.
-- **Claude Code**: Add `@AGENTS.md` to your `CLAUDE.md`.
-- **Gemini CLI**: Add `@AGENTS.md` to your `GEMINI.md`.
-
-### 2. Start Chatting (Intent Routing)
-
-Just talk to your AI. The system will automatically route your intent:
-
-*   **"I have a new idea..."** $\rightarrow$ Triggers **PR/FAQ Module** (Product Manager Mode).
-*   **"Implement this feature..."** $\rightarrow$ Triggers **Linus Coding Module** (Strict Engineering Mode).
-*   **"Write a release note..."** $\rightarrow$ Triggers **Copywriting Module** (Marketing Mode).
-*   **"Scrape this website..."** $\rightarrow$ Triggers **Browser Automation Module**.
-
-## Principles
-
-Similar to OpenSpec, SPEC-AGENTS.md splits development into multiple phases and standardizes a “doc-driven development” workflow:
-
-1. First, write `spec_*`, `plan_*`, `task_*` and other docs in natural language under `.phrase/phases/`.  
-2. Then, let the agent implement and verify tasks strictly according to those documents.  
-3. Finally, write back to `task_*`, `change_*`, `spec_*`, `issue_*`, `adr_*`, so every change can be traced end-to-end.
-
-When you place an `AGENTS.md` file in a project, any AI tool that supports this protocol will read the rules at the start of a session and treat them as “instructions for the developer assistant”:
-
-- All requirements, interactions, and interface information come from docs, not ad-hoc chat messages.  
-- Each conversation focuses on a single atomic `taskNNN`.  
-- After each task is completed, the assistant records how it was verified and what it affected in the change docs.  
-
-With this set of constraints, SPEC-AGENTS compresses the traditional spec / task / change / issue workflow into a lightweight text protocol, so individuals and small teams can enjoy mature software engineering practice even while “vibe coding”.
-
-## Workflow (How It Works)
-
-The diagram below shows a typical workflow for SPEC-AGENTS.md within a project:
-
-```
-┌────────────────────┐      Draft / update specs (write spec_/plan_ in natural language)
-│ Specs & Plans      │
-│ (.phrase/phases/   │
-│  spec_/plan_ docs) │
-└────────┬───────────┘
-         │ define intent & scope
-         ▼
-┌────────────────────┐      Break down into atomic tasks (taskNNN)
-│ Atomic taskNNN     │◀──── feedback loop ──────┐  refine task boundaries with the AI
-└────────┬───────────┘                          │
-         │ agreed task boundaries               │ both sides agree on scope & acceptance
-         ▼                                      │
-┌────────────────────┐                          │ Implement & verify (AI writes code + tests)
-│ Implement & Verify │──────────────────────────┘
-│ (AI writes code &  │
-│  runs tests)       │
-└────────┬───────────┘
-         │ mark taskNNN done
-         ▼
-┌────────────────────┐      Archive changes & update docs
-│ Archive & Update   │
-│ (change_/spec_/    │
-│  issue_/adr_)      │
-└────────────────────┘
+```text
+AGENTS.md
+.phrase/
+  decision.md
+  roadmap.md
+  current.md
+  evidence.md
+  archive/
+  adr/
+  protocol/
+  runbooks/
+  modules/
+  commands/
 ```
 
-## Real-world Example
+## Default Read Rule
 
-Here is a minimal natural-language dialogue that shows how SPEC-AGENTS.md works in a real session:
+At the start of ordinary work, the agent reads only:
 
-**1. User describes a request**
-> User: I want to add a “Dark Mode” toggle to the project that can be switched via menu or shortcut. Please guide me through this once using the SPEC-AGENTS workflow.
+```text
+.phrase/decision.md
+.phrase/roadmap.md
+.phrase/current.md
+```
 
-**2. The AI goes back to the docs and locks in a task**
-> AI: Sure. I won’t write code yet. According to `AGENTS.md`, I’ll first update the docs under the current phase:
-> - In `plan_ui.md`, I’ll add this milestone: support dark-mode toggling.
-> - In `task_ui.md`, I’ll add: `task003 [ ] Dark mode toggle (verification: manual toggle + UI refresh check)`.
-> Once you confirm this task description and verification method, we’ll move on to implementation.
+It reads `.phrase/evidence.md` only when choosing the next phase, resolving a
+plan conflict, checking blocker classification, or closing a phase.
 
-**3. Align task boundaries**
-> User: That works. We don’t need persistence yet; as long as I can toggle it back and forth in the current session, that’s enough.
-> AI: Got it. I’ll change the verification for `task003` to “manually toggle twice and confirm the UI updates correctly”, and leave persistence for a follow-up `task004`.
+It reads `.phrase/archive/` only when current files link to an archived item, a
+regression needs historical comparison, or the user explicitly asks for old
+context.
 
-**4. AI implements and verifies**
-> (AI performs coding and testing...)
+## File Authority
 
-**5. Write back to the docs and close the loop**
-> AI: Implementation and verification are complete. Following `AGENTS.md`, I’ll write back to the docs:
-> - Mark `task003` as `[x]`.
-> - Add a record to `change_ui.md`.
-> - Update `spec_ui.md` if needed.
+When documents disagree:
 
----
+1. `decision.md`, `adr/`, and `protocol/` define durable rules.
+2. Fresh evidence defines what is currently known.
+3. `current.md` defines the active phase.
+4. `roadmap.md` defines direction.
+5. `archive/` is historical context only.
+
+Fresh evidence updates the current plan. Durable rule changes require explicit
+decision, ADR, or protocol updates.
+
+## Workflow
+
+1. Establish or read the decision framework.
+2. Maintain roadmap at phase granularity.
+3. Select the current phase from evidence.
+4. Update `current.md` with scope, out-of-scope, acceptance gate, task slice,
+   and verification plan.
+5. Run discovery before broad implementation when the blocker shape is unknown.
+6. Classify blockers before fixing them.
+7. Implement only the measured slice.
+8. Verify against the phase gate.
+9. Record an evidence delta.
+10. Update durable decisions only when needed.
+11. Prepare the next phase and archive stale local context.
+
+## Task Format
+
+Tasks are phase-local. Use them only in `current.md` when they help coordinate
+the active work:
+
+```text
+taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
+```
+
+Do not pre-split future roadmap phases into tasks.
+
+## Migration From v2
+
+For existing projects:
+
+1. Extract durable rules into `.phrase/decision.md`.
+2. Convert future milestones into `.phrase/roadmap.md`.
+3. Compress the active phase into `.phrase/current.md`.
+4. Move decision-relevant observations into `.phrase/evidence.md`.
+5. Move completed/stale `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*`
+   material into `.phrase/archive/`.
+6. Stop maintaining mechanical per-file `change_*` logs.
+7. Keep ADR/protocol files only for durable decisions and stable contracts.
+
+You can ask the agent to run:
+
+```text
+/migrate-v3
+```
+
+The command archives legacy material under `.phrase/archive/legacy-v2/` and
+promotes only decision-relevant context into the v3 files.
+
+## Protocol Cost Comparison
+
+Run the comparison benchmark:
+
+```bash
+./tests/protocol-cost-comparison.sh
+```
+
+The script creates the same development request in two temporary fixtures:
+
+- legacy v2 static SPEC layout
+- v3 EDPP minimal-context layout
+
+It compares default read files, words, bytes, estimated tokens, and required
+write surfaces after implementation. The benchmark measures protocol overhead,
+not model intelligence or code quality.
 
 ## 中文说明
 
-本项目受 Spec-kit、OpenSpec、Stack Workflow 启发而来，兼具「规范驱动开发」和「阶段性开发」的优势，通过简单的配置，让普通小白在氛围编程（Vibe Coding）时，提升 AI 执行任务的准确性，减少与 AI 重复输（chao）入（jia）的次数，同时享受成熟的软件开发流程的稳定、便利。
+SPEC-AGENTS v3 是一个证据校准的 Agent 工作流。
 
-## 特点
+它结合 EDPP（Evidence-Driven Phase Planning，证据驱动阶段规划）和一套最小执行协议，
+帮助 AI coding agent 在少读上下文的前提下，仍然保留规划、验证和决策记录的可靠性。
 
-- **意图识别**：自动在产品经理、Linus 风格程序员、文案专家之间切换。
-- **零配置**：一行命令即可初始化。
-- **自然语言沟通**：无需复杂的 JSON/YAML 配置。
-- **成熟的开发流程**：强制执行严格的 Spec/Plan/Task 生命周期。
-- **项目记忆**：AI 能够跨会话记住项目上下文。
+## 为什么改变
 
-## 安装 (CLI)
+这个变化的前提是：当前 LLM 模型的能力已经得到巨大提升。
 
-Spec-AGENTS v2 提供了一个 CLI 工具，方便一键安装。
+过去，纯 SPEC 推动方式试图把需求、计划、任务、变更和问题都写成稳定文档，再要求
+Agent 每次读取并严格执行。这在模型能力较弱时有价值，因为它用大量显式约束弥补模型的
+理解和规划能力。
 
-### 1. 下载并连接
+但在今天，这种方式已经显得不合时宜：
 
-下载本仓库，并运行连接脚本（将工具注册到系统路径）：
+- 写入成本高：每次开发都要维护 `spec_*`、`plan_*`、`task_*`、`change_*`、
+  `issue_*` 等记录，很多内容只是重复 git diff 已经表达的信息。
+- 读取成本高：Agent 每次为了“遵守流程”加载大量历史文档，更快消耗宝贵的上下文空间。
+- token 消耗高：静态文档越多，越容易把 token 花在旧计划和机械记录上，而不是当前判断。
+- 旧计划容易变成噪音：一旦新证据推翻旧假设，过期 SPEC 仍然可能被误读为当前事实。
+
+因此，v3 不再要求把每一行实现意图都提前写进 SPEC。新的流程更适合现在的模型：
+
+> 向 AI 说明边界，而不是说明每一行函数如何修改；每一轮开发后，用测试和证据证明之前开发无误。
+
+这个流程尤其适合多智能体共同合作。多个 Agent 不需要共享庞大的历史文档，只需要共享稳定边界、
+当前 phase、验证标准和最新 evidence，就能更容易并行工作、交接结果和校准下一步。
+
+## 核心想法
+
+旧版强调静态文档闭环：
+
+```text
+spec -> plan -> task -> implementation -> change log
+```
+
+新版改为证据校准的阶段循环：
+
+```text
+decision framework -> roadmap -> current phase
+        -> discovery / implementation -> verification
+        -> evidence delta -> next phase
+```
+
+核心目标不是记录更多，而是让 Agent 默认读取更少、更准的上下文。
+
+## 功能特点
+
+- **最小上下文**：默认只读取 `decision.md`、`roadmap.md` 和 `current.md`。
+- **证据驱动阶段**：下一阶段由上一阶段 evidence 决定，而不是由旧计划惯性推进。
+- **阶段内任务**：任务只服务当前 phase，不为远期 roadmap 预拆任务。
+- **长期决策才持久化**：ADR/protocol 只记录会长期影响项目边界的规则和契约。
+- **意图模块仍保留**：产品访谈、代码判断、文案、浏览器自动化等模块仍可按需加载。
+
+## 默认读取规则
+
+默认上下文：
+
+```text
+.phrase/decision.md
+.phrase/roadmap.md
+.phrase/current.md
+```
+
+只有在选择下一阶段、解决计划冲突、检查 blocker 分类或关闭 phase 时，才读取
+`.phrase/evidence.md`。
+
+只有当当前文件明确链接、回归问题需要历史对比，或用户明确要求追溯旧上下文时，才读取
+`.phrase/archive/`。
+
+## 文件权威顺序
+
+当文档互相冲突时，按以下顺序判断：
+
+1. `decision.md`、`adr/` 和 `protocol/` 定义长期规则。
+2. 最新 evidence 定义当前已知事实。
+3. `current.md` 定义当前 phase。
+4. `roadmap.md` 定义阶段方向。
+5. `archive/` 只是历史上下文。
+
+如果新 evidence 推翻当前计划，就更新 `current.md`。如果新 evidence 改变长期边界，
+就显式更新 `decision.md`、ADR 或 protocol。
+
+## 工作流
+
+1. 建立或读取决策框架。
+2. 只在 phase 粒度维护 roadmap。
+3. 根据 evidence 选择当前 phase。
+4. 用目标、范围、非目标、验收门槛、任务切片和验证计划更新 `current.md`。
+5. 阻塞形态不清楚时，先 discovery，不急着实现。
+6. 先分类 blocker，再修复。
+7. 只执行当前被测量过的切片。
+8. 按 phase gate 验证。
+9. 记录 evidence delta。
+10. 只有长期规则变化时，才更新 durable decision。
+11. 准备下一阶段，并把过期上下文归档。
+
+## 任务格式
+
+任务是 phase-local 的，只在 `current.md` 中用于协调当前工作：
+
+```text
+taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方式>
+```
+
+不要为远期 roadmap 阶段预拆任务。
+
+## 从 v2 迁移
+
+已有项目迁移时：
+
+1. 把长期规则提取到 `.phrase/decision.md`。
+2. 把未来方向压缩到 `.phrase/roadmap.md`。
+3. 把当前阶段压缩到 `.phrase/current.md`。
+4. 把会影响后续判断的事实移到 `.phrase/evidence.md`。
+5. 把完成或过期的 `spec_*`、`plan_*`、`task_*`、`change_*`、`issue_*`
+   移到 `.phrase/archive/`。
+6. 停止维护机械的逐文件 `change_*` 日志。
+7. ADR/protocol 只保留长期决策和稳定契约。
+
+## 协议成本对比测试
+
+运行：
 
 ```bash
-git clone https://github.com/your-repo/SPEC-AGENTS.git
-cd SPEC-AGENTS
-chmod +x link_to_system.sh
-./link_to_system.sh
+./tests/protocol-cost-comparison.sh
 ```
 
-现在你可以全局使用 `spec-agents` 命令了。
+这个脚本会用同一个开发需求生成两套临时 fixture：
 
-### 2. 在项目中初始化
+- 旧版 v2 静态 SPEC 布局
+- v3 EDPP 最小上下文布局
 
-进入你的新项目目录，运行：
+然后对比默认读取文件数、字数、字节数、估算 token，以及实现后需要维护的写入面。
+这个测试衡量的是协议开销，不是模型智力或代码质量。
 
-```bash
-cd ~/MyProject
-spec-agents init        # 安装中文版（默认）
-# 或
-spec-agents init en     # 安装英文版
-```
+一句话：
 
-这会自动创建 `AGENTS.md` 和 `.phrase/` 目录结构（包含所有智能模块）。
-
-## 用法
-
-### 1. 配置 AI 工具
-
-- **Cursor / Copilot**: 确保 `AGENTS.md` 在项目根目录即可。
-- **Claude Code**: 在 `CLAUDE.md` 中添加 `@AGENTS.md`。
-- **Gemini CLI**: 在 `GEMINI.md` 中添加 `@AGENTS.md`。
-
-### 2. 意图路由（直接对话）
-
-只需与 AI 自然对话，系统会自动路由你的意图：
-
-*   **"我想做个新功能..."** $\rightarrow$ 触发 **PR/FAQ 模块**（产品经理模式）。
-*   **"帮我写代码..."** $\rightarrow$ 触发 **Linus 编程模块**（严格工程模式）。
-*   **"写个文案..."** $\rightarrow$ 触发 **文案模块**（营销模式）。
-*   **"抓取这个网页..."** $\rightarrow$ 触发 **浏览器自动化模块**。
-
-## 原理
-
-与 OpenSpec 类似，SPEC-AGENTS.md 将开发分为不同的阶段，并约定「文档驱动开发」的工作流：先在 `.phrase/phases/` 中用自然语言写好 `spec_*` / `plan_*` / `task_*` 等文档，再由代理按任务执行实现与验证，最后回写 `task_*` / `change_*` / `spec_*` / `issue_*` / `adr_*`，形成可追溯的闭环。
-
-当你在项目中放置 `AGENTS.md` 后，支持该协议的 AI 工具会在会话开始时读取其中规则，把它视为“开发助理使用说明”：  
-- 所有需求与接口信息只以文档为准，而不是零散对话；  
-- 每次对话只处理一个 `taskNNN` 原子任务；  
-- 每个任务完成后，都在变更文档中登记验证方式和影响范围。  
-
-通过这一套约束，SPEC-AGENTS.md 把传统团队里的 spec / task / change / issue 流程，压缩成一个轻量的文本协议，让个人或小团队也能在「氛围编程」状态下享受成熟的软件工程体验。
-
-## 工作流程（How It Works）
-
-下面是 SPEC-AGENTS.md 协议在一个项目中的典型工作流示意图：
-
-```
-┌────────────────────┐      起草 / 更新规范（用自然语言写 spec_/plan_）
-│ Specs & Plans      │
-│ (.phrase/phases/   │
-│  spec_/plan_ docs) │
-└────────┬───────────┘
-         │ define intent & scope                用自然语言描述意图与范围
-         ▼
-┌────────────────────┐      拆分为原子任务（taskNNN）
-│ Atomic taskNNN     │◀──── feedback loop ──────┐  和 AI 来回调整任务边界
-└────────┬───────────┘                          │
-         │ agreed task boundaries               │ 双方确认每个任务的范围与验收
-         ▼                                      │
-┌────────────────────┐                          │ 实现与验证（AI 写代码 + 测试）
-│ Implement & Verify │──────────────────────────┘
-│ (AI writes code &  │
-│  runs tests)       │
-└────────┬───────────┘
-         │ mark taskNNN done                    标记任务完成
-         ▼
-┌────────────────────┐      归档变更并更新文档
-│ Archive & Update   │
-│ (change_/spec_/    │
-│  issue_/adr_)      │
-└────────────────────┘
-```
-
-用一句话概括就是：
-
-1. 与 LLM 确定进入新的开发阶段，在 `.phrase/phases/` 里用自然语言起草或更新规范和计划（spec_/plan_）；  
-2. 和 AI 一起把需求拆成若干原子 `taskNNN`，来回修改直到双方对范围和验收标准达成一致；  
-3. 按照这些文档驱动实现和验证，每次对话聚焦一个任务；  
-4. 完成后回写 `task_*` / `change_*` / `spec_*` / `issue_*`，让所有改动都能从代码追溯回最初的文字意图。
-
-## 实际案例
-
-下面是一个极简的自然对话示例，展示 SPEC-AGENTS.md 在真实会话中的使用方式：
-
-**1. 用户提出需求**
-> 用户：我想给项目加一个「深色模式」开关，用菜单或快捷键切换就行。
-
-**2. AI 回到文档，先锁定任务**
-> AI：好，我先不直接写代码，而是根据 `AGENTS.md` 先更新当前 phase 下的文档：
-> - 在 `plan_ui.md` 补充本次里程碑：支持深色模式切换；
-> - 在 `task_ui.md` 中新增：`task003 [ ] 深色模式开关（验证：手动切换 + 界面刷新检查）`。
-> 等你确认这个任务描述和验证方式，我们再进入实现。
-
-**3. 对齐任务边界**
-> 用户：可以，先不做持久化，只要当前会话能来回切换就够了。
-> AI：好的，我会把 `task003` 的验证方式改成「手动切换两次，确认 UI 正确刷新」，持久化部分留到后续的 `task004`。
-
-**4. AI 执行实现与验证**
-> （AI 内部在 App/UI 层添加代码，并手动/自动运行验证...）
-
-**5. 回写文档，完成闭环**
-> AI：代码和验证已经完成，我会按照 `AGENTS.md` 的要求回写文档：
-> - 在 `task_ui.md` 中将 `task003` 勾选为 `[x]`；
-> - 在 `change_ui.md` 增加变更记录；
-> - 如有必要，补充 `spec_ui.md`。
+> 最小上下文，证据驱动阶段，验证后执行，只保留长期有价值的决策。

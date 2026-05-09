@@ -29,7 +29,7 @@ for arg in "$@"; do
 done
 
 show_help() {
-  echo "🤖 Spec-AGENTS CLI v2.2.0"
+  echo "🤖 Spec-AGENTS CLI v3"
   echo ""
   echo "Usage:"
   echo "  spec-agents init [lang] [--link|-l]    Initialize in current directory"
@@ -90,13 +90,20 @@ else
 fi
 
 # Execution Logic
-echo "🚀 Initializing Spec-AGENTS v2..."
+echo "🚀 Initializing Spec-AGENTS v3..."
 echo "   📂 Source: $REPO_ROOT"
 echo "   🎯 Target: $TARGET_DIR"
 
 if [ ! -d "$TARGET_DIR" ]; then
   echo "   ⚠️  Target directory does not exist. Creating..."
   mkdir -p "$TARGET_DIR"
+fi
+
+TARGET_DIR_ABS="$(cd "$TARGET_DIR" && pwd)"
+if [ "$TARGET_DIR_ABS" = "$REPO_ROOT" ]; then
+  echo "❌ Error: Refusing to install into the Spec-AGENTS source repository itself."
+  echo "   Please run 'spec-agents init' inside your project directory, not inside $REPO_ROOT"
+  exit 1
 fi
 
 # Interactive mode: ask user if not specified via flag
@@ -119,21 +126,55 @@ else
   echo "   📦 Copying intelligent modules..."
 fi
 
-mkdir -p "$TARGET_DIR/.phrase/modules"
-mkdir -p "$TARGET_DIR/.phrase/docs"
-mkdir -p "$TARGET_DIR/.phrase/phases"
+mkdir -p "$TARGET_DIR/.phrase/archive"
 
-if [ "$USE_LINK" == true ]; then
-  # Use symlinks for modules
-  for item in "$REPO_ROOT/.phrase/modules/"*; do
+install_phrase_dir() {
+  local dir_name="$1"
+  local source_dir="$REPO_ROOT/.phrase/$dir_name"
+  local target_dir="$TARGET_DIR/.phrase/$dir_name"
+
+  [ -d "$source_dir" ] || return 0
+
+  mkdir -p "$target_dir"
+  for item in "$source_dir"/*; do
     if [ -e "$item" ]; then
+      local basename_item
       basename_item=$(basename "$item")
-      ln -sf "$item" "$TARGET_DIR/.phrase/modules/$basename_item"
+      if [ "$USE_LINK" == true ]; then
+        ln -sf "$item" "$target_dir/$basename_item"
+      else
+        cp -R "$item" "$target_dir/"
+      fi
     fi
   done
-else
-  cp -R "$REPO_ROOT/.phrase/modules/"* "$TARGET_DIR/.phrase/modules/"
-fi
+}
+
+install_phrase_dir "modules"
+install_phrase_dir "docs"
+install_phrase_dir "templates"
+install_phrase_dir "commands"
+install_phrase_dir "adr"
+install_phrase_dir "protocol"
+install_phrase_dir "runbooks"
+
+install_phrase_file() {
+  local file_name="$1"
+  local source_file="$REPO_ROOT/.phrase/$file_name"
+  local target_file="$TARGET_DIR/.phrase/$file_name"
+
+  [ -f "$source_file" ] || return 0
+
+  if [ "$USE_LINK" == true ]; then
+    ln -sf "$source_file" "$target_file"
+  else
+    cp "$source_file" "$target_file"
+  fi
+}
+
+install_phrase_file "decision.md"
+install_phrase_file "roadmap.md"
+install_phrase_file "current.md"
+install_phrase_file "evidence.md"
 
 # 3. Install Claude Code commands (.claude/commands/)
 if [ -d "$REPO_ROOT/.phrase/commands" ]; then
@@ -183,4 +224,18 @@ fi
 
 echo ""
 echo "✨ Done! Spec-AGENTS is ready."
+echo "   Installed:"
+echo "   - $TARGET_DIR/AGENTS.md"
+echo "   - $TARGET_DIR/.phrase/modules"
+echo "   - $TARGET_DIR/.phrase/docs"
+echo "   - $TARGET_DIR/.phrase/templates"
+echo "   - $TARGET_DIR/.phrase/commands"
+echo "   - $TARGET_DIR/.phrase/decision.md"
+echo "   - $TARGET_DIR/.phrase/roadmap.md"
+echo "   - $TARGET_DIR/.phrase/current.md"
+echo "   - $TARGET_DIR/.phrase/evidence.md"
+echo "   - $TARGET_DIR/.phrase/archive"
+if [ -d "$TARGET_DIR/.claude/commands" ]; then
+  echo "   - $TARGET_DIR/.claude/commands"
+fi
 echo "   To start, simply tell your AI Agent: 'Read AGENTS.md'"
