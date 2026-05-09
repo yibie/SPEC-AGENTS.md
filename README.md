@@ -161,6 +161,16 @@ It compares default read files, words, bytes, estimated tokens, and required
 write surfaces after implementation. The benchmark measures protocol overhead,
 not model intelligence or code quality.
 
+Current fixture result:
+
+| Metric | v2 static SPEC | v3 EDPP | Saved |
+| --- | ---: | ---: | ---: |
+| Default read files | 8 | 3 | 62.5% |
+| Default read words | 378 | 170 | 55.0% |
+| Default read bytes | 2405 | 1160 | 51.8% |
+| Estimated read tokens | 601 | 290 | 51.7% |
+| Required write surfaces after implementation | 5 | 2 | 60.0% |
+
 ## 中文说明
 
 SPEC-AGENTS v3 是一个证据校准的 Agent 工作流。
@@ -298,6 +308,16 @@ taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方
 
 然后对比默认读取文件数、字数、字节数、估算 token，以及实现后需要维护的写入面。
 这个测试衡量的是协议开销，不是模型智力或代码质量。
+
+当前 fixture 的结果：
+
+| 指标 | v2 静态 SPEC | v3 EDPP | 节省 |
+| --- | ---: | ---: | ---: |
+| 默认读取文件数 | 8 | 3 | 62.5% |
+| 默认读取字数 | 378 | 170 | 55.0% |
+| 默认读取字节数 | 2405 | 1160 | 51.8% |
+| 估算读取 token | 601 | 290 | 51.7% |
+| 实现后需要维护的写入面 | 5 | 2 | 60.0% |
 
 一句话：
 
