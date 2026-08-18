@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.0.4] — 2026-08-17
+
+- Added the v2/v3/v4 comparison and concise experiment conclusions to the
+  English README so both language sections describe the same evidence boundary.
+
 ## [4.0.3] — 2026-08-17
 
 - Expanded the Chinese README with an explicit v2/v3/v4 comparison and a

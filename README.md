@@ -124,6 +124,46 @@ plan -> capture -> arrange -> do -> check -> learn
 `plan` may conclude that no change is needed. `capture` and `arrange` are not
 required for a settled one-file fix.
 
+## v2, v3, and v4
+
+| Version | Core method | Where knowledge lives | Main boundary |
+| --- | --- | --- | --- |
+| v2 | Static SPEC document chain | `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*` | Static abstractions are explicit, but context and maintenance costs are high, and old plans become noise. |
+| v3 | EDPP, evidence-driven phases | `.phrase/decision.md`, `roadmap.md`, `current.md`, and `evidence.md` | Dynamic evolution is lighter, but phase knowledge is not reliably promoted into a durable semantic model. |
+| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and phase evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; legacy projects use `UPGRADE.md` to reconstruct cognition instead of a mechanical compatibility mode. |
+
+v4 is therefore not a file rename or a compatibility wrapper around v2/v3. It
+adds an explicit bridge from stable abstraction to dynamic state, evidence, and
+code: durable principles stay fixed within their boundary while the current
+phase can evolve through a controlled decision.
+
+## Experiment conclusions
+
+By v4.0.0, the repository had recorded nine v3/v4 and Kernel phases plus two
+focused pilots: 11 documented rounds in total. Most were `n=1` per arm, so they
+are bounded protocol evidence, not a statistical proof that one version or model
+is universally better.
+
+- The initial v3/v4 Pomodoro comparison showed that neither workflow guaranteed
+  behavioral verification; v4 classified knowledge more clearly but lacked a
+  first Kernel-bootstrap gate.
+- In the independent A/B run, both arms passed the same R1–R12 matrix. This does
+  not establish a causal quality advantage for v4, but a small Kernel was cheap
+  enough to provide a useful shared vocabulary.
+- Compatible, conflicting, and cross-domain changes supported a bounded
+  `Kernel -> State -> Evidence -> Code` trace: conflicts use `reject`, while a
+  compatible change must name one `revise` alternative and preserve old
+  invariants.
+- The JSONL pilot validated IDs, independent streams, and supersession, but did
+  not reduce fixture bytes or rough tokens; Markdown remains the stable-document
+  format.
+- The ontology graph pilot made typed relations, actions, lifecycle gates, and
+  provenance useful as an in-memory projection. It did not justify a graph
+  database, RDF/OWL/SHACL stack, or generator yet.
+
+The current conclusion is a bounded protocol improvement, not a claim of
+general superiority. Full records remain in [`research/`](research/README.md).
+
 ### CLI commands
 
 ```text
