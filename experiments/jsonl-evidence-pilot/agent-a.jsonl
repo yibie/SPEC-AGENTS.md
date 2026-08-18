@@ -1,0 +1,4 @@
+{"id":"E-001","kind":"observation","phase":"jsonl-pilot","status":"confirmed","claim":"A record can be appended without rewriting earlier records.","source":["agent-a"],"created_at":"2026-08-17T10:00:00Z"}
+{"id":"E-002","kind":"observation","phase":"jsonl-pilot","status":"confirmed","claim":"Stable IDs let a later record point at an earlier claim.","source":["agent-a"],"created_at":"2026-08-17T10:01:00Z"}
+{"id":"E-003","kind":"interpretation","phase":"jsonl-pilot","status":"proposed","claim":"JSONL should be considered for append-only evidence, not normative instructions.","source":["E-001","E-002"],"created_at":"2026-08-17T10:02:00Z"}
+{"id":"E-004","kind":"observation","phase":"unrelated-fixture","status":"confirmed","claim":"An unrelated phase must not appear in a scoped read.","source":["agent-a"],"created_at":"2026-08-17T10:03:00Z"}

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room reservations</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <p class="eyebrow">Workspace scheduling</p>
+    <h1>Room reservations</h1>
+    <p>Plan focused time in one of three shared rooms.</p>
+  </header>
+  <main id="main" tabindex="-1">
+    <section class="panel" aria-labelledby="form-heading">
+      <h2 id="form-heading">New reservation</h2>
+      <form id="reservation-form">
+        <input type="hidden" id="reservation-id">
+        <div class="field"><label for="topic">Topic</label><input id="topic" name="topic" required maxlength="120" autocomplete="off"></div>
+        <div class="field"><label for="person">Person</label><input id="person" name="person" required maxlength="80" autocomplete="name"></div>
+        <div class="form-grid">
+          <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required></div>
+          <div class="field"><label for="room">Room</label><select id="room" name="room" required><option value="Atlas">Atlas</option><option value="Cedar">Cedar</option><option value="Juniper">Juniper</option></select></div>
+          <div class="field"><label for="start">Start time</label><input id="start" name="start" type="time" required><small id="time-error" class="error" role="alert"></small></div>
+          <div class="field"><label for="end">End time</label><input id="end" name="end" type="time" required></div>
+        </div>
+        <p id="form-message" class="message" role="status" aria-live="polite"></p>
+        <div class="actions"><button type="submit" id="save-button">Add reservation</button><button type="button" id="reset-button" class="secondary" hidden>Cancel edit</button></div>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="list-heading">
+      <div class="section-heading"><div><p class="eyebrow">Schedule</p><h2 id="list-heading">Reservations</h2></div><span id="count" class="count"></span></div>
+      <p id="empty-state" class="empty">No reservations yet. Add the first one above.</p>
+      <ul id="reservation-list" class="reservation-list"></ul>
+    </section>
+  </main>
+  <dialog id="cancel-dialog" aria-labelledby="cancel-title">
+    <form method="dialog" class="dialog-card"><h2 id="cancel-title">Cancel reservation?</h2><p id="cancel-copy"></p><div class="actions"><button value="cancel" class="secondary">Keep reservation</button><button value="confirm" id="confirm-cancel" class="danger">Cancel reservation</button></div></form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>

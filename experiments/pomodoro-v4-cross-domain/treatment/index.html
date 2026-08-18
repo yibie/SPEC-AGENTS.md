@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>番茄钟</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <header class="site-header"><h1>番茄钟</h1><p>专注当下，完成一件事。</p></header>
+  <main id="main" class="layout" tabindex="-1">
+    <section class="timer-card" aria-labelledby="timer-title">
+      <h2 id="timer-title">计时器</h2>
+      <fieldset class="mode-picker">
+        <legend>计时模式</legend>
+        <label><input type="radio" name="mode" value="focus" checked> 专注 · 25 分钟</label>
+        <label><input type="radio" name="mode" value="short"> 短休息 · 5 分钟</label>
+        <label><input type="radio" name="mode" value="long"> 长休息 · 15 分钟</label>
+      </fieldset>
+      <p id="timer-display" class="timer-display" aria-live="off">25:00</p>
+      <p id="timer-status" class="timer-status" aria-live="polite">准备开始</p>
+      <div class="timer-actions">
+        <button id="start-button" type="button">开始</button>
+        <button id="pause-button" type="button" disabled>暂停</button>
+        <button id="reset-button" type="button">重置</button>
+      </div>
+    </section>
+
+    <section class="tasks-card" aria-labelledby="tasks-title">
+      <h2 id="tasks-title">任务清单</h2>
+      <form id="task-form">
+        <label for="task-title">新任务</label>
+        <div class="task-entry"><input id="task-title" name="title" type="text" required maxlength="160" autocomplete="off"><button type="submit">添加任务</button></div>
+        <p id="task-error" class="form-message" role="alert"></p>
+      </form>
+      <p id="current-task" class="current-task">当前任务：无</p>
+      <ul id="task-list" class="task-list" aria-label="任务"></ul>
+      <p id="empty-tasks" class="empty-state">还没有任务。</p>
+    </section>
+  </main>
+
+  <dialog id="delete-dialog" aria-labelledby="delete-title">
+    <form method="dialog">
+      <h2 id="delete-title">删除任务？</h2>
+      <p id="delete-description">此操作无法撤销。</p>
+      <div class="dialog-actions">
+        <button value="cancel">取消</button>
+        <button id="confirm-delete" value="confirm">确认删除</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

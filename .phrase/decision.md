@@ -27,6 +27,17 @@ Evidence notes should separate:
 - Do not pre-split future roadmap phases into tasks.
 - Do not read archive material by default.
 - Do not maintain mechanical per-file changelogs when the git diff is enough.
+- For experimental SPEC evolution, use a bounded `Kernel → State → Evidence`
+  change protocol: update domain vocabulary/invariants/action contracts first,
+  record the permitted next step, then change code and attach proof. This does
+  not authorize formal ontology tooling, silent durable-rule changes, or an
+  `AGENTS.md` replacement without a new phase gate.
+- If a proposed delta conflicts with a durable Kernel invariant, record an
+  explicit `revise` or `reject` decision before editing application code; a
+  `reject` decision leaves the prior app contract unchanged.
+- A `revise` decision must name one concrete compatible alternative, preserve
+  the existing invariant/data contract, and map the new behavior to an explicit
+  Action Contract before implementation.
 
 ## Phase Gate Rules
 

@@ -1,244 +1,165 @@
-# SPEC-AGENTS v3：证据校准的 Agent 工作流
+# SPEC-AGENTS: evidence-calibrated agent workflow
 
-在处理任何请求之前，先识别用户意图，然后按最轻可行协议执行。
+先识别意图，再读取最小上下文；先验证，再执行；只保留会影响未来判断的知识。
 
-核心原则：
+## Default context
 
-> 最小上下文，证据驱动阶段，验证后执行，只保留长期有价值的决策。
-
-SPEC-AGENTS 不再要求读取和维护完整历史文档。默认只读取当前决策所需的最小上下文，并让上一阶段证据决定下一阶段计划。
-
----
-
-## 1. 意图识别
-
-### 🌱 启动 / 立项 / 模糊想法
-
-触发条件：用户想开启新项目、新方向、新阶段，或只有模糊想法。
-
-行动：
-- 先读取 `.phrase/decision.md`、`.phrase/roadmap.md`、`.phrase/current.md`。
-- 如果方向不清，扫描 `.phrase/modules/pr_faq.md` 的 YAML 元数据；匹配后再完整加载。
-- 访谈目标是澄清当前 phase 的决策框架、证据规则、范围和验收门槛。
-- 不要把远期工作拆成任务清单。
-
-### 🔨 编码 / 重构 / 审查
-
-触发条件：用户请求实现、修 Bug、重构、审查。
-
-行动：
-- 默认读取 `.phrase/decision.md`、`.phrase/roadmap.md`、`.phrase/current.md`。
-- 只有当当前问题需要历史依据时，才读取 `.phrase/evidence.md` 或 `.phrase/archive/`。
-- 执行当前 phase 的最小任务切片，验证后记录 evidence delta。
-- 如需代码判断，可扫描 `.phrase/modules/linus_coding.md` 的 YAML 元数据；匹配后再完整加载。
-
-### ✍️ 文案 / 营销 / 文档
-
-触发条件：用户需要 README、发布说明、产品介绍、营销文案或文档改写。
-
-行动：
-- 扫描 `.phrase/modules/copywriting.md` 的 YAML 元数据；匹配后再完整加载。
-- 输出仍要遵守当前 phase 的边界和证据规则。
-
-### 🌐 浏览器 / 网页自动化 / 爬虫
-
-触发条件：用户需要访问网页、抓取数据、截图、测试 Web UI 或填写表单。
-
-行动：
-- 扫描 `.phrase/modules/agent-browser.md` 的 YAML 元数据；匹配且依赖可用后再完整加载。
-- 浏览器结果如果会改变后续判断，应写入 `.phrase/evidence.md`。
-
-### 📋 默认任务执行
-
-触发条件：用户给出明确任务。
-
-行动：执行下方的 EDPP v3 工作流。
-
-### 📝 会话收尾：`/done`
-
-触发条件：用户输入 `/done` 或明确表示结束会话。
-
-行动：
-- 读取 `.phrase/commands/done.md`。
-- 只记录实际发生的内容。
-- 若本次会话产生会影响下一步的事实，优先更新 `.phrase/evidence.md`，不要只写会话流水账。
-
-### 🚀 启动阶段：`/start-phase`
-
-触发条件：用户输入 `/start-phase` 或明确表示要开启新阶段。
-
-行动：
-- 读取 `.phrase/commands/start-phase.md`。
-- 用上一阶段 evidence 生成新的 `.phrase/current.md`。
-- 只规划当前 phase，不预拆远期任务。
-
-### 🔁 旧项目迁移：`/migrate-v3`
-
-触发条件：项目已有旧版 `.phrase/phases/`、`spec_*`、`plan_*`、`task_*`、`change_*` 或 `issue_*` 流程。
-
-行动：
-- 读取 `.phrase/commands/migrate-v3.md`。
-- 将旧材料归档到 `.phrase/archive/legacy-v2/`。
-- 只把长期规则、当前 phase、未解决 blocker、验证结果和下一阶段建议提升到 v3 文件。
-- 不做机械格式转换，不让旧文档继续成为默认上下文。
-
----
-
-## 2. 默认读取规则
-
-普通工作开始时只读：
+For every task, read:
 
 ```text
-.phrase/decision.md
-.phrase/roadmap.md
-.phrase/current.md
+AGENTS.md
+CONTEXT.md
+STATUS.md
+ROADMAP.md
 ```
 
-读取 `.phrase/evidence.md` 的情况：
+Read `EVIDENCE.md` when choosing a phase, checking a failed assumption,
+classifying a blocker, or deciding whether a phase can close. Read `docs/adr/`
+and `docs/protocols/` when the affected area points to them. Read `archive/`
+only for an explicit historical or regression question.
 
-- 选择下一阶段
-- 判断计划是否被新事实推翻
-- 查 blocker / risk 的分类依据
-- 验证 phase 是否可以关闭
+The old `.phrase/` tree is legacy context. Read it only for migration,
+regression comparison, or explicit history; do not use it as a second default
+source of truth.
 
-读取 `.phrase/archive/` 的情况：
+If `.phrase/` or legacy `spec_*`/`plan_*` markers exist, read `UPGRADE.md`
+before ordinary work. It is the user-confirmed migration Prompt; the installer
+does not infer or archive project knowledge.
 
-- 当前文件明确链接到某个归档项
-- 回归问题需要历史对比
-- 用户明确要求追溯旧上下文
+## Document authority
 
-不要默认加载完整历史。降低 token 消耗是协议目标之一。
+When sources conflict, use this order:
 
----
+1. `AGENTS.md` for workflow and safety rules.
+2. `CONTEXT.md`, `docs/adr/`, and `docs/protocols/` for durable semantics and
+   boundaries.
+3. Fresh, verified entries in `EVIDENCE.md`.
+4. A confirmed `.scratch/<feature>/SPEC.md`.
+5. `STATUS.md` for current state.
+6. `ROADMAP.md` for phase direction.
+7. `archive/` and legacy `.phrase/` material.
 
-## 3. 文件权威顺序
+Fresh evidence can challenge a durable rule, but never silently overrides it.
+Route that conflict through `plan` and record the decision before changing
+application code or static documents.
 
-当文件冲突时，按以下顺序处理：
+## Six actions
 
-1. `.phrase/decision.md`、`.phrase/adr/`、`.phrase/protocol/`
-2. 新鲜 evidence
-3. `.phrase/current.md`
-4. `.phrase/roadmap.md`
-5. `.phrase/archive/`
-
-如果新 evidence 和当前 phase 冲突，更新 `current.md`。如果新 evidence 挑战长期边界，显式更新 `decision.md`、ADR 或 protocol，不要在实现里偷偷改变规则。
-
----
-
-## 4. EDPP v3 工作流
-
-1. **确认决策框架。**
-   明确证据规则、长期边界、验证标准和 phase gate。
-
-2. **维护 roadmap。**
-   roadmap 只写阶段方向、状态、入口条件和验收门槛，不写远期实现细节。
-
-3. **从 evidence 选择当前 phase。**
-   依据上一阶段结果决定下一步，不因为旧计划写过就继续执行。
-
-4. **更新 current phase brief。**
-   `current.md` 必须说明目标、范围、out of scope、验收门槛、当前任务切片、验证方式和已知 blocker。
-
-5. **不确定时先 discovery。**
-   用最小实验、trace、prototype、benchmark、audit、用户测试或 harness 暴露真实阻塞。
-
-6. **先分类 blocker，再实现。**
-   按项目语境分类：本地修复、共享机制、工作流边界、平台差异、产品歧义、运营依赖、数据质量等。
-
-7. **只执行当前测量过的切片。**
-   不顺手扩张到相邻问题。无关发现写入 evidence，留给后续 phase。
-
-8. **验证。**
-   运行 phase gate 要求的证明；影响面大时补更广验证。
-
-9. **记录 evidence delta。**
-   只记录会影响后续判断的事实：验证结果、失败假设、剩余 blocker、拒绝路径、下一阶段建议。
-
-10. **必要时更新长期决策。**
-    只有长期规则或边界变化时，才更新 `decision.md`、ADR 或 protocol。
-
-11. **准备下一阶段。**
-    用最新 evidence 更新 roadmap/current。过期 phase-local 细节进入 archive。
-
----
-
-## 5. 最小文件结构
+The project uses six action-named skills. These names and contracts are ours;
+they are not aliases for another skill collection.
 
 ```text
-.phrase/
-  decision.md
-  roadmap.md
-  current.md
-  evidence.md
-  archive/
-
-  adr/          # 可选：长期决策
-  protocol/     # 可选：稳定接口和边界
-  runbooks/     # 可选：重复手工流程
-  modules/      # 可选：意图模块
-  commands/     # 可选：命令说明
+plan → capture → arrange → do → check → learn
 ```
 
-### `decision.md`
-
-长期原则、证据规则、稳定边界、验证标准、phase gate、需要 ADR/protocol 的条件、不要重复探索的拒绝路径。
-
-### `roadmap.md`
-
-阶段级方向。只写 phase goal、status、entry condition、acceptance gate 和 major out-of-scope。
-
-### `current.md`
-
-默认上下文。只保留当前 phase 所需内容，必须短到每次会话都能读。
-
-### `evidence.md`
-
-证据增量。不是流水账，不是完整 changelog。区分 observation、interpretation、recommended next action。
-
-### `archive/`
-
-旧 phase、旧 spec、旧 task、历史 notes。默认不读。
-
----
-
-## 6. 任务规则
-
-任务只服务当前 phase。不要为 roadmap 里的远期阶段预拆任务。
-
-推荐格式：
+Use the shortest valid path:
 
 ```text
-taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方式>
+plan
+  ├─ no-change → stop
+  ├─ settled small change → do → check → learn
+  └─ multi-context change → capture → arrange → do → check → learn
 ```
 
-如果任务执行中暴露出不同 blocker 类型，停止扩张实现，更新 evidence，再决定是否改 phase。
+### `plan`
 
----
+Use for any request that may change a concept, identity, relation, lifecycle,
+invariant, Action Contract, architecture boundary, or work size. Ask in design
+tree rounds. Confirm the need, unchanged baseline, definitions, compatibility,
+migration, and verification before routing. Do not edit files before shared
+understanding is confirmed.
 
-## 7. 完成条件
+### `capture`
 
-声称 phase 或任务完成前，必须满足：
+Use for confirmed work that must survive multiple contexts. Create or revise
+`.scratch/<feature>/SPEC.md`. Capture decisions already made; do not reopen
+them. A change to a goal, boundary, identity, relation, invariant, interface,
+or acceptance rule requires a new `plan` pass.
 
-- acceptance gate 已检查
-- verification evidence 存在
-- 剩余 blocker 已记录
-- 下一阶段建议已写入
-- 如长期规则变化，已更新 decision/ADR/protocol
-- 过期 local context 已归档或标记 stale
+### `arrange`
 
----
+Use after a confirmed SPEC when the work needs independent slices. Write
+`.scratch/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
+acceptance, verification, status, and an optional empty `evidence_ref`.
+Prefer vertical slices. Show the split and dependency edges to the user before
+publishing it. Leave `evidence_ref` empty until `learn` records verification.
 
-## 8. 提交与安全
+### `do`
 
-- 提交信息说明为什么改、验证了什么、剩余风险是什么。
-- 不要求每个提交绑定 `taskNNN`，但必须能追溯到当前 phase 和 evidence。
-- 禁止提交密钥、token、证书、真实用户数据。
-- 对权限、配置、外部 API、数据迁移等风险，必须在 `current.md` 或 `decision.md` 中写清边界和验证方式。
+Use for one ready, unblocked slice or a settled small change. Read the relevant
+SPEC, CONTEXT, Protocol, tests, and callers. Make the smallest working change,
+run the required checks, and update only the local issue status and verification
+summary. Keep `evidence_ref` empty and do not write root Evidence. If semantics
+conflict, stop and return to `plan`.
 
----
+### `check`
 
-## 9. 协作表达
+Use after `do` or for a requested review. Fix a comparison baseline and check
+two axes: the confirmed contract (SPEC, CONTEXT, Protocol) and engineering
+standards (tests, types, security, accessibility, errors, and scope). Default
+to read-only; confirm facts are sufficient for `learn`, leave `evidence_ref`
+empty, and return required fixes to `do`.
 
-- 解释方案时先说当前 phase、证据、下一步。
-- 引用文档时说文件名和小节，不复述整篇。
-- 提供选项时说明它属于当前 phase、后续 phase，还是长期决策。
+### `learn`
+
+Use after verification, a failed assumption, a blocker, or a phase boundary.
+Append observation, interpretation, recommended next action, and verification
+to `EVIDENCE.md`. Promote only verified, reusable knowledge: concepts and
+invariants to `CONTEXT.md`, stable interfaces to `docs/protocols/`, hard-to-
+reverse trade-offs to `docs/adr/`, and current state to `STATUS.md`. If an issue
+has `evidence_ref`, append the Evidence ID first, then write the same ID back to
+the issue; `learn` is the only writer.
+
+## Static and dynamic model
+
+`CONTEXT.md` is the stable semantic model: concepts, identities, relations,
+lifecycles, invariants, and Action Contracts. It contains no feature-local
+implementation plan.
+
+`STATUS.md` is the current state pointer. `EVIDENCE.md` is an append-only
+decision-relevant ledger. `SPEC.md` is a living feature contract below the
+durable model and above its issues. Issues are execution state, not ontology.
+
+Never let a ticket silently redefine the model. A compatible revision must name
+one concrete alternative, preserve the existing invariant/data contract, and
+map the new behavior to an Action Contract before code changes.
+
+## Phase and task discipline
+
+`ROADMAP.md` records phase goals, entry conditions, acceptance gates, and major
+out-of-scope boundaries. `STATUS.md` records only the active phase, current
+slice, blockers, verification, and next permitted action. Do not pre-split
+future roadmap phases.
+
+Use this task shape for the active phase:
+
+```text
+taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
+```
+
+A phase or task is complete only after its acceptance gate is checked,
+verification evidence exists, remaining blockers are recorded, the next step is
+written, and durable rules are updated when required.
+
+## Safety and scope
+
+- Preserve user changes and unrelated dirty work.
+- Do not commit secrets, tokens, certificates, or real user data.
+- Treat permissions, configuration, external APIs, and migrations as explicit
+  boundaries with verification.
+- Do not add formal ontology tooling, graph storage, generators, or runtime
+  authorization without a new phase and evidence.
+- Do not turn a useful observation into a durable rule without `learn` and the
+  required `plan` confirmation.
+
+## Legacy upgrade
+
+Existing v2 and v3 projects use the root `UPGRADE.md` Prompt. It reconstructs
+recent history, scans the current code architecture, asks the user to confirm
+the candidate project cognition, and only then archives legacy material and
+promotes root documents. The installer does not infer or archive project
+knowledge.
+
+Old `.phrase/commands/` files are historical material. Read them only while
+following `UPGRADE.md` or for explicit regression research; do not use
+`/migrate-v3` as a new default entry point.

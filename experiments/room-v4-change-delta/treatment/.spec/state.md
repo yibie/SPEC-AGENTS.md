@@ -1,0 +1,7 @@
+# State model
+
+`state = { bookings: Booking[] }`, loaded once from `localStorage` key `room-v4-independent-ab-treatment`; malformed data falls back to empty. Booking identity is a generated id and never changes on edit. Rendering derives room summaries and the booking list from state; cancelled bookings remain visible but are excluded from availability checks. Mutations are create, edit (replace by id only after full validation), and cancel (lifecycle transition after confirmation), each followed by persistence and render. Dialog state is transient and never persisted.
+
+Validation boundary: trim topic/person, require all fields, allow only the fixed room set, require ISO local date and `HH:MM` values, reject `end <= start`, reject duration over 120 minutes, and reject overlap with active bookings having same room/date. The duration gate is evaluated before mutation for both create and edit; errors attach to the end-time field or form status. DOM output uses `createElement`/`textContent`; no `innerHTML`, `insertAdjacentHTML`, eval, or network APIs.
+
+Change-gate checkpoint: D1 is limited to the shared create/edit validation boundary; R1–R12 remain unchanged, and R13 maps to the same rejection path for create (no appended booking) and edit (no replacement of the existing id). Permitted next step: update the copied app's validation only, then run static checks and the R1–R13 browser matrix.

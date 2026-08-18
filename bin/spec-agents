@@ -5,44 +5,49 @@ set -e
 # 自动定位仓库根目录（即脚本所在目录的上一级）
 # 兼容 macOS/Linux 的 readlink 问题
 
+VERSION="4.0.0"
+
 SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+while [ -h "$SOURCE" ]; do
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
   SOURCE="$(readlink "$SOURCE")"
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 REPO_ROOT="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
-# CLI Argument Parsing
-COMMAND="$1"
-TARGET_DIR="${2:-.}" # Default to current directory
-LANG="${3:-cn}"      # Default to Chinese
-USE_LINK=false       # Default to copy mode
+# CLI argument parsing
+COMMAND="${1:-}"
+TARGET_DIR="${2:-.}"
+LANG="${3:-cn}"
+USE_LINK=false
+HAS_LEGACY=false
 
-# Parse optional flags (don't shift to preserve positional args)
 for arg in "$@"; do
   case "$arg" in
     --link|-l)
       USE_LINK=true
       ;;
+    --legacy)
+      echo "❌ Error: --legacy is no longer an installation mode."
+      echo "   Install the modern entry points, then read UPGRADE.md."
+      exit 1
+      ;;
   esac
 done
 
 show_help() {
-  echo "🤖 Spec-AGENTS CLI v3"
+  echo "🤖 Spec-AGENTS CLI v$VERSION"
   echo ""
   echo "Usage:"
-  echo "  spec-agents init [lang] [--link|-l]    Initialize in current directory"
-  echo "  spec-agents install <path> [lang] [--link|-l] Install to specific directory"
+  echo "  spec-agents init [lang] [--link|-l]           Initialize current directory"
+  echo "  spec-agents install <path> [lang] [--link|-l] Install modern layout"
   echo ""
   echo "Arguments:"
   echo "  lang: cn (default) | en"
   echo "  --link, -l: Use symbolic links instead of copying files"
   echo ""
-  echo "Examples:"
-  echo "  spec-agents init"
-  echo "  spec-agents init en --link"
-  echo "  spec-agents install ../my-new-project cn -l"
+  echo "For an existing v2/v3 project, install the modern entry points and read"
+  echo "UPGRADE.md. The upgrade review is performed by an Agent with user confirmation."
 }
 
 if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
@@ -50,47 +55,35 @@ if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] |
   exit 0
 fi
 
-# Normalize Target Directory
 if [ "$COMMAND" == "init" ]; then
-    TARGET_DIR="."
-    # Check if $2 is a language or a flag
-    if [[ "${2:-}" == --* ]] || [[ "${2:-}" == -* ]]; then
-      LANG="cn"
-    else
-      LANG="${2:-cn}"
-    fi
-    # Check for --link flag in remaining args
-    for arg in "${@:2}"; do
-      if [[ "$arg" == "--link" ]] || [[ "$arg" == "-l" ]]; then
-        USE_LINK=true
-      fi
-    done
+  TARGET_DIR="."
+  if [[ "${2:-}" == --* ]] || [[ "${2:-}" == -* ]]; then
+    LANG="cn"
+  else
+    LANG="${2:-cn}"
+  fi
 elif [ "$COMMAND" == "install" ]; then
-    if [ -z "$2" ]; then
-        echo "❌ Error: Please specify target path for 'install' command."
-        exit 1
-    fi
-    TARGET_DIR="$2"
-    # Check if $3 is a language or a flag
-    if [[ "${3:-}" == --* ]] || [[ "${3:-}" == -* ]]; then
-      LANG="cn"
-    else
-      LANG="${3:-cn}"
-    fi
-    # Check for --link flag in remaining args
-    for arg in "${@:3}"; do
-      if [[ "$arg" == "--link" ]] || [[ "$arg" == "-l" ]]; then
-        USE_LINK=true
-      fi
-    done
-else
-    echo "❌ Unknown command: $COMMAND"
-    show_help
+  if [ -z "${2:-}" ]; then
+    echo "❌ Error: Please specify target path for 'install' command."
     exit 1
+  fi
+  TARGET_DIR="$2"
+  if [[ "${3:-}" == --* ]] || [[ "${3:-}" == -* ]]; then
+    LANG="cn"
+  else
+    LANG="${3:-cn}"
+  fi
+elif [ "$COMMAND" == "upgrade" ]; then
+  echo "❌ Error: Upgrade is Prompt-driven, not an installer operation."
+  echo "   Install the modern entry points, then read UPGRADE.md."
+  exit 1
+else
+  echo "❌ Unknown command: $COMMAND"
+  show_help
+  exit 1
 fi
 
-# Execution Logic
-echo "🚀 Initializing Spec-AGENTS v3..."
+echo "🚀 Initializing Spec-AGENTS v4..."
 echo "   📂 Source: $REPO_ROOT"
 echo "   🎯 Target: $TARGET_DIR"
 
@@ -102,11 +95,22 @@ fi
 TARGET_DIR_ABS="$(cd "$TARGET_DIR" && pwd)"
 if [ "$TARGET_DIR_ABS" = "$REPO_ROOT" ]; then
   echo "❌ Error: Refusing to install into the Spec-AGENTS source repository itself."
-  echo "   Please run 'spec-agents init' inside your project directory, not inside $REPO_ROOT"
+  echo "   Please provide a separate project directory, not $REPO_ROOT"
   exit 1
 fi
 
-# Interactive mode: ask user if not specified via flag
+if [ -d "$TARGET_DIR/.phrase" ]; then
+  HAS_LEGACY=true
+else
+  for legacy_pattern in spec_* plan_* task_* change_* issue_*; do
+    if [ -e "$TARGET_DIR/$legacy_pattern" ]; then
+      HAS_LEGACY=true
+      break
+    fi
+  done
+fi
+
+# Interactive mode: ask only when copy/link was not specified.
 if [ "$USE_LINK" == false ] && [ -t 0 ]; then
   echo ""
   echo "📋 Select installation mode:"
@@ -119,29 +123,41 @@ if [ "$USE_LINK" == false ] && [ -t 0 ]; then
   fi
 fi
 
-# 1. Install Modules
-if [ "$USE_LINK" == true ]; then
-  echo "   🔗 Linking intelligent modules (symlink mode)..."
-else
-  echo "   📦 Copying intelligent modules..."
-fi
+install_file() {
+  local source_file="$1"
+  local target_file="$2"
 
-mkdir -p "$TARGET_DIR/.phrase/archive"
+  [ -f "$source_file" ] || return 0
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    echo "   ⚠️  Keeping existing file: $target_file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$target_file")"
 
-install_phrase_dir() {
-  local dir_name="$1"
-  local source_dir="$REPO_ROOT/.phrase/$dir_name"
-  local target_dir="$TARGET_DIR/.phrase/$dir_name"
+  if [ "$USE_LINK" == true ]; then
+    ln -s "$source_file" "$target_file"
+  else
+    cp "$source_file" "$target_file"
+  fi
+}
+
+install_dir_contents() {
+  local source_dir="$1"
+  local target_dir="$2"
 
   [ -d "$source_dir" ] || return 0
-
   mkdir -p "$target_dir"
   for item in "$source_dir"/*; do
     if [ -e "$item" ]; then
       local basename_item
+      local target_item
       basename_item=$(basename "$item")
+      target_item="$target_dir/$basename_item"
+      if [ -e "$target_item" ] || [ -L "$target_item" ]; then
+        continue
+      fi
       if [ "$USE_LINK" == true ]; then
-        ln -sf "$item" "$target_dir/$basename_item"
+        ln -s "$item" "$target_item"
       else
         cp -R "$item" "$target_dir/"
       fi
@@ -149,71 +165,29 @@ install_phrase_dir() {
   done
 }
 
-install_phrase_dir "modules"
-install_phrase_dir "docs"
-install_phrase_dir "templates"
-install_phrase_dir "commands"
-install_phrase_dir "adr"
-install_phrase_dir "protocol"
-install_phrase_dir "runbooks"
-
-install_phrase_file() {
-  local file_name="$1"
-  local source_file="$REPO_ROOT/.phrase/$file_name"
-  local target_file="$TARGET_DIR/.phrase/$file_name"
-
-  [ -f "$source_file" ] || return 0
-
-  if [ "$USE_LINK" == true ]; then
-    ln -sf "$source_file" "$target_file"
+install_agent() {
+  if [ "$LANG" == "en" ]; then
+    install_file "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+    echo "   🌐 Language: English"
   else
-    cp "$source_file" "$target_file"
+    install_file "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+    echo "   🌐 Language: Chinese"
   fi
 }
 
-install_phrase_file "decision.md"
-install_phrase_file "roadmap.md"
-install_phrase_file "current.md"
-install_phrase_file "evidence.md"
+echo "   📦 Installing modern root layout..."
+install_agent
+for file_name in CONTEXT.md ROADMAP.md STATUS.md EVIDENCE.md UPGRADE.md; do
+  install_file "$REPO_ROOT/$file_name" "$TARGET_DIR/$file_name"
+done
+install_dir_contents "$REPO_ROOT/docs" "$TARGET_DIR/docs"
+install_dir_contents "$REPO_ROOT/archive" "$TARGET_DIR/archive"
+install_dir_contents "$REPO_ROOT/skills" "$TARGET_DIR/skills"
 
-# 3. Install Claude Code commands (.claude/commands/)
-if [ -d "$REPO_ROOT/.phrase/commands" ]; then
-  mkdir -p "$TARGET_DIR/.claude/commands"
-  if [ "$USE_LINK" == true ]; then
-    echo "   🔗 Linking Claude commands (symlink mode)..."
-    for item in "$REPO_ROOT/.phrase/commands/"*; do
-      if [ -e "$item" ]; then
-        basename_item=$(basename "$item")
-        ln -sf "$item" "$TARGET_DIR/.claude/commands/$basename_item"
-      fi
-    done
-  else
-    echo "   📋 Installing Claude commands..."
-    cp "$REPO_ROOT/.phrase/commands/"* "$TARGET_DIR/.claude/commands/"
-  fi
-fi
-
-# 2. Install Core Protocol
-if [ "$USE_LINK" == true ]; then
-  echo "   🔗 Linking AGENTS.md (symlink mode)..."
-else
-  echo "   📄 Copying AGENTS.md..."
-fi
-
-if [ "$LANG" == "en" ]; then
-  if [ "$USE_LINK" == true ]; then
-    ln -sf "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
-  else
-    cp "$REPO_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
-  fi
-  echo "   🌐 Language: English"
-else
-  if [ "$USE_LINK" == true ]; then
-    ln -sf "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
-  else
-    cp "$REPO_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
-  fi
-  echo "   🌐 Language: Chinese"
+if [ "$HAS_LEGACY" == true ]; then
+  echo ""
+  echo "   ⚠️  Existing legacy SPEC material detected."
+  echo "      Read $TARGET_DIR/UPGRADE.md before ordinary work."
 fi
 
 if [ "$USE_LINK" == true ]; then
@@ -226,16 +200,12 @@ echo ""
 echo "✨ Done! Spec-AGENTS is ready."
 echo "   Installed:"
 echo "   - $TARGET_DIR/AGENTS.md"
-echo "   - $TARGET_DIR/.phrase/modules"
-echo "   - $TARGET_DIR/.phrase/docs"
-echo "   - $TARGET_DIR/.phrase/templates"
-echo "   - $TARGET_DIR/.phrase/commands"
-echo "   - $TARGET_DIR/.phrase/decision.md"
-echo "   - $TARGET_DIR/.phrase/roadmap.md"
-echo "   - $TARGET_DIR/.phrase/current.md"
-echo "   - $TARGET_DIR/.phrase/evidence.md"
-echo "   - $TARGET_DIR/.phrase/archive"
-if [ -d "$TARGET_DIR/.claude/commands" ]; then
-  echo "   - $TARGET_DIR/.claude/commands"
-fi
+echo "   - $TARGET_DIR/CONTEXT.md"
+echo "   - $TARGET_DIR/ROADMAP.md"
+echo "   - $TARGET_DIR/STATUS.md"
+echo "   - $TARGET_DIR/EVIDENCE.md"
+echo "   - $TARGET_DIR/UPGRADE.md"
+echo "   - $TARGET_DIR/docs"
+echo "   - $TARGET_DIR/archive"
+echo "   - $TARGET_DIR/skills/{plan,capture,arrange,do,check,learn}"
 echo "   To start, simply tell your AI Agent: 'Read AGENTS.md'"

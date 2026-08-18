@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Living SPEC 演进模型推演器</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --page: light-dark(#f7f8fa, #111417);
+      --surface: light-dark(#ffffff, #1a1f24);
+      --surface-subtle: light-dark(#eef2f5, #222930);
+      --text: light-dark(#17202a, #eef2f5);
+      --muted: light-dark(#52606d, #aeb8c2);
+      --border: light-dark(#b8c2cc, #4d5965);
+      --accent: light-dark(#075985, #38bdf8);
+      --accent-strong: light-dark(#0c4a6e, #7dd3fc);
+      --accent-soft: light-dark(#e0f2fe, #0c3448);
+      --danger: light-dark(#9f1239, #fda4af);
+      --success: light-dark(#166534, #86efac);
+      --radius: 0.75rem;
+      --space-1: 0.375rem;
+      --space-2: 0.75rem;
+      --space-3: 1rem;
+      --space-4: 1.5rem;
+      --space-5: 2rem;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    body {
+      margin: 0;
+      min-block-size: 100dvh;
+      background: var(--page);
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    header,
+    main,
+    footer {
+      inline-size: min(76rem, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+
+    header {
+      padding-block: var(--space-5) var(--space-4);
+    }
+
+    main {
+      display: grid;
+      gap: var(--space-4);
+      padding-block-end: var(--space-5);
+    }
+
+    footer {
+      padding-block: var(--space-3) var(--space-5);
+      color: var(--muted);
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 1.2rem + 2vw, 3rem);
+    }
+
+    h2 {
+      margin-block: 0 var(--space-3);
+      font-size: 1.3rem;
+    }
+
+    h3 {
+      margin-block: 0 var(--space-2);
+      font-size: 1.05rem;
+    }
+
+    p {
+      max-inline-size: 75ch;
+      text-wrap: pretty;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      min-block-size: 2.75rem;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 0.55rem;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    code {
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .visually-hidden:where(:not(:focus-within, :active)) {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      border: 0;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .eyebrow {
+      margin-block: 0 var(--space-1);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .intro {
+      margin-block: var(--space-2) 0;
+      color: var(--muted);
+    }
+
+    .panel {
+      padding: var(--space-4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .model-picker {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-2);
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .model-option {
+      display: grid;
+      gap: var(--space-1);
+      padding: var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      background: var(--surface-subtle);
+      cursor: pointer;
+    }
+
+    .model-option:has(input:checked) {
+      border-color: var(--accent);
+      outline: 2px solid var(--accent-soft);
+    }
+
+    .model-option strong {
+      color: var(--text);
+    }
+
+    .model-option small {
+      color: var(--muted);
+    }
+
+    .model-option input {
+      inline-size: 1.1rem;
+      block-size: 1.1rem;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .state-layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2);
+      margin: 0;
+    }
+
+    .state-item {
+      padding: var(--space-2);
+      border-inline-start: 0.25rem solid var(--border);
+      background: var(--surface-subtle);
+    }
+
+    .state-item dt {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .state-item dd {
+      margin: var(--space-1) 0 0;
+      overflow-wrap: anywhere;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .message {
+      margin-block: var(--space-3) 0;
+      padding: var(--space-2) var(--space-3);
+      border-inline-start: 0.25rem solid var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .message[data-kind="error"] {
+      border-inline-start-color: var(--danger);
+    }
+
+    .message[data-kind="success"] {
+      border-inline-start-color: var(--success);
+    }
+
+    .history {
+      max-block-size: 25rem;
+      margin: 0;
+      padding-inline-start: 1.4rem;
+      overflow: auto;
+      color: var(--muted);
+    }
+
+    .history li + li {
+      margin-block-start: var(--space-1);
+    }
+
+    .action-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .action-grid .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: light-dark(#ffffff, #071219);
+    }
+
+    .action-grid .primary:hover:not(:disabled) {
+      color: light-dark(#ffffff, #071219);
+    }
+
+    .tab-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-1);
+      margin-block-end: var(--space-3);
+      border-block-end: 1px solid var(--border);
+    }
+
+    [role="tab"] {
+      border: 0;
+      border-block-end: 0.2rem solid transparent;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    [role="tab"][aria-selected="true"] {
+      border-block-end-color: var(--accent);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    [role="tabpanel"] p {
+      color: var(--muted);
+    }
+
+    .scenario-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-block-start: var(--space-3);
+    }
+
+    .scenario-steps button[data-current="true"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .comparison-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      inline-size: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    caption {
+      margin-block-end: var(--space-2);
+      text-align: start;
+      color: var(--muted);
+    }
+
+    th,
+    td {
+      padding: var(--space-2);
+      border-block-end: 1px solid var(--border);
+      text-align: start;
+      vertical-align: top;
+    }
+
+    th {
+      text-wrap: balance;
+    }
+
+    tr[data-selected="true"] {
+      background: var(--accent-soft);
+    }
+
+    .verdict {
+      font-weight: 700;
+    }
+
+    @media (max-width: 52rem) {
+      .model-picker,
+      .state-layout {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 36rem) {
+      header,
+      main,
+      footer {
+        inline-size: min(100% - 1rem, 76rem);
+      }
+
+      .panel {
+        padding: var(--space-3);
+      }
+
+      .model-picker,
+      .state-layout,
+      .state-grid {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        min-block-size: 3rem;
+      }
+    }
+
+    @media (forced-colors: active) {
+      .model-option:has(input:checked),
+      tr[data-selected="true"] {
+        outline: 2px solid Highlight;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">PROTOTYPE — 可丢弃的状态模型推演</p>
+    <h1>Living SPEC：静态抽象如何与动态证据一起演进？</h1>
+    <p class="intro">
+      这个原型回答一个问题：当运行证据挑战现有规则时，哪种结合方式既能沉淀稳定抽象，
+      又允许抽象在明确框架下修订，同时不让默认上下文和维护成本失控？
+    </p>
+  </header>
+
+  <main id="content" tabindex="-1">
+    <section class="panel" aria-labelledby="model-title">
+      <h2 id="model-title">选择候选模型</h2>
+      <fieldset class="model-picker">
+        <legend class="visually-hidden">候选结合方式</legend>
+        <label class="model-option">
+          <input type="radio" name="model" value="dynamic">
+          <strong>动态优先</strong>
+          <small>当前 v3：evidence 推动 phase，抽象靠人工提升。</small>
+        </label>
+        <label class="model-option">
+          <input type="radio" name="model" value="overlay">
+          <strong>Decision Overlay</strong>
+          <small>在 current 中补 Actor、Decision、Action 与 Guard。</small>
+        </label>
+        <label class="model-option">
+          <input type="radio" name="model" value="living" checked>
+          <strong>双层活本体</strong>
+          <small>静态内涵层 + 动态事实层 + 显式模型变更协议。</small>
+        </label>
+        <label class="model-option">
+          <input type="radio" name="model" value="registry">
+          <strong>统一机器本体</strong>
+          <small>所有规则、事实和动作进入同一个 schema/registry。</small>
+        </label>
+      </fieldset>
+    </section>
+
+    <section class="panel" aria-labelledby="state-title">
+      <h2 id="state-title">完整状态</h2>
+      <div class="state-layout">
+        <div>
+          <dl class="state-grid" id="state-grid"></dl>
+          <p class="message" id="message" aria-live="polite"></p>
+        </div>
+        <div>
+          <h3>事件轨迹</h3>
+          <ol class="history" id="history"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="actions-title">
+      <h2 id="actions-title">自由推演</h2>
+      <p>按钮始终可点击；非法动作会被状态机拒绝，并说明缺少的条件。</p>
+      <div class="action-grid" id="free-actions"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="walkthrough-title">
+      <h2 id="walkthrough-title">引导场景</h2>
+      <div class="tab-list" role="tablist" aria-label="推演场景" id="scenario-tabs"></div>
+      <div id="scenario-panel" role="tabpanel" tabindex="0"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="comparison-title">
+      <h2 id="comparison-title">推演前的结构性比较</h2>
+      <div class="comparison-wrap">
+        <table>
+          <caption>比较的是机制，不是文档命名；当前选择会高亮。</caption>
+          <thead>
+            <tr>
+              <th scope="col">模型</th>
+              <th scope="col">静态抽象</th>
+              <th scope="col">动态演进</th>
+              <th scope="col">提升机制</th>
+              <th scope="col">默认上下文</th>
+              <th scope="col">判断</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    这是决策原型，不是生产协议。它不持久化数据，也不修改仓库中的 SPEC 文件。
+  </footer>
+
+  <script>
+    const LivingSpecLogic = (() => {
+      const MODELS = {
+        dynamic: {
+          name: "动态优先",
+          staticLayer: "decision / ADR 中的非结构化原则",
+          deltaLocation: "evidence 的 recommended next action",
+          verification: "人工阅读 evidence 后判断",
+          promotion: "手工改写 decision / ADR；引用关系隐式",
+          implementationChange: "架构变化与领域含义主要靠作者解释",
+          contextCost: "低",
+          maintenanceCost: "低",
+          traceability: "隐式",
+        },
+        overlay: {
+          name: "Decision Overlay",
+          staticLayer: "长期原则 + phase-local 决策契约",
+          deltaLocation: "current 的 Decision Workflow / Ontology Delta",
+          verification: "在当前 phase 内检查 Actor、Inputs、Action、Guard",
+          promotion: "验证后手工复制到 decision / protocol",
+          implementationChange: "能区分动作与实现，但跨 phase 语义仍靠复制",
+          contextCost: "低—中",
+          maintenanceCost: "低",
+          traceability: "部分显式",
+        },
+        living: {
+          name: "双层活本体",
+          staticLayer: "版本化内涵层：概念、关系、动作、约束",
+          deltaLocation: "显式 Ontology Delta，链接触发它的 evidence",
+          verification: "先验证事实，再做影响检查，最后提升",
+          promotion: "通过 gate 原子更新内涵层；动态事实保留来源",
+          implementationChange: "架构映射可变，领域语义与不变量保持稳定",
+          contextCost: "低：Agent 只读当前投影",
+          maintenanceCost: "中低",
+          traceability: "显式",
+        },
+        registry: {
+          name: "统一机器本体",
+          staticLayer: "统一 schema / registry / graph",
+          deltaLocation: "schema migration 与实例迁移",
+          verification: "结构检查、迁移检查和运行检查",
+          promotion: "合并 schema migration 后更新全部实例",
+          implementationChange: "表达最完整，但实现细节容易被升格为本体",
+          contextCost: "高：需要查询、投影或生成工具",
+          maintenanceCost: "高",
+          traceability: "强制显式",
+        },
+      };
+
+      function initialState(mode = "living") {
+        return {
+          mode,
+          kernelVersion: 1,
+          kernelInvariant: "Phase 关闭前必须检查 acceptance gate",
+          architectureRevision: 1,
+          phase: "尚未开始",
+          repeatedEvidence: 0,
+          outlierEvidence: 0,
+          candidate: "无",
+          candidateStatus: "无",
+          resolution: "无冲突",
+          verification: "未运行",
+          lastMessage: `已载入「${MODELS[mode].name}」模型。`,
+          messageKind: "info",
+          history: [],
+        };
+      }
+
+      function copy(state) {
+        return { ...state, history: [...state.history] };
+      }
+
+      function record(state, message, kind = "info") {
+        state.lastMessage = message;
+        state.messageKind = kind;
+        state.history.push(message);
+        return state;
+      }
+
+      function reject(state, reason) {
+        return record(state, `拒绝：${reason}`, "error");
+      }
+
+      function reduce(previous, action) {
+        if (action.type === "RESET") return initialState(previous.mode);
+        if (action.type === "SET_MODE") return initialState(action.mode);
+
+        const state = copy(previous);
+        const model = MODELS[state.mode];
+
+        switch (action.type) {
+          case "START_PHASE":
+            if (state.phase !== "尚未开始") return reject(state, "只有未开始的 phase 可以启动。 ");
+            state.phase = "进行中";
+            return record(state, "启动 phase：开始收集验证证据。", "success");
+
+          case "ADD_REPEAT_EVIDENCE":
+            if (state.phase !== "进行中") return reject(state, "先启动 phase，证据才有当前决策上下文。 ");
+            state.repeatedEvidence += 1;
+            state.resolution = "稳定规则受到挑战";
+            return record(state, `记录重复证据 ${state.repeatedEvidence}/2：不同 Agent 对完成条件产生相同歧义。`);
+
+          case "ADD_OUTLIER":
+            if (state.phase !== "进行中") return reject(state, "先启动 phase，证据才有当前决策上下文。 ");
+            state.outlierEvidence += 1;
+            state.resolution = "存在单次异常";
+            return record(state, "记录单次异常：一个特殊 phase 无法套用现有完成条件。 ");
+
+          case "PROPOSE_DELTA":
+            if (state.phase !== "进行中") return reject(state, "只有进行中的 phase 可以提出模型修订。 ");
+            if (state.repeatedEvidence + state.outlierEvidence === 0) {
+              return reject(state, "没有 evidence，不能凭偏好修改静态抽象。 ");
+            }
+            state.candidate = "Phase 必须链接 gate evidence，并分类剩余 blocker";
+            state.candidateStatus = "待验证";
+            state.verification = `候选变更位于：${model.deltaLocation}`;
+            return record(state, `提出模型修订：${state.candidate}`);
+
+          case "VERIFY_DELTA":
+            if (state.candidateStatus !== "待验证") return reject(state, "先提出一个待验证的模型修订。 ");
+            if (state.repeatedEvidence < 2) {
+              state.verification = "失败：只有单次异常，不足以修改稳定框架";
+              return reject(state, "验证未通过；保留静态抽象，异常应在当前 phase 局部处理。 ");
+            }
+            state.candidateStatus = "已验证";
+            state.verification = `通过：${model.verification}`;
+            return record(state, `模型修订验证通过：${model.verification}。`, "success");
+
+          case "PROMOTE_DELTA":
+            if (state.candidateStatus !== "已验证") return reject(state, "模型修订必须先通过验证。 ");
+            state.kernelVersion += 1;
+            state.kernelInvariant = state.candidate;
+            state.candidateStatus = "已提升";
+            state.resolution = "稳定抽象已更新";
+            return record(state, `提升到静态层 v${state.kernelVersion}：${model.promotion}。`, "success");
+
+          case "HANDLE_LOCALLY":
+            if (state.phase !== "进行中") return reject(state, "没有进行中的 phase。 ");
+            if (state.repeatedEvidence + state.outlierEvidence === 0) return reject(state, "没有需要局部处理的证据。 ");
+            state.resolution = "phase-local 处理；静态抽象不变";
+            if (state.candidateStatus === "待验证") state.candidateStatus = "未提升";
+            return record(state, "将异常留在 current，并记录适用边界；没有改写长期原则。", "success");
+
+          case "CHANGE_IMPLEMENTATION":
+            if (state.phase !== "进行中") return reject(state, "先启动承载该重构的 phase。 ");
+            state.architectureRevision += 1;
+            return record(
+              state,
+              `实现架构更新到 r${state.architectureRevision}；静态规则仍为 v${state.kernelVersion}。${model.implementationChange}`,
+              "success",
+            );
+
+          case "CLOSE_PHASE":
+            if (state.phase !== "进行中") return reject(state, "只有进行中的 phase 可以关闭。 ");
+            if (state.resolution === "稳定规则受到挑战" || state.resolution === "存在单次异常") {
+              return reject(state, "证据冲突尚未提升或局部处理，phase gate 不允许关闭。 ");
+            }
+            state.phase = "已关闭";
+            return record(state, "关闭 phase：动态状态冻结为证据，长期抽象保持独立版本。", "success");
+
+          default:
+            return reject(state, `未知动作 ${action.type}。`);
+        }
+      }
+
+      return { MODELS, initialState, reduce };
+    })();
+
+    const ACTIONS = [
+      ["START_PHASE", "启动 phase"],
+      ["ADD_REPEAT_EVIDENCE", "记录重复歧义"],
+      ["ADD_OUTLIER", "记录单次异常"],
+      ["PROPOSE_DELTA", "提出模型修订"],
+      ["VERIFY_DELTA", "验证模型修订"],
+      ["PROMOTE_DELTA", "提升到静态层"],
+      ["HANDLE_LOCALLY", "仅在当前 phase 处理"],
+      ["CHANGE_IMPLEMENTATION", "替换实现架构"],
+      ["CLOSE_PHASE", "关闭 phase"],
+      ["RESET", "重置"],
+    ];
+
+    const SCENARIOS = [
+      {
+        id: "repeated",
+        title: "重复歧义应沉淀",
+        description: "同一歧义跨执行者重复出现。观察 evidence 如何成为模型修订，并在验证后进入稳定抽象。",
+        steps: ["START_PHASE", "ADD_REPEAT_EVIDENCE", "ADD_REPEAT_EVIDENCE", "PROPOSE_DELTA", "VERIFY_DELTA", "PROMOTE_DELTA", "CLOSE_PHASE"],
+      },
+      {
+        id: "outlier",
+        title: "单次异常不改框架",
+        description: "只有一个特殊案例。观察稳定原则是否会被过早改写，以及异常能否留在当前 phase。",
+        steps: ["START_PHASE", "ADD_OUTLIER", "PROPOSE_DELTA", "VERIFY_DELTA", "HANDLE_LOCALLY", "CLOSE_PHASE"],
+      },
+      {
+        id: "refactor",
+        title: "实现变化、语义不漂移",
+        description: "替换实现架构，但业务不变量没有改变。观察模型能否区分 Architecture Revision 与 Ontology Version。",
+        steps: ["START_PHASE", "CHANGE_IMPLEMENTATION", "CHANGE_IMPLEMENTATION", "CLOSE_PHASE"],
+      },
+    ];
+
+    const COMPARISON = {
+      dynamic: ["弱：原则存在但关系隐式", "强", "人工提升", "低", "不足以独立解决静态沉淀"],
+      overlay: ["中：当前 phase 更清晰", "强", "复制提升", "低—中", "适合作为输入格式，不是完整桥梁"],
+      living: ["强：版本化内涵层", "强", "Evidence → Delta → Gate → Promote", "低：按需投影", "静态与动态之间最平衡"],
+      registry: ["强：机器可检查", "强", "Schema migration", "高", "能力完整，但当前成本过早"],
+    };
+
+    let state = LivingSpecLogic.initialState();
+    let activeScenario = 0;
+    let scenarioStep = 0;
+
+    const stateGrid = document.querySelector("#state-grid");
+    const message = document.querySelector("#message");
+    const history = document.querySelector("#history");
+    const freeActions = document.querySelector("#free-actions");
+    const scenarioTabs = document.querySelector("#scenario-tabs");
+    const scenarioPanel = document.querySelector("#scenario-panel");
+    const comparisonBody = document.querySelector("#comparison-body");
+
+    const stateFields = [
+      ["候选模型", () => LivingSpecLogic.MODELS[state.mode].name],
+      ["静态内涵层", () => LivingSpecLogic.MODELS[state.mode].staticLayer],
+      ["静态版本", () => `v${state.kernelVersion}`],
+      ["当前不变量", () => state.kernelInvariant],
+      ["动态 phase", () => state.phase],
+      ["Evidence", () => `重复 ${state.repeatedEvidence}；异常 ${state.outlierEvidence}`],
+      ["模型修订", () => `${state.candidateStatus}：${state.candidate}`],
+      ["冲突处理", () => state.resolution],
+      ["验证", () => state.verification],
+      ["实现架构", () => `revision ${state.architectureRevision}`],
+      ["默认上下文成本", () => LivingSpecLogic.MODELS[state.mode].contextCost],
+      ["维护成本", () => LivingSpecLogic.MODELS[state.mode].maintenanceCost],
+    ];
+
+    function actionLabel(type) {
+      return ACTIONS.find(([action]) => action === type)?.[1] ?? type;
+    }
+
+    function dispatch(type) {
+      state = LivingSpecLogic.reduce(state, { type });
+      render();
+    }
+
+    function renderState() {
+      stateGrid.replaceChildren(...stateFields.map(([label, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "state-item";
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const description = document.createElement("dd");
+        description.textContent = value();
+        wrapper.append(term, description);
+        return wrapper;
+      }));
+
+      message.textContent = state.lastMessage;
+      message.dataset.kind = state.messageKind;
+      history.replaceChildren(...(state.history.length ? state.history : ["尚无事件。 "]).map((entry) => {
+        const item = document.createElement("li");
+        item.textContent = entry;
+        return item;
+      }));
+    }
+
+    function renderFreeActions() {
+      if (freeActions.childElementCount) return;
+      ACTIONS.forEach(([type, label]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        if (type === "PROMOTE_DELTA") button.className = "primary";
+        button.addEventListener("click", () => dispatch(type));
+        freeActions.append(button);
+      });
+    }
+
+    function selectScenario(index) {
+      activeScenario = index;
+      scenarioStep = 0;
+      state = LivingSpecLogic.initialState(state.mode);
+      render();
+      document.querySelector(`[role="tab"][data-index="${index}"]`)?.focus();
+    }
+
+    function renderScenarios() {
+      scenarioTabs.replaceChildren(...SCENARIOS.map((scenario, index) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.id = `tab-${scenario.id}`;
+        tab.dataset.index = String(index);
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-controls", `panel-${scenario.id}`);
+        tab.setAttribute("aria-selected", String(index === activeScenario));
+        tab.tabIndex = index === activeScenario ? 0 : -1;
+        tab.textContent = scenario.title;
+        tab.addEventListener("click", () => selectScenario(index));
+        return tab;
+      }));
+
+      const scenario = SCENARIOS[activeScenario];
+      scenarioPanel.id = `panel-${scenario.id}`;
+      scenarioPanel.setAttribute("aria-labelledby", `tab-${scenario.id}`);
+      scenarioPanel.replaceChildren();
+
+      const description = document.createElement("p");
+      description.textContent = scenario.description;
+      const steps = document.createElement("div");
+      steps.className = "scenario-steps";
+      scenario.steps.forEach((type, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = `${index + 1}. ${actionLabel(type)}`;
+        button.disabled = index !== scenarioStep;
+        button.dataset.current = String(index === scenarioStep);
+        button.addEventListener("click", () => {
+          dispatch(type);
+          scenarioStep += 1;
+          renderScenarios();
+        });
+        steps.append(button);
+      });
+      scenarioPanel.append(description, steps);
+    }
+
+    function renderComparison() {
+      comparisonBody.replaceChildren(...Object.entries(COMPARISON).map(([mode, cells]) => {
+        const row = document.createElement("tr");
+        row.dataset.selected = String(mode === state.mode);
+        const name = document.createElement("th");
+        name.scope = "row";
+        name.textContent = LivingSpecLogic.MODELS[mode].name;
+        row.append(name, ...cells.map((value, index) => {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          if (index === cells.length - 1) cell.className = "verdict";
+          return cell;
+        }));
+        return row;
+      }));
+    }
+
+    function render() {
+      document.querySelector(`input[name="model"][value="${state.mode}"]`).checked = true;
+      renderState();
+      renderFreeActions();
+      renderScenarios();
+      renderComparison();
+    }
+
+    document.querySelectorAll('input[name="model"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        state = LivingSpecLogic.reduce(state, { type: "SET_MODE", mode: input.value });
+        scenarioStep = 0;
+        render();
+      });
+    });
+
+    scenarioTabs.addEventListener("keydown", (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const last = SCENARIOS.length - 1;
+      if (event.key === 'Home') return selectScenario(0);
+      if (event.key === 'End') return selectScenario(last);
+      const delta = event.key === 'ArrowRight' ? 1 : -1;
+      selectScenario((activeScenario + delta + SCENARIOS.length) % SCENARIOS.length);
+    });
+
+    render();
+  </script>
+</body>
+</html>

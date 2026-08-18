@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Meeting-room reservations</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Meeting-room reservations</h1>
+    <section class="panel" aria-labelledby="form-title">
+      <h2 id="form-title">New reservation</h2>
+      <form id="booking-form">
+        <input type="hidden" id="edit-id">
+        <label>Topic <input id="topic" required maxlength="120"></label>
+        <label>Person <input id="person" required maxlength="80"></label>
+        <label>Date <input id="date" type="date" required></label>
+        <label>Start <input id="start" type="time" required></label>
+        <label>End <input id="end" type="time" required aria-describedby="time-error"></label>
+        <label>Room <select id="room" required></select></label>
+        <p id="time-error" class="error" role="alert"></p>
+        <button type="submit">Save reservation</button><button type="button" id="cancel-edit" hidden>Cancel edit</button>
+      </form>
+    </section>
+    <section aria-labelledby="list-title"><h2 id="list-title">Reservations</h2><div id="list" aria-live="polite"></div></section>
+  </main>
+  <dialog id="confirm"><form method="dialog"><p>Cancel this reservation?</p><button value="no">Keep</button><button value="yes">Confirm cancellation</button></form></dialog>
+  <script src="app.js"></script>
+</body>
+</html>

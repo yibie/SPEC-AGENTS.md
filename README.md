@@ -1,34 +1,44 @@
-# SPEC-AGENTS.md
+# SPEC-AGENTS
 
-SPEC-AGENTS v3 is an evidence-calibrated agent workflow.
+SPEC-AGENTS v4 is an evidence-calibrated agent workflow with a stable semantic
+model and a living, phase-local execution record.
 
-It combines Evidence-Driven Phase Planning (EDPP) with a minimal execution protocol for AI coding agents. The goal is to reduce token load and stale memory while keeping planning, verification, and decision records reliable.
+See [`CHANGELOG.md`](CHANGELOG.md) for the v4.0.0 experiment record, design
+rationale, measured limits, and release benefits.
+
+It combines static concepts and boundaries with dynamic evidence for AI coding
+agents. The goal is to reduce stale context while keeping planning,
+verification, and durable decisions reliable.
 
 ## Core Idea
 
-Old SPEC-AGENTS used a static doc-driven loop:
+The old workflow used a static doc-driven loop:
 
 ```text
 spec -> plan -> task -> implementation -> change log
 ```
 
-v3 uses a smaller evidence-driven loop:
+The current workflow uses a six-action loop:
 
 ```text
-decision framework -> roadmap -> current phase
-        -> discovery / implementation -> verification
-        -> evidence delta -> next phase
+plan -> capture -> arrange -> do -> check -> learn
 ```
 
-The agent should read less, but read the right things.
+The agent reads the stable model first, then only the phase and evidence needed
+for the current decision.
 
 ## Features
 
-- **Minimal Context**: default reads only `decision.md`, `roadmap.md`, and  `current.md`.
-- **Evidence-Driven Phases**: the next phase is chosen from the previous phase's evidence.
-- **Phase-Local Tasks**: tasks exist only for the active phase, not distant roadmap items.
-- **Durable Decisions Only**: ADR/protocol files are used only for long-lived rules and contracts.
-- **Intent Modules**: optional modules still support product interviews, coding judgment, copywriting, and browser automation.
+- **Stable semantic model**: `CONTEXT.md` records concepts, relations,
+  lifecycles, invariants, and Action Contracts.
+- **Evidence-driven phases**: `EVIDENCE.md` records only facts that change
+  future decisions.
+- **Phase-local tasks**: `STATUS.md` coordinates the active slice instead of
+  pre-splitting distant roadmap work.
+- **Six action skills**: `plan`, `capture`, `arrange`, `do`, `check`, and
+  `learn` are the project's own contracts.
+- **Durable boundaries**: `docs/adr/` and `docs/protocols/` hold long-lived
+  decisions and stable interfaces.
 
 ## Installation
 
@@ -41,6 +51,10 @@ chmod +x link_to_system.sh
 ./link_to_system.sh
 ```
 
+The script creates `/usr/local/bin/spec-agents` and may ask for `sudo`. If a
+global command is unnecessary, run `./bin/spec-agents ...` directly from this
+checkout instead.
+
 Initialize a project:
 
 ```bash
@@ -49,72 +63,140 @@ spec-agents init        # Chinese AGENTS.md by default
 spec-agents init en     # English AGENTS.md
 ```
 
-The installer creates:
+The modern installer creates:
 
 ```text
 AGENTS.md
-.phrase/
-  decision.md
-  roadmap.md
-  current.md
-  evidence.md
-  archive/
+CONTEXT.md
+ROADMAP.md
+STATUS.md
+EVIDENCE.md
+UPGRADE.md
+docs/
   adr/
-  protocol/
-  runbooks/
-  modules/
-  commands/
+  protocols/
+archive/
+skills/
+  plan/ capture/ arrange/ do/ check/ learn/
 ```
+
+For an existing v2 or v3 project, install the modern entry points first:
+
+```bash
+spec-agents install ../old-project cn
+```
+
+Then run the upgrade Prompt:
+
+```text
+Read UPGRADE.md and execute the upgrade review.
+```
+
+The Prompt reconstructs recent history, scans the code architecture, asks the
+user to confirm the candidate project cognition, and only then archives the old
+`.phrase/` tree. The installer itself does not move, delete, or summarize old
+project material.
+
+## Quick Start
+
+After installation, begin a new project or session by telling the Agent:
+
+```text
+Read AGENTS.md, then follow it for this task.
+```
+
+For an ordinary small change, the Agent will normally use:
+
+```text
+plan -> do -> check -> learn
+```
+
+If the change spans several concepts or needs coordination, it uses the full
+loop:
+
+```text
+plan -> capture -> arrange -> do -> check -> learn
+```
+
+`plan` may conclude that no change is needed. `capture` and `arrange` are not
+required for a settled one-file fix.
+
+### CLI commands
+
+```text
+spec-agents init [cn|en] [--link]       # install into the current directory
+spec-agents install <path> [cn|en] [--link]
+spec-agents --help
+```
+
+Copy mode is the default. `--link` keeps symbolic links to this SPEC-AGENTS
+checkout, so source updates affect linked projects. Existing files are kept;
+the installer does not overwrite a project's local decisions.
+
+For a v2/v3 project, do not look for a migration subcommand. Install the modern
+layout, then explicitly ask the Agent to run the review:
+
+```text
+Read UPGRADE.md and execute the upgrade review.
+```
+
+The review reports its reconstruction and architecture scan first, then waits
+for the user's confirmation before changing root documents or archiving legacy
+material.
 
 ## Default Read Rule
 
-At the start of ordinary work, the agent reads only:
+At the start of ordinary work, the agent reads:
 
 ```text
-.phrase/decision.md
-.phrase/roadmap.md
-.phrase/current.md
+AGENTS.md
+CONTEXT.md
+STATUS.md
+ROADMAP.md
 ```
 
-It reads `.phrase/evidence.md` only when choosing the next phase, resolving a
-plan conflict, checking blocker classification, or closing a phase.
+It reads `EVIDENCE.md` when choosing a phase, checking a failed assumption,
+classifying a blocker, or deciding whether a phase can close. It reads
+`docs/adr/` and `docs/protocols/` only when the affected area points to them,
+and `archive/` only for explicit historical or regression questions.
 
-It reads `.phrase/archive/` only when current files link to an archived item, a
-regression needs historical comparison, or the user explicitly asks for old
-context.
+The old `.phrase/` tree is legacy context, not a second default source of
+truth.
 
 ## File Authority
 
 When documents disagree:
 
-1. `decision.md`, `adr/`, and `protocol/` define durable rules.
-2. Fresh evidence defines what is currently known.
-3. `current.md` defines the active phase.
-4. `roadmap.md` defines direction.
-5. `archive/` is historical context only.
+1. `AGENTS.md` defines workflow and safety rules.
+2. `CONTEXT.md`, `docs/adr/`, and `docs/protocols/` define durable semantics.
+3. Fresh, verified entries in `EVIDENCE.md` define current facts.
+4. A confirmed `.scratch/<feature>/SPEC.md` defines the living feature
+   contract.
+5. `STATUS.md` defines current execution state.
+6. `ROADMAP.md` defines phase direction.
+7. `archive/` and `.phrase/` are historical context only.
 
-Fresh evidence updates the current plan. Durable rule changes require explicit
-decision, ADR, or protocol updates.
+Fresh evidence can challenge a durable rule, but the conflict must be routed
+through `plan` and recorded before implementation silently changes the model.
 
 ## Workflow
 
-1. Establish or read the decision framework.
-2. Maintain roadmap at phase granularity.
-3. Select the current phase from evidence.
-4. Update `current.md` with scope, out-of-scope, acceptance gate, task slice,
-   and verification plan.
-5. Run discovery before broad implementation when the blocker shape is unknown.
-6. Classify blockers before fixing them.
-7. Implement only the measured slice.
-8. Verify against the phase gate.
-9. Record an evidence delta.
-10. Update durable decisions only when needed.
-11. Prepare the next phase and archive stale local context.
+1. `plan`: clarify need, unchanged baseline, concepts, compatibility, and the
+   verification gate.
+2. `capture`: record a confirmed multi-context change in a living SPEC.
+3. `arrange`: split that SPEC into independent, vertical slices only when
+   coordination needs it.
+4. `do`: execute one ready slice and update only its local status.
+5. `check`: compare the result with the confirmed contract and engineering
+   standards.
+6. `learn`: append verified evidence and promote only reusable knowledge.
+
+Use the shortest valid path: no-change stops after `plan`; a settled small
+change may go directly to `do`; multi-context work uses all six actions.
 
 ## Task Format
 
-Tasks are phase-local. Use them only in `current.md` when they help coordinate
-the active work:
+Tasks are phase-local. Use them only when they help coordinate the active work:
 
 ```text
 taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
@@ -122,27 +204,16 @@ taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
 
 Do not pre-split future roadmap phases into tasks.
 
-## Migration From v2
+## Migration From v2/v3
 
-For existing projects:
+For an existing project, install the modern entry points and read `UPGRADE.md`.
+Use a `plan` pass to decide what should be promoted. Keep only durable rules in `CONTEXT.md` or
+`docs/adr/`, stable interfaces in `docs/protocols/`, current state in
+`STATUS.md`, and decision-relevant facts in `EVIDENCE.md`. Archive obsolete
+material instead of mechanically copying it into the default context.
 
-1. Extract durable rules into `.phrase/decision.md`.
-2. Convert future milestones into `.phrase/roadmap.md`.
-3. Compress the active phase into `.phrase/current.md`.
-4. Move decision-relevant observations into `.phrase/evidence.md`.
-5. Move completed/stale `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*`
-   material into `.phrase/archive/`.
-6. Stop maintaining mechanical per-file `change_*` logs.
-7. Keep ADR/protocol files only for durable decisions and stable contracts.
-
-You can ask the agent to run:
-
-```text
-/migrate-v3
-```
-
-The command archives legacy material under `.phrase/archive/legacy-v2/` and
-promotes only decision-relevant context into the v3 files.
+The old `.phrase/commands/` instructions are archived history, not a second
+default workflow.
 
 ## Protocol Cost Comparison
 
@@ -152,14 +223,8 @@ Run the comparison benchmark:
 ./tests/protocol-cost-comparison.sh
 ```
 
-The script creates the same development request in two temporary fixtures:
-
-- legacy v2 static SPEC layout
-- v3 EDPP minimal-context layout
-
-It compares default read files, words, bytes, estimated tokens, and required
-write surfaces after implementation. The benchmark measures protocol overhead,
-not model intelligence or code quality.
+The script creates temporary legacy v2 and v3 fixtures. Its numbers measure
+historical protocol overhead, not model intelligence or code quality.
 
 Current fixture result:
 
@@ -171,7 +236,15 @@ Current fixture result:
 | Estimated read tokens | 601 | 290 | 51.7% |
 | Required write surfaces after implementation | 5 | 2 | 60.0% |
 
-## 中文说明
+The benchmark remains a historical v3 comparison; it does not define the v4
+default layout.
+
+## 中文说明（历史 v3 参考）
+
+以下内容保留旧版 v3 的背景说明。出现 `.phrase/` 的地方仅描述 legacy
+兼容或历史 benchmark，不是当前新项目的默认入口。
+
+### v3 背景
 
 SPEC-AGENTS v3 是一个证据校准的 Agent 工作流。
 
@@ -227,9 +300,9 @@ decision framework -> roadmap -> current phase
 - **长期决策才持久化**：ADR/protocol 只记录会长期影响项目边界的规则和契约。
 - **意图模块仍保留**：产品访谈、代码判断、文案、浏览器自动化等模块仍可按需加载。
 
-## 默认读取规则
+## 默认读取规则（v3 历史）
 
-默认上下文：
+默认上下文（v3 历史）：
 
 ```text
 .phrase/decision.md
@@ -280,7 +353,11 @@ taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方
 
 不要为远期 roadmap 阶段预拆任务。
 
-## 从 v2 迁移
+## 从 v2 迁移（历史 v3 记录）
+
+以下步骤只记录旧版 v3 的做法，不是当前迁移指引。现在的 v2/v3 项目应先
+安装新版入口，再执行 `Read UPGRADE.md and execute the upgrade review.`；
+不要手动把遗留内容移动到 `.phrase/archive/`。
 
 已有项目迁移时：
 

@@ -2,48 +2,70 @@
 
 ## Status
 
-Planned
+Complete — promote bounded cross-domain revise path
 
 ## Goal
 
-Define the active phase before implementation.
+Test whether the Kernel → State → Evidence → Code rule survives a second
+bounded context and a different kind of compatible change: persistent domain
+state rather than a presentation filter.
 
 ## Entry Condition
 
-- Decision framework exists in `.phrase/decision.md`.
+- Phase 8 validated one compatible revise in the meeting-room domain.
+- The next evidence question was a different domain or change type.
 
 ## Scope
 
-- Clarify the current phase goal.
-- Identify the active task slice.
-- Define verification evidence.
+- Run `experiments/pomodoro-v4-cross-domain/` from the validated Pomodoro K1
+  baseline.
+- Review D4 auto-completion conflict and require treatment to record `revise`
+  and implement the pre-registered D5 focus-session count.
+- Control applies D4 directly; treatment updates Kernel/State/Evidence before
+  its app edit.
+- Run static checks, controlled-clock Chromium checks, and R1–R13.
 
 ## Out Of Scope
 
-- Distant roadmap task decomposition.
-- Mechanical per-file changelog maintenance.
-- Reading archive material without a current need.
+- Re-running the meeting-room delta, adding a third domain, or changing R1–R13.
+- Replacing `AGENTS.md`.
+- Adding ontology tooling, schemas, graphs, generators, sync, notifications,
+  sounds, analytics, or server storage.
 
 ## Acceptance Gate
 
-- Current phase goal is explicit.
-- Active task slice is defined.
-- Verification plan is defined.
-- Evidence to record is listed.
+- D4/D5 are fixed before implementation and their compatibility relationship is
+  explicit.
+- Control records the direct D4 contradiction at R6.
+- Treatment records `revise` and D5 in Kernel/State/Evidence before app edit,
+  then passes the baseline behavior matrix plus R13.
+- Static checks, ordering, cost, contradiction, and browser limitations are
+  recorded; root instructions remain untouched.
 
 ## Active Task Slice
 
 ```text
-task001 [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
+task010 [x] goal:<cross-domain validation of compatible revise> | scope:<experiments/pomodoro-v4-cross-domain> | verify:<D4/D5 fixed + pre-edit Kernel/State/Evidence + control R6 contradiction + treatment R1–R13 + cost>
 ```
 
-## Known Blockers
+## Remaining Boundary
 
-- None recorded yet.
+- Phase 9 supplies one Pomodoro state/persistence revision in addition to the
+  meeting-room presentation revision. It is still not general model proof.
+- The pointer-based skip-link check was not accepted because the link is
+  intentionally visually hidden; no screen-reader audit was claimed.
+- Do not add a third domain or ontology infrastructure without a new phase.
 
-## Evidence To Record
+## Evidence Recorded
 
-- Baseline before work.
-- Verification result.
-- Remaining blockers.
-- Suggested next phase.
+- D4 conflict, D5 compatible alternative, treatment ordering, and K1-D5 action
+  contract.
+- Control R6 contradiction, treatment R1–R13 results, controlled clock,
+  storage boundary, costs, and browser artifacts.
+
+## Close Result
+
+- The result and bounded decision are recorded in
+  `experiments/pomodoro-v4-cross-domain/RESULTS.md`.
+- Keep `revise` concrete: preserve the existing invariant/data contract, add
+  one named compatible behavior, and prove both old and new contracts.
