@@ -3,7 +3,7 @@
 Run from the repository root:
 
 ```bash
-python3 experiments/ontology-graph-pilot/run_pilot.py
+python3 research/experiments/ontology-graph-pilot/run_pilot.py
 ```
 
 The runner uses only the Python standard library, stores everything in memory,

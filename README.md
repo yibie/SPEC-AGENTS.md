@@ -6,6 +6,9 @@ model and a living, phase-local execution record.
 See [`CHANGELOG.md`](CHANGELOG.md) for the v4.0.0 experiment record, design
 rationale, measured limits, and release benefits.
 
+The source repository keeps that research archive under
+[`research/`](research/README.md). It is not part of the installer payload.
+
 It combines static concepts and boundaries with dynamic evidence for AI coding
 agents. The goal is to reduce stale context while keeping planning,
 verification, and durable decisions reliable.

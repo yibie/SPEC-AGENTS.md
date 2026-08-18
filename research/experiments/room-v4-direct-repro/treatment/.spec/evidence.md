@@ -28,7 +28,7 @@
 
 ## Protocol deviation
 
-- An extra `experiments/room-v4-direct-repro/styles.css` appeared outside the
+- An extra `research/experiments/room-v4-direct-repro/styles.css` appeared outside the
   treatment sandbox and duplicates treatment CSS. It is preserved as a path
   discipline deviation; the assigned treatment files remain under `treatment/`.
 

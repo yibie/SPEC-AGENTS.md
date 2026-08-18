@@ -333,15 +333,15 @@ plan.
 
 ### Verification
 
-`python3 experiments/jsonl-evidence-pilot/run_pilot.py` passed J1–J5. The runner
+`python3 research/experiments/jsonl-evidence-pilot/run_pilot.py` passed J1–J5. The runner
 used only the Python standard library, wrote no files, and did not touch
 application code or production skills.
 
 ### References
 
-- `experiments/jsonl-evidence-pilot/BRIEF.md`
-- `experiments/jsonl-evidence-pilot/RUN_PROTOCOL.md`
-- `experiments/jsonl-evidence-pilot/RESULTS.md`
+- `research/experiments/jsonl-evidence-pilot/BRIEF.md`
+- `research/experiments/jsonl-evidence-pilot/RUN_PROTOCOL.md`
+- `research/experiments/jsonl-evidence-pilot/RESULTS.md`
 
 ## E-20260817-003 — typed ontology graph projection pilot
 
@@ -370,13 +370,13 @@ pilot alone.
 
 ### Verification
 
-`python3 experiments/ontology-graph-pilot/run_pilot.py` passed all typed-edge,
+`python3 research/experiments/ontology-graph-pilot/run_pilot.py` passed all typed-edge,
 lifecycle, impact, provenance, and rejection checks. The runner used only the
 Python standard library, stored state in memory, wrote no files, and did not
 modify production documents or code.
 
 ### References
 
-- `experiments/ontology-graph-pilot/ONTOLOGY.md`
-- `experiments/ontology-graph-pilot/RUN_PROTOCOL.md`
-- `experiments/ontology-graph-pilot/RESULTS.md`
+- `research/experiments/ontology-graph-pilot/ONTOLOGY.md`
+- `research/experiments/ontology-graph-pilot/RUN_PROTOCOL.md`
+- `research/experiments/ontology-graph-pilot/RESULTS.md`

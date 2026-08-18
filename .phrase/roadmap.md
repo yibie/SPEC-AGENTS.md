@@ -92,7 +92,7 @@ worktree; the user requested a direct-directory experiment.
 
 **Acceptance Gate**:
 
-- `experiments/room-v4-direct-repro/` contains independent control/treatment
+- `research/experiments/room-v4-direct-repro/` contains independent control/treatment
   sandboxes and the fixed Brief.
 - Both assigned Luna runs land their implementations; treatment K1/State
   precede its app, and thread freshness is recorded as a validity condition.
@@ -128,7 +128,7 @@ direct run used a reused thread and therefore cannot serve as causal evidence.
 - A new fixed Brief names the same rooms and matrix for both fresh runs.
 - Treatment K1/State precede its app; both runs finish without root recovery.
 - Static/browser evidence, cost, freshness, and path deviations are recorded.
-- `ONTOLOGY_SPEC_FUSION_RESEARCH.md` cites primary sources, separates facts from
+- `research/ontology/ONTOLOGY_SPEC_FUSION_RESEARCH.md` cites primary sources, separates facts from
   mappings, rejects over-fusion, and proposes one smallest next experiment.
 - No `AGENTS.md` replacement or Kernel-v2 work occurs in this phase.
 

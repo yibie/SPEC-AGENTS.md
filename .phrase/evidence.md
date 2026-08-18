@@ -53,7 +53,7 @@ Record only evidence that can change future planning or durable decisions.
   design, use-case lifecycle, Actions, action logs, and change governance with
   the W3C OWL overview and the current SPEC-AGENTS v3 system model.
 - Claims, source links, evidence limits, and the proposed mapping are recorded
-  in `PALANTIR_ONTOLOGY_METHOD.md`.
+  in `research/ontology/PALANTIR_ONTOLOGY_METHOD.md`.
 
 **Remaining Blockers**:
 
@@ -98,7 +98,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `SPEC_ONTOLOGY_EVOLUTION_PROTOTYPE.html` contains a pure reducer plus guided
+- `research/ontology/SPEC_ONTOLOGY_EVOLUTION_PROTOTYPE.html` contains a pure reducer plus guided
   walkthroughs for the three discriminating scenarios.
 - Browser evaluation confirmed all four state checks, the guided-step wiring,
   semantic controls, and an empty warning/error console after reload.
@@ -136,7 +136,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Recommended Next Action**:
 
-- Review `SPEC_AGENTS_V4_LIVING_ONTOLOGY.md`, then exercise its first validation
+- Review `research/ontology/SPEC_AGENTS_V4_LIVING_ONTOLOGY.md`, then exercise its first validation
   gate on one real phase before replacing the current `AGENTS.md` entry point.
 
 ### 2026-08-15: v3 / v4 Pomodoro worktree comparison
@@ -173,7 +173,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `POMODORO_V3_V4_EXPERIMENT.md` records the controlled conditions, browser
+- `research/experiments/POMODORO_V3_V4_EXPERIMENT.md` records the controlled conditions, browser
   behavior matrix, protocol artifacts, limitations, and candidate v4 Delta.
 - Both `pomodoro/app.js` files pass `node --check`.
 - Real Chromium checks used the same add/edit/complete/select/reload/delete,
@@ -230,7 +230,7 @@ Record only evidence that can change future planning or durable decisions.
   `pomodoro/` existed.
 - `.spec/evidence.md` maps external results to K1 Action Contracts;
   `node --check pomodoro/app.js` passes.
-- `POMODORO_V3_V4_EXPERIMENT.md` contains the first-run/repeat behavior matrix,
+- `research/experiments/POMODORO_V3_V4_EXPERIMENT.md` contains the first-run/repeat behavior matrix,
   cost, limitations, and Delta decision.
 
 **Remaining Blockers**:
@@ -282,7 +282,7 @@ Record only evidence that can change future planning or durable decisions.
 **Verification**:
 
 - Browser results and the control/treatment deviations are recorded in
-  `MEETING_ROOM_V4_EXPERIMENT.md`.
+  `research/experiments/MEETING_ROOM_V4_EXPERIMENT.md`.
 - Treatment `.spec/kernel.md` existed before any app file and passed the root
   Bootstrap audit; both worktrees have static and browser Evidence.
 - Playwright sessions were closed, local servers stopped, and artifacts moved
@@ -347,7 +347,7 @@ Record only evidence that can change future planning or durable decisions.
 **Observation**:
 
 - A new experiment directory was created inside the repository at
-  `experiments/room-v4-direct-repro/`, with a fixed Brief and independent
+  `research/experiments/room-v4-direct-repro/`, with a fixed Brief and independent
   `control/` and `treatment/` sandboxes.
 - The control Luna landed `index.html`, `styles.css`, `app.js`, and evidence;
   `node --check` passed. The treatment Luna landed K1/State before its three
@@ -359,7 +359,7 @@ Record only evidence that can change future planning or durable decisions.
   valid R2 submit persisted a record and then threw `TypeError: form.reset is not
   a function`; the `id="reset"` button shadows the native form method. The
   treatment record was not rendered in the same submit. An extra duplicate
-  `experiments/room-v4-direct-repro/styles.css` also appeared outside its
+  `research/experiments/room-v4-direct-repro/styles.css` also appeared outside its
   assigned sandbox.
 
 **Interpretation**:
@@ -375,10 +375,10 @@ Record only evidence that can change future planning or durable decisions.
 **Verification**:
 
 - Static checks and forbidden-API scans passed for both apps.
-- `experiments/room-v4-direct-repro/control/evidence.md` records Chromium
+- `research/experiments/room-v4-direct-repro/control/evidence.md` records Chromium
   R1–R12 pass results; `treatment/.spec/evidence.md` records the R1 pass, R2
   TypeError, console output, and skipped remaining scenarios.
-- The complete run summary is in `experiments/room-v4-direct-repro/RESULTS.md`.
+- The complete run summary is in `research/experiments/room-v4-direct-repro/RESULTS.md`.
 
 **Remaining Blockers**:
 
@@ -397,7 +397,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Observation**:
 
-- A new fixed Brief/protocol in `experiments/room-v4-independent-ab/` was
+- A new fixed Brief/protocol in `research/experiments/room-v4-independent-ab/` was
   supplied to two fresh `gpt-5.6-luna` agents in separate sandboxes. Control
   implemented directly; treatment created and self-audited `.spec/kernel.md`
   and `.spec/state.md` before any application file.
@@ -432,11 +432,11 @@ Record only evidence that can change future planning or durable decisions.
   actions and validation reports, but does not justify RDF/OWL/SHACL files,
   graph storage, code generation, or runtime authorization for this fixture.
   The full mapping and primary sources are in
-  `ONTOLOGY_SPEC_FUSION_RESEARCH.md`.
+  `research/ontology/ONTOLOGY_SPEC_FUSION_RESEARCH.md`.
 
 **Verification**:
 
-- `experiments/room-v4-independent-ab/RESULTS.md` records freshness,
+- `research/experiments/room-v4-independent-ab/RESULTS.md` records freshness,
   sequencing, cost, static checks, browser results, limitations, and the next
   experiment. Control and treatment evidence record the complete runtime
   matrix; browser artifacts were moved to
@@ -499,7 +499,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `experiments/room-v4-change-delta/RESULTS.md` records the fixed delta,
+- `research/experiments/room-v4-change-delta/RESULTS.md` records the fixed delta,
   ordering, costs, static/browser results, deviation, and decision. The
   browser artifacts were moved to
   `/private/tmp/spec-agents-room-v4-change-delta-playwright-artifacts-20260816`.
@@ -554,7 +554,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `experiments/room-v4-rejection-delta/RESULTS.md` records D2, the control
+- `research/experiments/room-v4-rejection-delta/RESULTS.md` records D2, the control
   contradiction, treatment `reject`, app preservation, costs, and next test.
   Browser artifacts were moved to
   `/private/tmp/spec-agents-room-v4-rejection-delta-playwright-artifacts-20260816`.
@@ -611,7 +611,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `experiments/room-v4-revise-delta/RESULTS.md` records D2/D3, the control
+- `research/experiments/room-v4-revise-delta/RESULTS.md` records D2/D3, the control
   contradiction, treatment `revise`, R1–R13, costs, and polarity deviation.
   Browser artifacts were moved to
   `/private/tmp/spec-agents-room-v4-revise-delta-playwright-artifacts-20260816`.
@@ -665,7 +665,7 @@ Record only evidence that can change future planning or durable decisions.
 
 **Verification**:
 
-- `experiments/pomodoro-v4-cross-domain/RESULTS.md` records D4/D5, the R6
+- `research/experiments/pomodoro-v4-cross-domain/RESULTS.md` records D4/D5, the R6
   contradiction, treatment ordering, R1–R13 results, cost, and browser
   artifacts. Artifacts are under
   `/private/tmp/spec-agents-pomodoro-v4-cross-domain-playwright-artifacts-20260816`

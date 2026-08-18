@@ -15,7 +15,7 @@ The runner passed all five scenarios:
 Command:
 
 ```bash
-python3 experiments/jsonl-evidence-pilot/run_pilot.py
+python3 research/experiments/jsonl-evidence-pilot/run_pilot.py
 ```
 
 ## Fixture measurements

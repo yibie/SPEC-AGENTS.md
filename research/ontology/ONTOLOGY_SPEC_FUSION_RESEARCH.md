@@ -8,7 +8,7 @@ R1–R12, while treatment failed R2 because an element id shadowed
 `form.reset()`. The current durable boundary explicitly excludes Kernel-v2,
 ontology schemas/graphs/generators, and replacing `AGENTS.md`. The later Phase
 5 independent repeat is recorded in
-`experiments/room-v4-independent-ab/RESULTS.md`; [current phase brief](.phrase/current.md)
+`research/experiments/room-v4-independent-ab/RESULTS.md`; [current phase brief](../../.phrase/current.md)
 now records that result separately.
 
 **Recommendation — decision.** Do **not** build an ontology implementation or adopt RDF/OWL/SHACL tooling. Use the small, human-readable contract below only to make the next fresh treatment handoff measurable. It is a protocol refinement, not a new platform layer.

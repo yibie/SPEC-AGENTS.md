@@ -3,7 +3,7 @@
 Run from the repository root:
 
 ```bash
-python3 experiments/jsonl-evidence-pilot/run_pilot.py
+python3 research/experiments/jsonl-evidence-pilot/run_pilot.py
 ```
 
 The runner reads `agent-a.jsonl`, `agent-b.jsonl`, and `baseline.md`. It does

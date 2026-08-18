@@ -54,7 +54,7 @@ Experimental ontology vocabulary:
 
 ## Seams and verification
 
-Run `python3 experiments/ontology-graph-pilot/run_pilot.py` and verify:
+Run `python3 research/experiments/ontology-graph-pilot/run_pilot.py` and verify:
 
 - invalid relation names and domain/range pairs fail;
 - `do` fails before its Slice is arranged and succeeds after the valid action

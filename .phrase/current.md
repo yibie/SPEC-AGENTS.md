@@ -17,7 +17,7 @@ state rather than a presentation filter.
 
 ## Scope
 
-- Run `experiments/pomodoro-v4-cross-domain/` from the validated Pomodoro K1
+- Run `research/experiments/pomodoro-v4-cross-domain/` from the validated Pomodoro K1
   baseline.
 - Review D4 auto-completion conflict and require treatment to record `revise`
   and implement the pre-registered D5 focus-session count.
@@ -45,7 +45,7 @@ state rather than a presentation filter.
 ## Active Task Slice
 
 ```text
-task010 [x] goal:<cross-domain validation of compatible revise> | scope:<experiments/pomodoro-v4-cross-domain> | verify:<D4/D5 fixed + pre-edit Kernel/State/Evidence + control R6 contradiction + treatment R1–R13 + cost>
+task010 [x] goal:<cross-domain validation of compatible revise> | scope:<research/experiments/pomodoro-v4-cross-domain> | verify:<D4/D5 fixed + pre-edit Kernel/State/Evidence + control R6 contradiction + treatment R1–R13 + cost>
 ```
 
 ## Remaining Boundary
@@ -66,6 +66,6 @@ task010 [x] goal:<cross-domain validation of compatible revise> | scope:<experim
 ## Close Result
 
 - The result and bounded decision are recorded in
-  `experiments/pomodoro-v4-cross-domain/RESULTS.md`.
+  `research/experiments/pomodoro-v4-cross-domain/RESULTS.md`.
 - Keep `revise` concrete: preserve the existing invariant/data contract, add
   one named compatible behavior, and prove both old and new contracts.

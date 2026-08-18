@@ -21,7 +21,7 @@ Date: 2026-08-15
 
 Both implementations are native HTML/CSS/JavaScript with no external
 dependencies or network API. Treatment also left a duplicate
-`experiments/room-v4-direct-repro/styles.css` at the experiment root.
+`research/experiments/room-v4-direct-repro/styles.css` at the experiment root.
 
 ## Browser result
 

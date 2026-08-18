@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0.1] — 2026-08-17
+
+- Moved design research, experiment fixtures, and historical model notes under
+  `research/` so the repository root remains operational.
+- Kept the installer allowlist unchanged; initialized user projects do not
+  receive the research archive.
+- Updated experiment and evidence references to the new paths.
+
 ## [4.0.0] — 2026-08-17
 
 SPEC-AGENTS v4 is the first release built around a stable semantic model and a
@@ -64,9 +72,9 @@ statistical samples; several contain control/treatment arms or repeat runs.
 | JSONL ledger pilot | IDs, streams, selection, and supersession worked; JSONL did not reduce fixture bytes or rough tokens | Keep Markdown for stable documents; consider JSONL only for a future high-cardinality dynamic ledger |
 | Ontology graph projection pilot | Typed relations, action/lifecycle gates, impact traversal, provenance, and rejected edges worked in memory | Define ontology semantics before choosing a graph database; do not add one yet |
 
-Detailed primary records live under [`experiments/`](experiments/), including
-the [JSONL results](experiments/jsonl-evidence-pilot/RESULTS.md) and [ontology
-graph results](experiments/ontology-graph-pilot/RESULTS.md).
+Detailed primary records live under [`research/experiments/`](research/experiments/), including
+the [JSONL results](research/experiments/jsonl-evidence-pilot/RESULTS.md) and [ontology
+graph results](research/experiments/ontology-graph-pilot/RESULTS.md).
 
 ## Benefits
 

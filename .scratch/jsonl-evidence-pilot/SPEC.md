@@ -51,7 +51,7 @@ Experimental record fields are:
 
 ## Seams and verification
 
-Run `python3 experiments/jsonl-evidence-pilot/run_pilot.py` and verify:
+Run `python3 research/experiments/jsonl-evidence-pilot/run_pilot.py` and verify:
 
 - both Agent streams parse and merge with unique IDs;
 - phase selection excludes an unrelated record;

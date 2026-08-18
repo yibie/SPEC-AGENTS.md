@@ -17,7 +17,7 @@ The pilot passed all intended checks:
 Command:
 
 ```bash
-python3 experiments/ontology-graph-pilot/run_pilot.py
+python3 research/experiments/ontology-graph-pilot/run_pilot.py
 ```
 
 ## Observations
