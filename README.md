@@ -137,6 +137,107 @@ adds an explicit bridge from stable abstraction to dynamic state, evidence, and
 code: durable principles stay fixed within their boundary while the current
 phase can evolve through a controlled decision.
 
+## Design goals
+
+v4 is organized around three outcomes:
+
+1. **Combine ontology with SPEC.** The project names its concepts, identities,
+   relations, lifecycles, invariants, and Action Contracts before asking an
+   Agent to change code. This is a small semantic model, not a graph database
+   or a formal ontology runtime.
+2. **Make project knowledge iterative and traceable.** A phase can change, but
+   a durable rule changes only through an explicit decision and a verified
+   evidence path. Every promoted rule should be traceable back to the change,
+   verification, and evidence that justified it.
+3. **Prevent drift during long development.** The stable model constrains what
+   an Agent may change; the current SPEC constrains the active slice; Action
+   Contracts and verification expose deviations before they become new project
+   assumptions.
+
+## Ontology × SPEC
+
+Ontology in v4 means the project's working answer to “what exists, how it is
+related, what may change, and what must remain true.” SPEC is the living
+contract that applies that model to one change. The connection is deliberately
+small and human-reviewable:
+
+```text
+stable semantic model (Kernel)
+          ↓ plan / capture
+living SPEC → State → Slice → Code
+                         ↓       ↓
+                      do/check  Evidence
+                         └── learn ──┐
+                                     ↓
+                         promote / revise / reject
+                                     ↓
+                         stable model or next phase
+```
+
+| Layer | What it records | Normal home | Change rule |
+| --- | --- | --- | --- |
+| Kernel | Concepts, identities, relations, lifecycles, invariants, and Action Contracts | `CONTEXT.md`, `docs/adr/`, `docs/protocols/` | A semantic change must pass `plan`; promotion requires verified evidence. |
+| SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.scratch/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
+| State | Current phase, slice, blocker, verification status, and next permitted action | `STATUS.md` and local issue state | Changes with execution; it does not redefine the Kernel. |
+| Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
+| Code | The implementation and observable behavior constrained by the contracts | Source, tests, and runtime artifacts | `do` changes code; `check` proves or rejects the result. |
+
+The Kernel is semantic content, not a required file named `KERNEL.md`. The
+experimental K1 artifacts tested this bridge; the default v4 layout keeps the
+stable model in the root documents and avoids adding ontology infrastructure
+until a real impact-analysis need justifies it.
+
+## Knowledge evolution
+
+Facts move through the system without pretending that every observation is a
+new rule:
+
+```text
+change → plan → SPEC / State → code → check → Evidence
+                                      ↓
+                              learn and classify
+                                      ↓
+             local fact | blocker | promote | revise | reject
+```
+
+- A local implementation fact stays in the feature record.
+- A verified concept, identity, relation, lifecycle, or invariant may be
+  promoted to `CONTEXT.md`.
+- A reusable interface or workflow boundary belongs in `docs/protocols/`.
+- A hard-to-reverse trade-off belongs in `docs/adr/`.
+- Current phase state belongs in `STATUS.md` or `ROADMAP.md`; it is not silently
+  promoted into the stable model.
+- A rejected proposal remains visible in Evidence so the same path is not
+  rediscovered as if it were new.
+
+This gives each durable statement a path back to its source change and proof:
+
+```text
+concept / invariant → Action Contract → code → verification → Evidence
+```
+
+## Long-running development and drift control
+
+The workflow is intentionally a constraint system for an Agent, not just a
+filing convention:
+
+1. Start from the authority order: `AGENTS.md`, the stable semantic model and
+   protocols, fresh `EVIDENCE.md`, the confirmed SPEC, then current state.
+2. Keep the goal, unchanged baseline, out-of-scope boundary, and acceptance
+   gate visible in the current SPEC or phase brief.
+3. Require every behavior change to map to an Action Contract, including its
+   precondition, permitted effect, invariant, and verification.
+4. If implementation discovers a semantic conflict, stop `do`; return to
+   `plan` instead of silently changing the model or adding a feature bundle.
+5. Use `reject` for an incompatible proposal. Use `revise` only with one named
+   compatible alternative that preserves the existing data contract.
+6. Finish with `check` and `learn`: record the first failing contract, remaining
+   blocker, and next permitted action before claiming completion.
+
+The result is not immutability. It is controlled change: the project can learn
+without allowing the latest ticket, prompt, or implementation shortcut to
+rewrite its identity and long-term goal.
+
 ## Experiment conclusions
 
 By v4.0.0, the repository had recorded nine v3/v4 and Kernel phases plus two
@@ -313,6 +414,94 @@ plan -> do -> check -> learn
 
 因此，v4 不是简单把 v2 或 v3 换一套文件名，而是补上“静态抽象—动态状态—
 证据—代码”的演进桥接：大原则保持稳定，当前阶段可以在明确边界内修改。
+
+### 设计目标
+
+v4 围绕三个结果设计：
+
+1. **将本体论与 SPEC 结合。** 在要求 Agent 修改代码前，先明确项目中的概念、
+   身份、关系、生命周期、不变量和 Action Contract。这是小型、可人工审查的
+   语义模型，不是图数据库或正式本体运行时。
+2. **让项目知识可迭代、可追踪。** 当前 phase 可以变化，但长期规则只能经过
+   明确决策和验证证据改变；每条被提升的规则都应能追溯到产生它的变更、验证和
+   Evidence。
+3. **在长期开发中防止 Agent 偏离目标。** 稳定模型约束 Agent 能改什么，当前
+   SPEC 约束当前切片，Action Contract 和验证则在偏离变成新假设前暴露它。
+
+### 本体论 × SPEC
+
+这里的“本体论”回答的是：项目中有什么、它们如何关联、什么动作可以改变它们、
+哪些条件必须始终成立。SPEC 则把这套模型应用到一次具体变更中。两者之间保持
+足够小，且可以由人审查：
+
+```text
+稳定语义模型（Kernel）
+          ↓ plan / capture
+活的 SPEC → State → Slice → Code
+                         ↓       ↓
+                      do/check  Evidence
+                         └── learn ──┐
+                                     ↓
+                         promote / revise / reject
+                                     ↓
+                         稳定模型或下一阶段
+```
+
+| 层 | 记录什么 | 通常存放位置 | 变更规则 |
+| --- | --- | --- | --- |
+| Kernel | 概念、身份、关系、生命周期、不变量和 Action Contract | `CONTEXT.md`、`docs/adr/`、`docs/protocols/` | 语义变化必须先经过 `plan`；提升长期规则必须有验证证据。 |
+| SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.scratch/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
+| State | 当前 phase、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 issue 状态 | 随执行变化，但不能重新定义 Kernel。 |
+| Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
+| Code | 受契约约束的实现和可观察行为 | 源码、测试和运行产物 | `do` 修改代码，`check` 证明或否定结果。 |
+
+Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件。实验中的 K1
+曾作为临时材料验证这条桥接；v4 默认仍把稳定模型放在根文件中，只有出现真实的
+影响分析需求时，才考虑增加本体基础设施。
+
+### 知识如何迭代
+
+不是每个观察都自动变成长期规则，知识按以下路径流动：
+
+```text
+变更 → plan → SPEC / State → code → check → Evidence
+                                      ↓
+                              learn 并分类
+                                      ↓
+             局部事实 | blocker | promote | revise | reject
+```
+
+- 局部实现事实留在 feature 记录中。
+- 已验证的概念、身份、关系、生命周期或不变量，才可以提升到 `CONTEXT.md`。
+- 可复用的接口或工作流边界放入 `docs/protocols/`。
+- 难以逆转的取舍放入 `docs/adr/`。
+- 当前阶段状态放入 `STATUS.md` 或 `ROADMAP.md`，不能偷偷提升为稳定模型。
+- 被拒绝的方案保留在 Evidence 中，避免未来被当作新想法重复探索。
+
+因此，稳定陈述都应能沿着下面的路径回到它的来源和证明：
+
+```text
+概念 / 不变量 → Action Contract → code → verification → Evidence
+```
+
+### 长期开发中的防漂移
+
+这套流程不是文件归档习惯，而是给 Agent 设置的约束系统：
+
+1. 按权威顺序开始：`AGENTS.md`、稳定语义模型和协议、最新 `EVIDENCE.md`、
+   已确认的 SPEC，最后才是当前 State。
+2. 在当前 SPEC 或 phase brief 中持续保留目标、未改变基线、范围外内容和验收门槛。
+3. 每个行为变化都必须对应 Action Contract，写清前置条件、允许效果、不变量和
+   验证方式。
+4. 实现中发现语义冲突时停止 `do`，回到 `plan`，不能偷偷改变模型或顺手加入一组
+   未确认的功能。
+5. 不兼容的提议走 `reject`；兼容变化只有在提出一个具体的 `revise` 方案并保持
+   原有数据契约时才继续。
+6. 用 `check` 和 `learn` 收尾：在声称完成前记录首个失败契约、剩余 blocker 和
+   下一步许可动作。
+
+这不是让项目不可变，而是让变化受控：项目可以学习，但最新 ticket、prompt 或
+实现捷径不能悄悄改写项目身份和长期目标。
 
 ### 实验结论（简要）
 
