@@ -9,7 +9,9 @@ description: 对已完成的代码变化做只读验收，检查它是否符合 
 
 ## 固定比较基点
 
-确定一个比较基点，读取变更相关的 `SPEC.md`、`CONTEXT.md`、Protocol、`AGENTS.md` 和 issue。不要只凭 diff 猜意图。
+确定一个比较基点，读取变更相关的 `SPEC.md`、`CONTEXT.md`、Protocol、Runbook、
+Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录，不要加载整个
+`docs/`，也不要只凭 diff 猜意图。
 
 ## 两条检查轴
 
@@ -18,6 +20,7 @@ description: 对已完成的代码变化做只读验收，检查它是否符合 
 - 目标、边界和 out-of-scope 是否符合 SPEC；
 - 概念、身份、关系、生命周期和不变量是否符合 CONTEXT；
 - Action Contract 和稳定接口是否符合 Protocol；
+- 相关代码实践、Runbook 前置条件和 Lesson 的 `applies_when` 是否满足；
 - 旧行为是否仍被验证，新行为是否有明确证据。
 
 ### 工程

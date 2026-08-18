@@ -380,3 +380,51 @@ modify production documents or code.
 - `research/experiments/ontology-graph-pilot/ONTOLOGY.md`
 - `research/experiments/ontology-graph-pilot/RUN_PROTOCOL.md`
 - `research/experiments/ontology-graph-pilot/RESULTS.md`
+
+## E-20260817-004 — project knowledge promotion pilot
+
+### Observation
+
+The existing evidence-link sample established a reusable workflow practice:
+`do` and `check` leave `evidence_ref` empty, while `learn` writes the verified
+Evidence ID back to the completed issue. The direct-directory experiment also
+recorded a reusable implementation lesson: an element with `id="reset"`
+shadowed `form.reset()` and caused a valid submit to fail before same-submit
+rendering.
+
+This pilot routed the two facts through the broader project-knowledge model:
+the writer boundary became a Protocol, and the scoped DOM failure became a
+Lesson with status, scope, applicability, source, and verification fields.
+The model now also has explicit destinations and templates for Runbooks and
+Lessons; no graph, schema, or application code was added.
+
+### Interpretation
+
+The existing Evidence → `learn` → `plan` → promotion → `check` loop can manage
+development practices and implementation experience as well as domain
+semantics, provided that each record remains scoped and evidence-linked. A
+Lesson is not automatically a project-wide invariant, and a Runbook must carry
+preconditions, verification, and recovery information.
+
+### Recommended next action
+
+Use the new routing on one real project's coding convention and one operational
+runbook before adding more knowledge classes or automation. Keep the default
+context minimal and load these records by intent.
+
+### Verification
+
+- `git diff --check` passed.
+- Local Markdown/HTML links resolve after adding `docs/runbooks/` and
+  `docs/lessons/`.
+- `bash -n bin/spec-agents` passed; the installer remains an explicit allowlist.
+- The protocol and lesson reference the existing E-20260816-003 writer evidence
+  and the archived direct-directory browser result rather than inventing a new
+  application claim.
+
+### References
+
+- `CONTEXT.md` — Knowledge Classes and project knowledge relations
+- `docs/protocols/knowledge-promotion.md`
+- `docs/lessons/dom-native-api-shadowing.md`
+- `research/experiments/room-v4-direct-repro/RESULTS.md`

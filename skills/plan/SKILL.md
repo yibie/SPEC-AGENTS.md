@@ -30,6 +30,9 @@ need:
 unchanged_baseline:
 old_definition:
 new_definition:
+knowledge_class: semantic | decision | protocol | runbook | lesson | state
+scope:
+applies_when:
 identity_and_relations:
 lifecycle_and_invariants:
 action_contracts:

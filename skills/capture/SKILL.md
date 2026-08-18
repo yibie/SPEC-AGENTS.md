@@ -11,7 +11,7 @@ description: 将已经确认的多上下文设计记录成可交接、可受控�
 
 - `plan` 已结束并得到 `approve`、`compatible revise` 或明确的 `plan-only` 执行授权。
 - 设计需要跨多个上下文，或必须交给之后的 agent 继续。
-- `CONTEXT.md`、相关 ADR 和 Protocol 已被读取；冲突回到 `plan`。
+- `CONTEXT.md`、相关 ADR、Protocol、Runbook 和 Lesson 已被读取；冲突回到 `plan`。
 
 ## 写入位置
 

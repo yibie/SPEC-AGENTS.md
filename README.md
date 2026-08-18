@@ -40,8 +40,9 @@ for the current decision.
   pre-splitting distant roadmap work.
 - **Six action skills**: `plan`, `capture`, `arrange`, `do`, `check`, and
   `learn` are the project's own contracts.
-- **Durable boundaries**: `docs/adr/` and `docs/protocols/` hold long-lived
-  decisions and stable interfaces.
+- **Project knowledge beyond code**: `docs/adr/`, `docs/protocols/`,
+  `docs/runbooks/`, and `docs/lessons/` preserve decisions, practices,
+  operations, and experience.
 
 ## Installation
 
@@ -78,6 +79,8 @@ UPGRADE.md
 docs/
   adr/
   protocols/
+  runbooks/
+  lessons/
 archive/
 skills/
   plan/ capture/ arrange/ do/ check/ learn/
@@ -216,6 +219,23 @@ This gives each durable statement a path back to its source change and proof:
 concept / invariant → Action Contract → code → verification → Evidence
 ```
 
+## Project knowledge beyond code
+
+The project model covers more than source behavior:
+
+| Knowledge | Example | Home |
+| --- | --- | --- |
+| Practice | coding style, review, testing, and collaboration conventions | `docs/protocols/` |
+| Operation | deployment, release, rollback, incident response, and environment setup | `docs/runbooks/` |
+| Lesson | a scoped failure mode, surprising result, or repeated review pattern | `docs/lessons/` |
+
+These records use the same method as semantic knowledge. A record is not
+durable merely because it was written; it needs `status`, `scope`,
+`applies_when`, a source Evidence ID, and a verification path. A lesson remains
+scoped unless `plan` confirms that it should become a project-wide Protocol or
+invariant. The default context stays small: load the relevant record by intent,
+not every file under `docs/`.
+
 ## Long-running development and drift control
 
 The workflow is intentionally a constraint system for an Agent, not just a
@@ -240,10 +260,11 @@ rewrite its identity and long-term goal.
 
 ## Experiment conclusions
 
-By v4.0.0, the repository had recorded nine v3/v4 and Kernel phases plus two
-focused pilots: 11 documented rounds in total. Most were `n=1` per arm, so they
-are bounded protocol evidence, not a statistical proof that one version or model
-is universally better.
+The v4.0.0 design record contains nine v3/v4 and Kernel phases plus two focused
+pilots: 11 documented rounds in that original release record. A later bounded
+project-knowledge promotion pilot is recorded separately in `E-20260817-004`.
+Most rounds were `n=1` per arm, so they are bounded protocol evidence, not a
+statistical proof that one version or model is universally better.
 
 - The initial v3/v4 Pomodoro comparison showed that neither workflow guaranteed
   behavioral verification; v4 classified knowledge more clearly but lacked a
@@ -261,6 +282,9 @@ is universally better.
 - The ontology graph pilot made typed relations, actions, lifecycle gates, and
   provenance useful as an in-memory projection. It did not justify a graph
   database, RDF/OWL/SHACL stack, or generator yet.
+- The project-knowledge pilot promoted one verified workflow practice to a
+  Protocol and one browser failure to a scoped Lesson. It supports the routing
+  method, but does not yet establish retrieval or consistency on a real project.
 
 The current conclusion is a bounded protocol improvement, not a claim of
 general superiority. Full records remain in [`research/`](research/README.md).
@@ -300,9 +324,10 @@ ROADMAP.md
 ```
 
 It reads `EVIDENCE.md` when choosing a phase, checking a failed assumption,
-classifying a blocker, or deciding whether a phase can close. It reads
-`docs/adr/` and `docs/protocols/` only when the affected area points to them,
-and `archive/` only for explicit historical or regression questions.
+classifying a blocker, or deciding whether a phase can close. It reads the
+relevant records in `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
+`docs/lessons/` only when the affected intent points to them, and `archive/`
+only for explicit historical or regression questions.
 
 The old `.phrase/` tree is legacy context, not a second default source of
 truth.
@@ -312,7 +337,8 @@ truth.
 When documents disagree:
 
 1. `AGENTS.md` defines workflow and safety rules.
-2. `CONTEXT.md`, `docs/adr/`, and `docs/protocols/` define durable semantics.
+2. `CONTEXT.md`, `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
+   `docs/lessons/` define durable semantics, practices, operations, and lessons.
 3. Fresh, verified entries in `EVIDENCE.md` define current facts.
 4. A confirmed `.scratch/<feature>/SPEC.md` defines the living feature
    contract.
@@ -484,6 +510,21 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
 概念 / 不变量 → Action Contract → code → verification → Evidence
 ```
 
+### 项目知识不止代码
+
+项目模型还要管理代码之外的知识：
+
+| 知识类型 | 示例 | 归属 |
+| --- | --- | --- |
+| Practice | 代码风格、评审、测试和协作约定 | `docs/protocols/` |
+| Operation | 部署、发布、回滚、故障处理和环境设置 | `docs/runbooks/` |
+| Lesson | 有范围的失败模式、意外结果或反复出现的评审问题 | `docs/lessons/` |
+
+这些记录使用和语义知识相同的方法。写进文件不等于已经成为长期规则；每条记录
+都应有 `status`、`scope`、`applies_when`、来源 Evidence ID 和验证路径。Lesson
+默认只在自己的范围内生效，只有经过 `plan` 确认后，才能提升为全项目 Protocol
+或不变量。默认上下文仍保持最小，只按任务意图加载相关记录，不读取整个 `docs/`。
+
 ### 长期开发中的防漂移
 
 这套流程不是文件归档习惯，而是给 Agent 设置的约束系统：
@@ -505,8 +546,9 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
 
 ### 实验结论（简要）
 
-截至 v4.0.0，仓库记录了 9 个 v3/v4 与 Kernel 阶段、2 个专项 pilot，合计
-11 轮文档化实验；它们多数是 `n=1`，不是统计学意义上的普遍性证明。结论是：
+v4.0.0 的原始设计记录包含 9 个 v3/v4 与 Kernel 阶段、2 个专项 pilot，合计
+11 轮文档化实验；后续的项目知识晋升 pilot 单独记录在 `E-20260817-004`。
+这些轮次多数是 `n=1`，不是统计学意义上的普遍性证明。结论是：
 
 - 初始 v3/v4 Pomodoro 对比显示：两种流程都不能自动保证行为验证；v4 改善了知识分类，但缺少 Kernel 的首次建立门槛。
 - 独立 A/B 中两边都通过同一套 R1–R12，不能据此声称 v4 产出质量有因果优势；不过小型 Kernel 的成本可接受，并确实提供了稳定语义词汇。
@@ -514,6 +556,7 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
   `Kernel -> State -> Evidence -> Code` 追踪：冲突走 `reject`，兼容变化必须提出一个明确的 `revise` 方案，并保持旧不变量。
 - JSONL pilot 验证了 ID、独立流和 supersession，但没有降低该 fixture 的字节数或粗略 token；稳定文档继续使用 Markdown。
 - Ontology graph pilot 证明类型关系、动作、生命周期和 provenance 适合作为内存投影；目前没有足够证据引入图数据库、RDF/OWL/SHACL 或生成器。
+- Project knowledge pilot 将一条已验证的工作流约定提升为 Protocol，将一个浏览器失败提升为有范围的 Lesson；它支持路由方法，但还没有证明真实项目中的检索和一致性效果。
 
 所以，v4 当前得到的是一个有实验边界的协议改进，而不是“某个版本普遍优于另一个版本”的结论。完整记录见 [`research/`](research/README.md)。
 
@@ -529,8 +572,9 @@ ROADMAP.md
 ```
 
 只有在选择下一阶段、检查失败假设、分类 blocker 或判断阶段是否可以关闭时，
-才读取 `EVIDENCE.md`。长期决策和稳定接口分别放在 `docs/adr/` 与
-`docs/protocols/`；`archive/` 只用于明确的历史或回归问题。
+才读取 `EVIDENCE.md`。长期决策、稳定实践、运行手册和经验教训分别按需读取
+`docs/adr/`、`docs/protocols/`、`docs/runbooks/` 和 `docs/lessons/`；`archive/`
+只用于明确的历史或回归问题。
 
 ### 研究归档与安装边界
 

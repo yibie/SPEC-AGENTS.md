@@ -1,27 +1,27 @@
 # STATUS
 
-**Phase**: 14 — Prompt-first Project Upgrade
+**Phase**: 15 — Project Knowledge Promotion
 
 **Status**: Complete
 
 ## Goal
 
-Replace mechanical installer-side migration with one user-confirmed
-`UPGRADE.md` Prompt for projects using the v2 static SPEC or v3 `.phrase`
-architecture.
+Extend the ontology/SPEC method beyond source code so development practices,
+operational procedures, and implementation lessons can be captured, promoted,
+scoped, and revised without enlarging the default context.
 
 ## Scope
 
-- `bin/spec-agents`
-- `AGENTS.md`, `AGENTS_en.md`, `README.md`
-- `CONTEXT.md`, `EVIDENCE.md`, `ROADMAP.md`, `STATUS.md`, `UPGRADE.md`
-- `.scratch/upgrade-prompt/`
+- `CONTEXT.md`, `AGENTS.md`, `AGENTS_en.md`
+- `README.md`, `EVIDENCE.md`, `ROADMAP.md`, `STATUS.md`
+- `skills/plan/`, `skills/do/`, `skills/check/`, `skills/learn/`
+- `docs/README.md`, `docs/protocols/`, `docs/runbooks/`, `docs/lessons/`
 
 ## Out of scope
 
 - Application code and experiment sandboxes.
-- Formal ontology infrastructure.
-- Rewriting the historical protocol-cost benchmark.
+- Formal ontology infrastructure, graph storage, and automatic promotion.
+- A real-project Runbook or coding-practice trial.
 
 ## Completed tasks
 
@@ -35,14 +35,20 @@ task018 [x] goal:<remove permanent legacy mode> | scope:<bin/spec-agents> | veri
 task019 [x] goal:<prepare v2/v3 upgrade path> | scope:<bin/spec-agents> | verify:<v2/v3/mixed/conflict fixtures>
 task020 [x] goal:<record upgrade verification and phase result> | scope:<AGENTS.md, AGENTS_en.md, README.md, CONTEXT.md, EVIDENCE.md, STATUS.md, ROADMAP.md> | verify:<full upgrade harness>
 task021 [x] goal:<replace mechanical migration with upgrade Prompt> | scope:<UPGRADE.md, bin/spec-agents, AGENTS.md, AGENTS_en.md, README.md, CONTEXT.md> | verify:<prompt content + modern install + legacy pointer>
+task022 [x] goal:<define project knowledge classes and routing> | scope:<CONTEXT.md, AGENTS.md, AGENTS_en.md, docs/> | verify:<knowledge classes + status/scope/applicability/source/verification contract>
+task023 [x] goal:<promote one practice and one scoped lesson> | scope:<docs/protocols/knowledge-promotion.md, docs/lessons/dom-native-api-shadowing.md, EVIDENCE.md> | verify:<E-20260817-004 + link/format checks>
 ```
 
 ## Acceptance
 
-- Modern installation is the only fresh-install path.
-- `UPGRADE.md` handles v2 and v3 source layouts with user confirmation.
-- The installer never moves, deletes, archives, or summarizes old material.
-- English guidance and README point legacy projects to the Prompt.
+- `CONTEXT.md` defines Knowledge Classes and their project-knowledge relations.
+- Protocols, Runbooks, and Lessons have explicit destinations and promotion
+  fields without becoming default context.
+- One verified workflow practice and one scoped implementation Lesson are
+  promoted with source Evidence and verification paths.
+- Both language entry points and the four affected skills route knowledge by
+  intent and preserve the `learn` writer boundary.
+- No application or experiment sandbox changes.
 
 ## Blockers
 
@@ -51,11 +57,12 @@ and its user guidance.
 
 ## Previous phase result
 
-Phase 13 tested a mechanical upgrade CLI. Phase 14 supersedes it with a
-user-confirmed Prompt; the earlier evidence remains historical in
-`EVIDENCE.md`.
+Phase 14 established the Prompt-first v2/v3 upgrade boundary. Its evidence
+remains historical in `EVIDENCE.md`; this phase extends the model without
+changing that migration boundary.
 
 ## Current phase handoff
 
-Phase 14 is closed. Evidence is recorded in `E-20260817-001`. The next permitted
-action is one real-project Prompt run; no application code changes are implied.
+Phase 15 is closed. Evidence is recorded in `E-20260817-004`. The next permitted
+action is one real-project Runbook and coding-practice routing trial; no
+application code changes are implied.

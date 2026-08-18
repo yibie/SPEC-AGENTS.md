@@ -27,20 +27,39 @@ description: 将已验证的观察记录为证据，并判断哪些学习应提�
 `EVIDENCE.md`，验证写入成功后，再把同一个 ID 回写 issue。不要在验证前
 预填链接；`learn` 是唯一写入者。
 
-## 判断提升层级
+## 判断知识类别与提升层级
 
 - 只影响当前任务：留在 issue/SPEC，不提升。
-- 可复用的事实、失败假设或验证结果：追加 `EVIDENCE.md`。
+- 可复用但尚未成为规则的事实、失败假设或验证结果：追加 `EVIDENCE.md`。
 - 稳定概念、身份、关系、生命周期或不变量：经 `plan` 确认后更新 `CONTEXT.md`。
 - 稳定接口、状态转换或 Action Contract：经 `plan` 确认后更新 `docs/protocols/`。
+- 稳定的开发、评审、测试或协作约定：经 `plan` 确认后更新
+  `docs/protocols/`。
+- 带前置条件、验证和恢复路径的重复操作：经 `plan` 确认后更新
+  `docs/runbooks/`。
+- 有明确适用范围的失败教训或重复模式：经 `plan` 确认后更新
+  `docs/lessons/`；不要把 scoped lesson 直接写成全局不变量。
 - 难以逆转、出乎预期且源于真实取舍的决定：创建 `docs/adr/` 中的 ADR。
 - 当前阶段状态、阻塞项或下一步改变：更新 `STATUS.md`；阶段方向改变才更新 `ROADMAP.md`。
+
+每个提升后的记录都必须写明：
+
+```text
+status | scope | applies_when | source Evidence ID | verification
+```
+
+如果替代或冲突了旧知识，还要写 `supersedes` 或 `contradicts`。只把知识
+放进“看起来合适”的目录，不算完成晋升。
 
 ## 安全边界
 
 - 未验证的猜测不进入长期文档。
 - 不因一次通过就宣称一般性改进；写清样本、成本、限制和浏览器/环境边界。
 - 与现有不变量冲突时，先让 `plan` 产生 `revise` 或 `reject`，再修改静态模型。
+- `check` 只验证；`learn` 是追加 Evidence、提升知识和回写 `evidence_ref`
+  的唯一动作。
+- Runbook 和 Lesson 必须有适用条件；不能因为一次成功或一次失败就扩大
+  适用范围。
 - 不创建正式本体 schema、图数据库、生成器或同步基础设施，除非另开 phase 并有证据支持。
 
 ## 完成条件

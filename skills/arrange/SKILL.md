@@ -9,7 +9,7 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 
 ## 读取
 
-读取当前 feature 的 `SPEC.md`、相关 `CONTEXT.md`、ADR、Protocol 和现有 issue。只查当前 phase 的范围；不要把 roadmap 的远期内容提前拆出来。
+读取当前 feature 的 `SPEC.md`、相关 `CONTEXT.md`、ADR、Protocol、Runbook、Lesson 和现有 issue。只查当前 phase 的范围；不要把 roadmap 的远期内容提前拆出来。
 
 ## 切片规则
 

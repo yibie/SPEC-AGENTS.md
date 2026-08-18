@@ -14,9 +14,11 @@ ROADMAP.md
 ```
 
 Read `EVIDENCE.md` when choosing a phase, checking a failed assumption,
-classifying a blocker, or deciding whether a phase can close. Read `docs/adr/`
-and `docs/protocols/` when the affected area points to them. Read `archive/`
-only for an explicit historical or regression question.
+classifying a blocker, or deciding whether a phase can close. Read the relevant
+record under `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, or
+`docs/lessons/` when the intent points to it; do not load every knowledge class
+by default. Read `archive/` only for an explicit historical or regression
+question.
 
 The old `.phrase/` tree is legacy context. Read it only for migration,
 regression comparison, or explicit history; do not use it as a second default
@@ -31,8 +33,8 @@ does not infer or archive project knowledge.
 When sources conflict, use this order:
 
 1. `AGENTS.md` for workflow and safety rules.
-2. `CONTEXT.md`, `docs/adr/`, and `docs/protocols/` for durable semantics and
-   boundaries.
+2. `CONTEXT.md`, `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
+   `docs/lessons/` for durable semantics, practices, operations, and lessons.
 3. Fresh, verified entries in `EVIDENCE.md`.
 4. A confirmed `.scratch/<feature>/SPEC.md`.
 5. `STATUS.md` for current state.
@@ -87,7 +89,7 @@ publishing it. Leave `evidence_ref` empty until `learn` records verification.
 ### `do`
 
 Use for one ready, unblocked slice or a settled small change. Read the relevant
-SPEC, CONTEXT, Protocol, tests, and callers. Make the smallest working change,
+SPEC, CONTEXT, Protocol, Runbook, Lesson, tests, and callers. Make the smallest working change,
 run the required checks, and update only the local issue status and verification
 summary. Keep `evidence_ref` empty and do not write root Evidence. If semantics
 conflict, stop and return to `plan`.
@@ -104,11 +106,14 @@ empty, and return required fixes to `do`.
 
 Use after verification, a failed assumption, a blocker, or a phase boundary.
 Append observation, interpretation, recommended next action, and verification
-to `EVIDENCE.md`. Promote only verified, reusable knowledge: concepts and
-invariants to `CONTEXT.md`, stable interfaces to `docs/protocols/`, hard-to-
-reverse trade-offs to `docs/adr/`, and current state to `STATUS.md`. If an issue
+to `EVIDENCE.md`. Classify verified reusable knowledge before promoting it:
+concepts and invariants to `CONTEXT.md`, stable development agreements to
+`docs/protocols/`, repeatable operations to `docs/runbooks/`, scoped failures
+and practices to `docs/lessons/`, hard-to-reverse trade-offs to `docs/adr/`,
+and current state to `STATUS.md`. Every promoted record names its status,
+scope, applicability, source Evidence ID, and verification path. If an issue
 has `evidence_ref`, append the Evidence ID first, then write the same ID back to
-the issue; `learn` is the only writer.
+the issue; `learn` is the only writer and promoter.
 
 ## Static and dynamic model
 
@@ -118,7 +123,9 @@ implementation plan.
 
 `STATUS.md` is the current state pointer. `EVIDENCE.md` is an append-only
 decision-relevant ledger. `SPEC.md` is a living feature contract below the
-durable model and above its issues. Issues are execution state, not ontology.
+durable model and above its issues. `docs/protocols/`, `docs/runbooks/`, and
+`docs/lessons/` hold broader project knowledge without becoming default
+context. Issues are execution state, not ontology.
 
 Never let a ticket silently redefine the model. A compatible revision must name
 one concrete alternative, preserve the existing invariant/data contract, and
@@ -147,6 +154,9 @@ written, and durable rules are updated when required.
 - Do not commit secrets, tokens, certificates, or real user data.
 - Treat permissions, configuration, external APIs, and migrations as explicit
   boundaries with verification.
+- Treat coding practices, operational procedures, and lessons as scoped
+  knowledge; do not apply a lesson outside `applies_when`, and do not promote an
+  unverified suggestion into a durable rule.
 - Do not add formal ontology tooling, graph storage, generators, or runtime
   authorization without a new phase and evidence.
 - Do not turn a useful observation into a durable rule without `learn` and the

@@ -240,3 +240,45 @@ user-confirmed `UPGRADE.md` Prompt while keeping the installer minimal.
 Run `UPGRADE.md` against one real v2 or v3 project. Treat the result as a
 semantic migration review, not as proof that the Prompt generalizes to all
 legacy projects.
+
+## Phase 15: Project Knowledge Promotion
+
+**Status**: Complete — bounded knowledge classes promoted
+
+**Goal**: Extend the ontology/SPEC method beyond source code so development
+practices, operational procedures, and implementation lessons can be captured,
+promoted, scoped, and revised without enlarging the default context.
+
+**Entry condition**:
+
+- v4 already has `EVIDENCE.md` and `learn` promotion for semantic knowledge.
+- The user identified coding conventions and implementation experience as
+  unmanaged project knowledge.
+
+**Acceptance gate**:
+
+- `CONTEXT.md` defines Knowledge Classes and their relations without adding a
+  formal ontology schema or graph database.
+- `docs/protocols/`, `docs/runbooks/`, and `docs/lessons/` have clear routing
+  and record requirements.
+- One verified workflow practice is represented as a Protocol and one verified
+  implementation failure is represented as a scoped Lesson.
+- `AGENTS.md`, `AGENTS_en.md`, `plan`, `do`, `check`, and `learn` route and
+  promote these records without loading all documentation by default.
+- No application or experiment sandbox is changed.
+
+**Result**:
+
+- Project knowledge now distinguishes semantic rules, decisions, Protocols,
+  Runbooks, Lessons, Evidence, and State.
+- The evidence-link writer boundary is the first promoted Protocol example.
+- Native form API shadowing is the first scoped Lesson example, with browser
+  verification and an explicit applicability condition.
+- The pilot supports the broader method, but one Protocol and one Lesson do not
+  prove general knowledge-management effectiveness.
+
+**Next phase recommendation**:
+
+Run the routing on one real project's coding convention and one operational
+Runbook. Do not add a knowledge index, graph projection, or automatic promotion
+until that real-project use exposes a measured retrieval or consistency problem.

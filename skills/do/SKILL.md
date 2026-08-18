@@ -9,7 +9,7 @@ description: 执行一个已经批准且未阻塞的工作切片，完成最小�
 
 ## 开始前
 
-读取 `AGENTS.md`、`CONTEXT.md`、`STATUS.md`、相关 `SPEC.md`、一个目标 issue 和必要的 Protocol。确认：
+读取 `AGENTS.md`、`CONTEXT.md`、`STATUS.md`、相关 `SPEC.md`、一个目标 issue 和必要的 Protocol、Runbook、Lesson。确认：
 
 - issue 状态是 `ready` 或已明确授权的 `doing`；
 - 所有 `blocked_by` 已完成；
@@ -28,12 +28,12 @@ description: 执行一个已经批准且未阻塞的工作切片，完成最小�
 
 ## 发现冲突时
 
-发现新的概念、身份、关系、生命周期、不变量或接口冲突时：
+发现新的概念、身份、关系、生命周期、不变量、接口或知识适用范围冲突时：
 
 - 停止扩张实现；
 - 保留可重现的事实和失败验证；
 - 将 issue 标为 `blocked` 或 `stale`；
-- 回到 `plan`，不直接修改 `CONTEXT.md`、ADR、Protocol 或 SPEC。
+- 回到 `plan`，不直接修改 `CONTEXT.md`、ADR、Protocol、Runbook、Lesson 或 SPEC。
 
 ## 完成条件
 
