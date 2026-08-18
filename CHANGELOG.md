@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.0.3] — 2026-08-17
+
+- Expanded the Chinese README with an explicit v2/v3/v4 comparison and a
+  concise summary of the experiment conclusions and limits.
+
 ## [4.0.2] — 2026-08-17
 
 - Updated the Chinese README with the current v4 workflow, default context,
