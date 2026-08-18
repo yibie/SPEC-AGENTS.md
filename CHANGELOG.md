@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.0.2] — 2026-08-17
+
+- Updated the Chinese README with the current v4 workflow, default context,
+  research-archive boundary, and v2/v3 upgrade path.
+
 ## [4.0.1] — 2026-08-17
 
 - Moved design research, experiment fixtures, and historical model notes under

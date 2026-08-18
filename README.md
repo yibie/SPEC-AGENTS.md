@@ -242,6 +242,66 @@ Current fixture result:
 The benchmark remains a historical v3 comparison; it does not define the v4
 default layout.
 
+## 中文说明（当前 v4）
+
+SPEC-AGENTS v4 将稳定的项目语义模型与当前阶段的动态证据分开保存。
+它不是要求 Agent 永远遵守一套不能修改的文档，而是在明确边界的前提下，
+允许通过验证后的证据演进当前阶段和后续规则。
+
+当前工作流是六个动作：
+
+```text
+plan -> capture -> arrange -> do -> check -> learn
+```
+
+最短可行路径是：
+
+```text
+plan -> do -> check -> learn
+```
+
+如果 `plan` 判断没有必要改变，就停止；只有跨多个上下文、需要保留设计契约
+或需要协调多个切片时，才使用 `capture` 和 `arrange`。
+
+### 当前项目文件
+
+普通任务默认读取：
+
+```text
+AGENTS.md
+CONTEXT.md
+STATUS.md
+ROADMAP.md
+```
+
+只有在选择下一阶段、检查失败假设、分类 blocker 或判断阶段是否可以关闭时，
+才读取 `EVIDENCE.md`。长期决策和稳定接口分别放在 `docs/adr/` 与
+`docs/protocols/`；`archive/` 只用于明确的历史或回归问题。
+
+### 研究归档与安装边界
+
+源码仓库中的设计研究和实验记录统一放在
+[`research/`](research/README.md)：
+
+- `research/ontology/`：本体论、Palantir 方法和 SPEC 融合研究；
+- `research/experiments/`：实验 Brief、fixture、运行协议和结果；
+- `research/history/`：旧版系统模型与 v3 EDPP 资料。
+
+这些内容是仓库研究档案，不是用户项目的默认上下文，也不会被
+`bin/spec-agents` 安装到用户项目。安装器只提供运行时所需的根文件、
+`docs/`、`archive/` 和六个 action skills。
+
+### v2/v3 项目升级
+
+旧项目先安装新版入口，再让 Agent 读取 `UPGRADE.md` 并执行升级审查：
+
+```text
+Read UPGRADE.md and execute the upgrade review.
+```
+
+升级由 Agent 重建近期历史、扫描代码架构并请求用户确认；安装器不会自动
+移动、删除或总结旧项目材料。
+
 ## 中文说明（历史 v3 参考）
 
 以下内容保留旧版 v3 的背景说明。出现 `.phrase/` 的地方仅描述 legacy
