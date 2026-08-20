@@ -11,7 +11,9 @@ description: 将已经确认的多上下文设计记录成可交接、可受控�
 
 - `plan` 已结束并得到 `approve`、`compatible revise` 或明确的 `plan-only` 执行授权。
 - 设计需要跨多个上下文，或必须交给之后的 agent 继续。
-- `CONTEXT.md`、相关 ADR、Protocol、Runbook 和 Lesson 已被读取；冲突回到 `plan`。
+- `docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、项目 `KERNEL.md`（若存在）、
+  相关 ADR、Protocol、Runbook 和
+  Lesson 已被读取；冲突回到 `plan`。
 
 ## 写入位置
 
@@ -45,6 +47,10 @@ context_refs:
 ```
 
 记录“已经决定的 what/why/where”，不要把新的取舍藏进 SPEC。实现细节只写到能让后续切片保持一致的程度。
+
+当 SPEC 是 `Kernel Bootstrap` 时，记录 K1 已确认的概念、关系、动作契约和
+不变量，以及待确认的扩展；不要把 K1 复制成第二份长期真相。验证通过后由
+`learn` 更新项目 `KERNEL.md`。
 
 ## 修订
 

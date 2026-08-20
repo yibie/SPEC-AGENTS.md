@@ -1,6 +1,6 @@
 ---
 name: check
-description: 对已完成的代码变化做只读验收，检查它是否符合 SPEC、CONTEXT、Protocol、AGENTS.md 和实际验证要求。适用于实现后验收、回归检查或用户要求审查变更时。
+description: 对已完成的代码变化做只读验收，检查它是否符合 SPEC、项目 KERNEL、WORKFLOW、CONTEXT、Protocol、AGENTS.md 和实际验证要求。适用于实现后验收、回归检查或用户要求审查变更时。
 ---
 
 # Check
@@ -9,8 +9,8 @@ description: 对已完成的代码变化做只读验收，检查它是否符合 
 
 ## 固定比较基点
 
-确定一个比较基点，读取变更相关的 `SPEC.md`、`CONTEXT.md`、Protocol、Runbook、
-Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录，不要加载整个
+确定一个比较基点，读取变更相关的 `SPEC.md`、`docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、项目 `KERNEL.md`、
+Protocol、Runbook、Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录，不要加载整个
 `docs/`，也不要只凭 diff 猜意图。
 
 ## 两条检查轴
@@ -18,7 +18,8 @@ Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录�
 ### 契约
 
 - 目标、边界和 out-of-scope 是否符合 SPEC；
-- 概念、身份、关系、生命周期和不变量是否符合 CONTEXT；
+- 项目概念、身份、关系、生命周期和不变量是否符合 `KERNEL.md`；框架工作流
+  语义是否符合 `docs/spec-agents/WORKFLOW.md` 与 `CONTEXT.md`；
 - Action Contract 和稳定接口是否符合 Protocol；
 - 相关代码实践、Runbook 前置条件和 Lesson 的 `applies_when` 是否满足；
 - 旧行为是否仍被验证，新行为是否有明确证据。
@@ -28,6 +29,15 @@ Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录�
 - 测试、类型、错误处理、安全、可访问性和仓库规范；
 - 是否有重复抽象、死代码、过早配置或超出切片的改动；
 - 是否存在数据丢失、状态泄漏或未覆盖的调用方。
+
+### Version-control axis
+
+- In a JJ repository, use `jj status`, `jj log`, and `jj diff` as the local
+  comparison basis; inspect the current JJ Change and any explicitly named
+  bookmark.
+- In a Git-only repository, use the existing Git comparison basis without
+  pretending that it has JJ change semantics.
+- A check never creates a bookmark, pushes, or initializes JJ.
 
 ## 输出
 
@@ -41,6 +51,10 @@ Lesson、`AGENTS.md` 和 issue。只读取与当前意图相关的知识记录�
 
 如果 issue 有可选的 `evidence_ref`，只判断当前事实是否足以进入
 `learn`；不要填写或修改该字段。
+
+对于 `Kernel Bootstrap`，额外检查：K1 的每条 enacted 记录都有直接来源，
+候选/unknown 没有混入稳定层，且 K1 足以约束当前 Action Contract。发现缺口时
+返回 `plan` 或修订 SPEC，不把猜测写入 Kernel。
 
 ## 完成条件
 

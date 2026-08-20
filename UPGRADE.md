@@ -1,7 +1,7 @@
 # SPEC-AGENTS Upgrade Prompt
 
-Run this prompt after installing the modern SPEC-AGENTS entry points in a
-project that still contains v2 or v3 material:
+Run this prompt after `START.md` routes a project with v2 or v3 material here,
+or after installing the modern SPEC-AGENTS entry points directly:
 
 ```text
 Read UPGRADE.md and execute the upgrade review.
@@ -19,9 +19,13 @@ confirms the candidate model.
 
 ## 1. Read the modern entry points
 
-Read `AGENTS.md`, `CONTEXT.md`, `ROADMAP.md`, `STATUS.md`, and `EVIDENCE.md`
-when they exist. Treat a missing root document as an upgrade finding, not as a
-reason to invent content.
+Read `AGENTS.md`, `docs/spec-agents/WORKFLOW.md`, `CONTEXT.md`, `KERNEL.md`,
+`STATUS.md`, and `EVIDENCE.md` when they exist. Read a root `ROADMAP.md` only
+if the project has one: it is retired material to be migrated, not a current
+entry point. Treat a missing root document as an upgrade
+finding, not as a reason to invent content. If `START.md` already created a
+`KERNEL.md` K1, preserve its confirmed sections and use this review to
+reconcile legacy material around it.
 
 Inspect only the minimum legacy context needed to classify the project:
 
@@ -33,6 +37,83 @@ Inspect only the minimum legacy context needed to classify the project:
 
 Record the classification and source paths before interpreting their meaning.
 
+If the project contains `.jj/`, inspect `jj log`, `jj status`, and the relevant
+`jj diff` before relying on Git commit history. Record JJ Change IDs and
+bookmarks as version-control evidence, while keeping the workflow `Change`
+concept separate. If `.jj/` is absent, use the project's existing Git history;
+do not initialize JJ during upgrade unless the user makes that a separate,
+explicit choice.
+
+### Pre-split SPEC-AGENTS layout
+
+A project installed before the framework namespace split carries framework
+material under project-owned names. Recognise it by all of these together:
+
+- root `CONTEXT.md` opens with the SPEC-AGENTS workflow model — `Change`,
+  `Plan`, `SPEC`, `Slice`, `Evidence`, `Knowledge Classes` — rather than the
+  project's own vocabulary;
+- root `STATUS.md` or `ROADMAP.md` names phases, tasks, or file paths that do
+  not exist in this project — check each named path before believing it;
+- root `EVIDENCE.md` records experiments that belong to the framework rather
+  than to this project;
+- a record under `docs/runbooks/` or `docs/lessons/` cites an Evidence ID that
+  root `EVIDENCE.md` does not contain, or a directory this project does not
+  have;
+- `docs/spec-agents/` is absent.
+
+Two of these can be a coincidence. A filename is never proof on its own — a
+project may legitimately own `CONTEXT.md`, `STATUS.md`, and `EVIDENCE.md`. Read the content and record the paths and the facts that support
+the classification.
+
+When the layout matches, report it and stop for the user. Do not delete
+anything. Present:
+
+1. which root files hold framework material and which hold project material,
+   quoting the line that decides each one;
+2. whether the project had its own `CONTEXT.md` or another context entry point
+   such as `docs/HANDOFF.md`, and where it went — version history usually still
+   has it;
+3. whether the project already has a work index of its own, and whether
+   adopting `STATUS.md` would duplicate it;
+4. the proposed disposition of each file, for the user to approve, reject, or
+   change one at a time.
+
+After confirmation, reinstall the modern entry points to obtain
+`docs/spec-agents/`, then apply the confirmed disposition. Framework leftovers
+are removed only for files the user classified as framework material. Project
+files are never removed by this review, and a conflict between an installed
+document and a project instruction — for example a handoff note that forbids a
+second index of in-flight work — is a question for the user, not something the
+upgrade decides.
+
+### Phase-shaped SPEC-AGENTS layout
+
+A project installed before `Phase` was retired carries a phase model that no
+longer exists. Recognise it by:
+
+- a root `ROADMAP.md`;
+- `STATUS.md` with a `**Phase**:` header, closed phase sections, or
+  `taskNNN` lines;
+- `AGENTS.md` with a "Phase and task discipline" section.
+
+This is not a legacy v2/v3 project and does not need the full reconstruction
+below. Reinstall the modern entry points, then present this conversion for the
+user to approve:
+
+1. Each open `taskNNN` becomes a Slice under the SPEC it belongs to, at
+   `.scratch/<feature>/issues/NN-<slug>.md`. A task with no SPEC needs a `plan`
+   pass before it becomes work — do not invent a SPEC to hold it.
+2. `STATUS.md` is rewritten to list only active SPECs, their blockers, and the
+   next permitted action. Closed phase sections move to `archive/`.
+3. `ROADMAP.md` moves to `archive/`. Its future-intent entries are not migrated
+   anywhere: the repository no longer records intent ahead of work. Show the
+   user what is being dropped and let them decide what still matters.
+4. Phase results already recorded in `EVIDENCE.md` stay where they are. Do not
+   re-record them.
+
+Nothing is deleted. If the project's phases encode something the SPEC model
+cannot hold, stop and ask rather than forcing the conversion.
+
 ## 2. Reconstruct recent project history
 
 For v2, inspect the most recent active phase and its related SPEC, plan, task,
@@ -43,7 +124,7 @@ records and call out conflicts.
 Produce a short, cited account of:
 
 - what the project recently completed;
-- what the current phase is trying to achieve;
+- what the legacy project's current phase was trying to achieve;
 - which decisions still appear durable;
 - which plans or tasks are stale;
 - unresolved blockers, failed assumptions, and verification results;
@@ -58,14 +139,14 @@ Inspect the current codebase before proposing the modern model. Use the
 repository's existing language and boundaries:
 
 - identify entry points, modules, packages, services, and storage boundaries;
-- trace the main callers and data flows for the current phase;
+- trace the main callers and data flows for the work being reconstructed;
 - identify concepts, identities, relations, lifecycles, invariants, and Action
   Contracts visible in code;
 - compare the code structure with the legacy SPEC claims;
 - label every finding `confirmed`, `inferred`, or `unknown` and cite the code
   path that supports it.
 
-Keep this scan bounded to the project area relevant to the current phase. Do
+Keep this scan bounded to the project area the upgrade actually concerns. Do
 not refactor, format, add dependencies, or fix unrelated findings.
 
 ## 4. Write the candidate report and stop
@@ -78,8 +159,9 @@ Create `.scratch/upgrade-review/REPORT.md` with these sections:
 ## Source classification
 ## Recent history
 ## Current code architecture
+## Candidate KERNEL changes
 ## Candidate CONTEXT changes
-## Candidate STATUS and ROADMAP changes
+## Candidate STATUS changes
 ## Evidence to preserve
 ## Conflicts and unknowns
 ## Proposed archive plan
@@ -104,9 +186,14 @@ plan → capture → arrange → do → check → learn
 
 Then:
 
-1. Merge confirmed durable concepts, identities, relations, lifecycles,
-   invariants, and Action Contracts into `CONTEXT.md`.
-2. Rebuild the active phase in `STATUS.md` and phase direction in `ROADMAP.md`.
+1. Merge confirmed project concepts, identities, relations, lifecycles,
+   invariants, and Action Contracts into `KERNEL.md`; keep SPEC-AGENTS workflow
+   semantics in `docs/spec-agents/WORKFLOW.md`. Preserve a Start-created K1
+   unless the user
+   explicitly confirms a `revise` or `reject` decision.
+2. Record the active work in `STATUS.md`: one entry per active SPEC, with its
+   scope, blockers, and next permitted action. Do not create a `ROADMAP.md` and
+   do not record future intent.
 3. Record only decision-relevant history, verification, blockers, rejected
    paths, and next-step facts in `EVIDENCE.md`.
 4. Preserve existing confirmed root content. When a root document conflicts
@@ -125,7 +212,8 @@ Then:
 Before declaring the upgrade complete, prove:
 
 - the confirmed root documents contain the preserved project cognition;
-- `STATUS.md` identifies one active phase and next permitted action;
+- `STATUS.md` identifies the active SPECs and the next permitted action, and
+  contains no closed section;
 - `EVIDENCE.md` contains the migration facts and their sources;
 - the legacy material is recoverable under `archive/` and is no longer in the
   default read path;
@@ -150,3 +238,5 @@ Report:
 
 `UPGRADE.md` is an entry prompt, not a replacement for the living root model.
 After completion, ordinary work follows `AGENTS.md` and the six action skills.
+`START.md` remains the general project bootstrap entry; it routes legacy and
+mixed projects to this Prompt instead of duplicating its migration flow.

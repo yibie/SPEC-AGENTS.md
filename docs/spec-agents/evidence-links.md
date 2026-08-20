@@ -1,9 +1,17 @@
 # Evidence Links
 
+status: active
+scope: newly arranged SPEC slices that need a post-verification Evidence link
+applies_when: a Slice is completed and `learn` has a verified Evidence ID to attach
+owner: project maintainer
+source: upstream SPEC-AGENTS Evidence `E-20260816-003`; the evidence-link writer smoke pass
+verification: confirm `arrange` creates an empty field, `do` and `check` leave it empty, and only `learn` writes a stable Evidence ID
+
 ## Contract
 
 An issue may carry one optional `evidence_ref` after its verification has been
-recorded. The value is a stable Evidence ID such as `E-20260816-001`.
+recorded. The value is a stable Evidence ID in this project's own `EVIDENCE.md`, in the
+form `E-YYYYMMDD-NNN`.
 
 ## Ownership
 

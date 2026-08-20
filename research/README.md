@@ -7,6 +7,8 @@ SPEC-AGENTS v4. It is repository history, not an installation payload.
 
 - `ontology/` — ontology, Palantir, and SPEC-fusion research plus the prototype.
 - `experiments/` — experiment briefs, fixtures, protocols, and result reports.
+  The project-knowledge routing pilot is the current record for Protocol,
+  Runbook, and scoped-Lesson selection.
 - `history/` — earlier system-model and EDPP notes retained for comparison.
 
 ## Reading rule

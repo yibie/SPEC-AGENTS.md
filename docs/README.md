@@ -4,6 +4,10 @@
 and the current feature SPEC. It is part of the repository's cognition, but it
 is not all default context for every task.
 
+`docs/spec-agents/` is the exception: it holds SPEC-AGENTS doctrine, is written
+only by the installer, and is not this project's knowledge. Everything described
+below belongs to this project.
+
 ## Knowledge classes
 
 - `adr/` — decisions and hard-to-reverse trade-offs.

@@ -428,3 +428,359 @@ context minimal and load these records by intent.
 - `docs/protocols/knowledge-promotion.md`
 - `docs/lessons/dom-native-api-shadowing.md`
 - `research/experiments/room-v4-direct-repro/RESULTS.md`
+
+## E-20260817-005 — project knowledge routing trial
+
+### Observation
+
+The first contract pass found that the existing DOM Lesson and two existing
+Protocol records were readable by humans but missing one or more required
+top-level knowledge fields. The records were minimally repaired before the
+trial continued. The bounded routing trial then passed: a temporary shell
+change passed the control syntax check; the treatment also passed `git
+diff --check`, two isolated installer copy runs, existing-file preservation,
+and source-repository refusal. Shell intent selected the shell Protocol and
+installer Runbook; browser-form intent selected only the browser Lesson.
+
+### Interpretation
+
+Project knowledge management provides a useful validation boundary in addition
+to a filing convention: it detects incomplete durable records and makes
+preconditions, verification, recovery, and applicability executable. The
+relevant records added 2,584 bytes to the 30,261-byte default context in this
+repository. This is routing and repeatability evidence, not a causal claim
+about Agent quality.
+
+### Recommended next action
+
+Keep intent-routed Protocols, Runbooks, and scoped Lessons. Apply the same
+pattern to one real user-project change with a non-trivial practice or recovery
+path before considering an index, graph projection, automatic promotion, or
+multi-Agent ownership model.
+
+### Verification
+
+`python3 research/experiments/project-knowledge-routing-pilot/run_pilot.py`
+passed metadata, routing, temporary shell, installer-repeatability, and
+source-refusal checks. `git diff --check` and the local shell syntax check
+passed. The runner wrote no repository files and removed all temporary
+fixtures.
+
+### References
+
+- `research/experiments/project-knowledge-routing-pilot/BRIEF.md`
+- `research/experiments/project-knowledge-routing-pilot/RUN_PROTOCOL.md`
+- `research/experiments/project-knowledge-routing-pilot/RESULTS.md`
+- `docs/protocols/shell-change-validation.md`
+- `docs/runbooks/installer-smoke.md`
+
+## E-20260817-006 — JJ workflow integration
+
+### Observation
+
+The current SPEC-AGENTS repository has Git metadata but no `.jj/`; no automatic
+initialization was performed. JJ `0.44.0` is installed locally. A disposable
+Git repository was initialized in colocated mode with `jj git init --colocate`.
+The smoke run created and described a JJ Change, inspected it with `jj status`,
+`jj log`, and `jj diff`, exercised `jj new` followed by `jj undo`, and created a
+local bookmark. It did not push to a remote because the fixture had no remote.
+
+The installer smoke passed two isolated copy installs, existing-file
+preservation, the source-repository refusal, and the presence of the new JJ
+Protocol/Runbook. `bash -n`, the Git-only `git diff --check`, Markdown local
+link/metadata checks, and the no-auto-init check passed as well.
+
+### Interpretation
+
+The six-action workflow can use JJ as a version-control layer without making
+version state the semantic authority. Qualifying the term `JJ Change` avoids a
+collision with the existing workflow `Change`; SPEC and Slice remain the source
+of intent, while JJ records implementation state. The Git bridge preserves
+remote interoperability, and the explicit setup gate prevents an installer or
+agent from changing repository history silently.
+
+This is bounded CLI and documentation evidence in a disposable local
+repository. It does not establish remote push behavior, cross-host bookmark
+conventions, multi-Agent coordination, or a general productivity improvement.
+
+### Recommended next action
+
+When the user explicitly selects a real project, run the JJ setup Runbook and
+record its project-specific change/SPEC traceability. Keep automatic
+initialization, history migration, and multi-Agent bookmark orchestration out
+of scope until that use exposes a measured need.
+
+### Verification
+
+- JJ disposable smoke: `jj git init --colocate`, `jj status`, `jj describe`,
+  `jj log`, `jj diff`, `jj new`, `jj undo`, and bookmark creation passed.
+- `bash -n bin/spec-agents` and `bash -n link_to_system.sh`: pass.
+- Git-only repository: `git diff --check`: pass.
+- Local Markdown link and Protocol/Runbook metadata checks: pass.
+- Installer smoke: two copy installs, existing-file preservation, and source
+  repository refusal: pass.
+- Current SPEC-AGENTS repository remains without `.jj/`.
+
+### References
+
+- `.scratch/jj-workflow/SPEC.md`
+- `.scratch/jj-workflow/issues/01-jj-model-and-routing.md`
+- `.scratch/jj-workflow/issues/02-jj-docs-and-operations.md`
+- `.scratch/jj-workflow/issues/03-jj-validation-and-evidence.md`
+- `docs/protocols/jj-change-management.md`
+- `docs/runbooks/jj-project-setup.md`
+
+## E-20260818-007 — Start project bootstrap entry
+
+### Observation
+
+The six-action workflow and `UPGRADE.md` had no single report-first entry for a
+project that was new to SPEC-AGENTS or missing current cognition. The new
+`START.md` Prompt classifies `modern`, `legacy`, `mixed`, `missing-entry`, and
+`blocked` states, records version-control markers without changing them, writes
+`.scratch/start/REPORT.md`, and stops for user confirmation. Confirmed modern
+projects route to `plan`; legacy or mixed projects route to `UPGRADE.md`; a
+missing-entry project receives installation guidance.
+
+The installer now copies `START.md` and preserves an existing copy on repeat
+installation. Four disposable route fixtures selected the expected routes.
+Shell syntax, Markdown links/content, installer repeatability, source-repository
+refusal, and the current repository's no-`.jj` boundary passed.
+
+### Interpretation
+
+Start reduces the cognitive cost of entering the workflow without adding a
+seventh action or allowing startup to become an unreviewed migration engine.
+The confirmation gate separates project reconnaissance from durable cognition;
+the existing six actions remain responsible for any bootstrap cutover and all
+subsequent changes. Routing legacy projects to `UPGRADE.md` keeps one migration
+authority.
+
+This is bounded prompt and fixture evidence. It does not establish that a
+single report is sufficient for every project, nor does it test a real user's
+semantic confirmation or a full v2/v3 cutover.
+
+### Recommended next action
+
+Run `START.md` on one real, user-selected project. Review its report with the
+user and measure whether the handoff to `plan` preserves the project's durable
+concepts, current state, and verification boundaries.
+
+### Verification
+
+- Start route matrix: modern → `plan`, legacy/mixed → `UPGRADE.md`,
+  missing-entry → installation guidance: pass.
+- `bash -n bin/spec-agents` and `git diff --check`: pass.
+- Installer smoke: two installs, existing-file preservation, `START.md`
+  presence, and source-repository refusal: pass.
+- Local Markdown link/content/state checks: pass.
+- Current SPEC-AGENTS repository remains without `.jj/` and no application code
+  changed.
+
+### References
+
+- `START.md`
+- `.scratch/start-command/SPEC.md`
+- `.scratch/start-command/RUN_PROTOCOL.md`
+- `.scratch/start-command/issues/01-start-model-and-prompt.md`
+- `.scratch/start-command/issues/02-start-install-and-guide.md`
+- `.scratch/start-command/issues/03-start-route-verification.md`
+
+## E-20260819-008 — first-run project Kernel bootstrap
+
+### Observation
+
+The prior Start implementation stopped after writing `.scratch/start/REPORT.md`.
+On the selected real `md-mode` project, the report correctly reconstructed the
+Emacs package architecture and recorded 203 passing ERT tests, but no project
+ontology file existed. The revised Start boundary now creates an absent
+project `KERNEL.md` as a confirmed-only `K1` before waiting for confirmation;
+the SPEC-AGENTS `CONTEXT.md` remains the framework model.
+
+The `md-mode` fixture received a new `KERNEL.md` containing source authority,
+edit/render views, source-preserving relations, action contracts, invariants,
+architecture boundaries, and cited source/test paths. Its existing application
+files, tests, README, dependencies, configuration, and Git history were not
+changed. The Start report was updated with the Kernel bootstrap result and
+route `modern with KERNEL.md K1 → plan`.
+
+### Interpretation
+
+The first-run Kernel is not a later documentation upgrade. It is the stable
+semantic floor that makes the subsequent `plan` meaningful. User confirmation
+still controls inferred additions, conflicts, and revisions, but it no longer
+leaves a newly onboarded project without static ontology. Existing Kernels are
+preserved and challenged through `plan`; the installer does not create a
+generic empty Kernel.
+
+This is one real-project bootstrap sample plus disposable boundary fixtures.
+It demonstrates the write boundary and traceability path, not general ontology
+quality or a causal improvement in Agent behavior.
+
+### Recommended next action
+
+Run `plan` in `md-mode` using `KERNEL.md` as the project semantic authority,
+confirm the inferred terms and any missing release/recovery knowledge, then
+make one small non-application documentation or coding change before deciding
+whether K1 needs revision.
+
+### Verification
+
+- Fresh fixture: confirmed-only `KERNEL.md` K1 created; application file stayed
+  byte-for-byte unchanged.
+- Existing-Kernel fixture: sentinel `KERNEL.md` preserved byte-for-byte.
+- Legacy and mixed fixtures: K1 created or preserved while route remained
+  `UPGRADE.md`.
+- Insufficient-evidence fixture: no empty Kernel created; route remained
+  `kernel-unavailable`.
+- Installer smoke: repeat install preserves `START.md`, does not install a
+  generic `KERNEL.md`, and source-repository refusal passes.
+- `bash -n bin/spec-agents`, `bash -n link_to_system.sh`, `git diff --check`,
+  and local Markdown-link checks pass.
+- `md-mode` application source and tests have no tracked diff.
+
+### References
+
+- `START.md`
+- `CONTEXT.md`
+- `.scratch/start-command/SPEC.md` revision 2
+- `.scratch/start-command/RUN_PROTOCOL.md`
+- `.scratch/start-command/issues/04-kernel-bootstrap.md`
+- `/Users/chenyibin/Documents/prj/md-mode/KERNEL.md`
+- `/Users/chenyibin/Documents/prj/md-mode/.scratch/start/REPORT.md`
+
+## 2026-08-20 — installer shipped repository instance state (E-20260820-001)
+
+### Observation
+
+A field report from a managed project showed `spec-agents init` writing this
+repository's own working state into the target. Reproduced in a temporary
+directory against the pre-fix installer: the target received `STATUS.md` naming
+Phase 19, `task031`, and `bin/spec-agents`; `ROADMAP.md` with 481 lines of this
+repository's phase history; `EVIDENCE.md` with 650 lines of this repository's
+experiments; `docs/runbooks/installer-smoke.md`, a procedure for a `bin/` the
+target does not have; and `docs/lessons/dom-native-api-shadowing.md`, whose
+Evidence ID and `research/` references were not installed with it. Five of the
+installed files matched a scan for this repository's own markers.
+
+Two further defects were found by reading `bin/spec-agents` rather than from
+the report. `install_dir_contents` enumerated `docs/`, so any file added to a
+scanned directory would ship automatically. Under `--link`, a state document in
+the target became a symlink to this repository's copy, so the managed project's
+first status write would have overwritten the framework source. The link defect
+had not fired in the field yet.
+
+The same report showed root `CONTEXT.md` claimed by three parties at once: the
+project's business glossary, another skill collection's convention, and this
+framework's workflow model.
+
+### Interpretation
+
+The repository had no boundary between material that is true for every managed
+project and material that is this repository's own state. The installer could
+only copy live files because no templates existed, and an allowlist was never
+written because directory enumeration appeared to work.
+
+Naming is part of the same boundary. A framework that occupies `CONTEXT.md`,
+`STATUS.md`, `ROADMAP.md`, and `EVIDENCE.md` in the project root is competing
+with the project for names it may already use.
+
+### Recommended next action
+
+Doctrine and Instance are now explicit concepts in
+`docs/spec-agents/WORKFLOW.md`, and the installer emits Doctrine only, through
+an explicit allowlist. The boundary is guarded by the leakage assertion in the
+installer smoke Runbook rather than by review attention.
+
+Run the pre-split migration section of `UPGRADE.md` against one real project
+that was installed before this change, and record what the classification step
+gets wrong before trusting it broadly.
+
+### Verification
+
+- `bash -n bin/spec-agents` and `git diff --check` pass.
+- Installed set is exactly the doctrine allowlist; the absent set contains no
+  `STATUS.md`, `ROADMAP.md`, `EVIDENCE.md`, `KERNEL.md`, `archive/`, or project
+  knowledge-class directory.
+- Leakage assertion passes: no installed file names this repository's phases,
+  tasks, scripts, research, or Evidence, except on lines explicitly labelled as
+  upstream Evidence.
+- `--link` assertion passes: `AGENTS.md` is a symlink, `CONTEXT.md` is a
+  regular file.
+- Every relative Markdown link in the installed payload resolves inside the
+  target.
+- Repeat install keeps four existing files; source-repository install is
+  refused.
+- The leakage assertion fails against the pre-fix installer, which is what
+  produced the reproduction above.
+
+### References
+
+- `docs/adr/0001-framework-namespace-split.md`
+- `docs/runbooks/installer-smoke.md`
+- `docs/spec-agents/WORKFLOW.md`
+- `templates/CONTEXT.md`
+- `.scratch/framework-namespace-split/SPEC.md`
+
+## 2026-08-20 — Phase carried two jobs and lost the first (E-20260820-002)
+
+### Observation
+
+A question about `learn` still referencing `ROADMAP.md` led to a count of what
+the phase model was actually holding. `ROADMAP.md` held eleven phases across
+481 lines. `STATUS.md` held three closed phase sections, despite `AGENTS.md`
+stating that it records only the active phase. `EVIDENCE.md` already contained
+every phase result independently. `STATUS.md` also held 26 `taskNNN` entries
+while `.scratch/<feature>/issues/` held Slice records for the same work, with
+`AGENTS.md` binding `taskNNN` to the active phase.
+
+`Feature` was in use throughout — `.scratch/<feature>/`, the `State`
+definition — but was never a defined Core Concept.
+
+### Interpretation
+
+`Phase` was doing two jobs: bounding a piece of work, and indexing history. The
+second job accumulates by nature, so it displaced the first. The contract
+forbidding history in `STATUS.md` had already been broken three times without
+anyone noticing, which is evidence that the rule was not the constraint — the
+concept was.
+
+The first proposal in the `plan` round was to promote `Feature` to a Core
+Concept. The user rejected it with the right question: what would then
+distinguish `Feature` from `KERNEL.md` as an ontology unit? The answer is that
+no new unit was needed. `SPEC` already bounds work and is already `plan`-gated;
+`KERNEL.md` describes what exists, `SPEC` describes what this work changes.
+Promoting `Feature` would have created a second unit competing for the same
+job.
+
+Recording future intent was the separate half. Direction fixed ahead of work
+drifts from the work, and nothing forces reconciliation.
+
+### Recommended next action
+
+Watch whether `STATUS.md` starts accumulating again under the new contract. The
+previous rule failed silently; the new one has no automated guard, only the
+`learn` completion condition. If it drifts, the next step is a check that
+fails on a closed section rather than another rule.
+
+### Verification
+
+- No live file outside `archive/`, `research/`, `.phrase/`, and `.scratch/`
+  defines or requires `Phase`. Remaining occurrences describe legacy v2/v3
+  material or name phase numbers as an example of instance leakage.
+- `grep -c "task[0-9]" STATUS.md` returns 0; `STATUS.md` is 52 lines with no
+  closed section.
+- `ROADMAP.md` is absent from the root and preserved with the closed `STATUS.md`
+  sections at `archive/roadmap-phases-10-20.md`.
+- `docs/spec-agents/parallel-work.md` carries the required Protocol metadata.
+- `jj workspace add|list|forget|update-stale|root|rename` confirmed present in
+  `jj 0.44.0` before being documented.
+- Installer smoke passes: installed set, absent set, leakage, link mode, link
+  resolution, idempotency, source refusal.
+
+### References
+
+- `docs/adr/0002-retire-phase.md`
+- `docs/spec-agents/parallel-work.md`
+- `archive/roadmap-phases-10-20.md`
+- `.scratch/retire-phase/SPEC.md`

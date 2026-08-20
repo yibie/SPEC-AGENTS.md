@@ -1,7 +1,7 @@
 # SPEC-AGENTS
 
 SPEC-AGENTS v4 is an evidence-calibrated agent workflow with a stable semantic
-model and a living, phase-local execution record.
+model and a living, SPEC-local execution record.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the v4.0.0 experiment record, design
 rationale, measured limits, and release benefits.
@@ -27,16 +27,17 @@ The current workflow uses a six-action loop:
 plan -> capture -> arrange -> do -> check -> learn
 ```
 
-The agent reads the stable model first, then only the phase and evidence needed
+The agent reads the stable model first, then only the state and evidence needed
 for the current decision.
 
 ## Features
 
-- **Stable semantic model**: `CONTEXT.md` records concepts, relations,
-  lifecycles, invariants, and Action Contracts.
-- **Evidence-driven phases**: `EVIDENCE.md` records only facts that change
+- **Stable semantic model**: `KERNEL.md` records the managed project's
+  concepts, relations, lifecycles, invariants, and Action Contracts;
+  `docs/spec-agents/WORKFLOW.md` records SPEC-AGENTS' own workflow semantics.
+- **Evidence-driven decisions**: `EVIDENCE.md` records only facts that change
   future decisions.
-- **Phase-local tasks**: `STATUS.md` coordinates the active slice instead of
+- **SPEC-local slices**: `STATUS.md` coordinates the active slice instead of
   pre-splitting distant roadmap work.
 - **Six action skills**: `plan`, `capture`, `arrange`, `do`, `check`, and
   `learn` are the project's own contracts.
@@ -67,24 +68,36 @@ spec-agents init        # Chinese AGENTS.md by default
 spec-agents init en     # English AGENTS.md
 ```
 
-The modern installer creates:
+The installer emits framework doctrine only:
 
 ```text
 AGENTS.md
-CONTEXT.md
-ROADMAP.md
-STATUS.md
-EVIDENCE.md
+START.md
 UPGRADE.md
+CONTEXT.md          empty skeleton; the file belongs to your project
 docs/
-  adr/
-  protocols/
-  runbooks/
-  lessons/
-archive/
+  spec-agents/
+    README.md
+    WORKFLOW.md
+    parallel-work.md
+    evidence-links.md
+    knowledge-promotion.md
+    jj-change-management.md
+    jj-project-setup.md
 skills/
   plan/ capture/ arrange/ do/ check/ learn/
 ```
+
+Everything else belongs to your project and is created only when there is
+something real to record: `KERNEL.md` by the first `START.md` scan from that
+project's confirmed facts, `STATUS.md` and `EVIDENCE.md` by
+`learn`, and `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, `docs/lessons/`
+when knowledge is promoted into them.
+
+The installer never writes this repository's own state, Evidence, or runbooks
+into your project. If your project already has a context entry point
+such as `docs/HANDOFF.md`, keep it and delete or redirect the `CONTEXT.md`
+skeleton rather than maintaining two.
 
 For an existing v2 or v3 project, install the modern entry points first:
 
@@ -103,9 +116,32 @@ user to confirm the candidate project cognition, and only then archives the old
 `.phrase/` tree. The installer itself does not move, delete, or summarize old
 project material.
 
+## Start a project
+
+After installing the modern entry points, start with:
+
+```text
+Read START.md and execute the start review.
+```
+
+`START.md` reconstructs a bounded project picture and, on the first run, writes
+an absent `KERNEL.md` version `K1` from directly confirmed project facts before
+writing the review report. It waits for user confirmation about candidate
+extensions, then routes a modern project to `plan`, a legacy or mixed project
+to `UPGRADE.md`, and a project missing modern entry points to installation
+guidance. It never overwrites an existing Kernel, modifies application code, or
+initializes JJ automatically.
+
 ## Quick Start
 
-After installation, begin a new project or session by telling the Agent:
+After installation, start a new or unfamiliar project with:
+
+```text
+Read START.md and execute the start review.
+```
+
+For an already bootstrapped project or an ordinary follow-up session, tell the
+Agent:
 
 ```text
 Read AGENTS.md, then follow it for this task.
@@ -127,18 +163,38 @@ plan -> capture -> arrange -> do -> check -> learn
 `plan` may conclude that no change is needed. `capture` and `arrange` are not
 required for a settled one-file fix.
 
+## JJ Version Control
+
+SPEC-AGENTS uses Jujutsu (JJ) as the default local version-control workflow
+when a project contains `.jj/`. The workflow `Change` is a semantic proposal;
+the version-control object is called a `JJ Change`.
+
+```text
+plan / SPEC / Slice → JJ Change → bookmark → Git remote
+```
+
+Use `jj status`, `jj log`, and `jj diff` to inspect; use `jj new`, `jj edit`, and
+`jj describe` to work; use `jj undo` or `jj op log` to recover. Remote
+publication is explicit and uses a bookmark with `jj git push`. Ordinary
+`do`/`check` never push or create a remote bookmark.
+
+Projects without `.jj/` keep their existing Git workflow. SPEC-AGENTS never
+initializes JJ automatically. If the user chooses colocated JJ, follow the
+[JJ project setup Runbook](docs/spec-agents/jj-project-setup.md) and then read the
+[JJ Change Management Protocol](docs/spec-agents/jj-change-management.md).
+
 ## v2, v3, and v4
 
 | Version | Core method | Where knowledge lives | Main boundary |
 | --- | --- | --- | --- |
 | v2 | Static SPEC document chain | `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*` | Static abstractions are explicit, but context and maintenance costs are high, and old plans become noise. |
 | v3 | EDPP, evidence-driven phases | `.phrase/decision.md`, `roadmap.md`, `current.md`, and `evidence.md` | Dynamic evolution is lighter, but phase knowledge is not reliably promoted into a durable semantic model. |
-| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and phase evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; legacy projects use `UPGRADE.md` to reconstruct cognition instead of a mechanical compatibility mode. |
+| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and verified Evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; legacy projects use `UPGRADE.md` to reconstruct cognition instead of a mechanical compatibility mode. |
 
 v4 is therefore not a file rename or a compatibility wrapper around v2/v3. It
 adds an explicit bridge from stable abstraction to dynamic state, evidence, and
 code: durable principles stay fixed within their boundary while the current
-phase can evolve through a controlled decision.
+work can evolve through a controlled decision.
 
 ## Design goals
 
@@ -148,7 +204,8 @@ v4 is organized around three outcomes:
    relations, lifecycles, invariants, and Action Contracts before asking an
    Agent to change code. This is a small semantic model, not a graph database
    or a formal ontology runtime.
-2. **Make project knowledge iterative and traceable.** A phase can change, but
+2. **Make project knowledge iterative and traceable.** Current work can
+   change, but
    a durable rule changes only through an explicit decision and a verified
    evidence path. Every promoted rule should be traceable back to the change,
    verification, and evidence that justified it.
@@ -174,21 +231,22 @@ living SPEC → State → Slice → Code
                                      ↓
                          promote / revise / reject
                                      ↓
-                         stable model or next phase
+                         stable model or next work
 ```
 
 | Layer | What it records | Normal home | Change rule |
 | --- | --- | --- | --- |
-| Kernel | Concepts, identities, relations, lifecycles, invariants, and Action Contracts | `CONTEXT.md`, `docs/adr/`, `docs/protocols/` | A semantic change must pass `plan`; promotion requires verified evidence. |
+| Kernel | Managed-project concepts, identities, relations, lifecycles, invariants, and Action Contracts | project `KERNEL.md`; workflow `docs/spec-agents/WORKFLOW.md` | The first Start may create confirmed-only K1; later semantic changes pass `plan` and require verified evidence. |
 | SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.scratch/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
-| State | Current phase, slice, blocker, verification status, and next permitted action | `STATUS.md` and local issue state | Changes with execution; it does not redefine the Kernel. |
+| State | Active SPECs, slices, blockers, verification status, and next permitted action | `STATUS.md` and local issue state | Changes with execution; it does not redefine the Kernel. |
 | Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
 | Code | The implementation and observable behavior constrained by the contracts | Source, tests, and runtime artifacts | `do` changes code; `check` proves or rejects the result. |
 
-The Kernel is semantic content, not a required file named `KERNEL.md`. The
-experimental K1 artifacts tested this bridge; the default v4 layout keeps the
-stable model in the root documents and avoids adding ontology infrastructure
-until a real impact-analysis need justifies it.
+The first `START.md` run creates the project's `KERNEL.md` when the bounded scan
+finds stable facts. The file is deliberately small and human-readable; it is
+not a formal ontology schema, graph database, generator, or second requirements
+document. `docs/spec-agents/WORKFLOW.md` remains the workflow model for
+SPEC-AGENTS itself, and root `CONTEXT.md` belongs to the project.
 
 ## Knowledge evolution
 
@@ -204,12 +262,14 @@ change → plan → SPEC / State → code → check → Evidence
 ```
 
 - A local implementation fact stays in the feature record.
-- A verified concept, identity, relation, lifecycle, or invariant may be
-  promoted to `CONTEXT.md`.
+- A verified project concept, identity, relation, lifecycle, or invariant may
+  be promoted to the project's `KERNEL.md`; the project's own vocabulary and
+  authority boundaries belong in `CONTEXT.md`; workflow semantics belong in
+  `docs/spec-agents/WORKFLOW.md`.
 - A reusable interface or workflow boundary belongs in `docs/protocols/`.
 - A hard-to-reverse trade-off belongs in `docs/adr/`.
-- Current phase state belongs in `STATUS.md` or `ROADMAP.md`; it is not silently
-  promoted into the stable model.
+- Current work state belongs in `STATUS.md`; it is not silently promoted into
+  the stable model.
 - A rejected proposal remains visible in Evidence so the same path is not
   rediscovered as if it were new.
 
@@ -244,7 +304,7 @@ filing convention:
 1. Start from the authority order: `AGENTS.md`, the stable semantic model and
    protocols, fresh `EVIDENCE.md`, the confirmed SPEC, then current state.
 2. Keep the goal, unchanged baseline, out-of-scope boundary, and acceptance
-   gate visible in the current SPEC or phase brief.
+   gate visible in the current SPEC.
 3. Require every behavior change to map to an Action Contract, including its
    precondition, permitted effect, invariant, and verification.
 4. If implementation discovers a semantic conflict, stop `do`; return to
@@ -261,8 +321,9 @@ rewrite its identity and long-term goal.
 ## Experiment conclusions
 
 The v4.0.0 design record contains nine v3/v4 and Kernel phases plus two focused
-pilots: 11 documented rounds in that original release record. A later bounded
-project-knowledge promotion pilot is recorded separately in `E-20260817-004`.
+pilots: 11 documented rounds in that original release record. Later bounded
+project-knowledge pilots are recorded separately in `E-20260817-004` and
+`E-20260817-005`.
 Most rounds were `n=1` per arm, so they are bounded protocol evidence, not a
 statistical proof that one version or model is universally better.
 
@@ -276,15 +337,22 @@ statistical proof that one version or model is universally better.
   `Kernel -> State -> Evidence -> Code` trace: conflicts use `reject`, while a
   compatible change must name one `revise` alternative and preserve old
   invariants.
+- The first-run Kernel bootstrap correction was exercised on the real `md-mode`
+  project: Start created a confirmed-only `KERNEL.md` K1 before handoff to
+  `plan`, while leaving application code and tests unchanged. This validates
+  the initialization boundary, not general ontology quality.
 - The JSONL pilot validated IDs, independent streams, and supersession, but did
   not reduce fixture bytes or rough tokens; Markdown remains the stable-document
   format.
 - The ontology graph pilot made typed relations, actions, lifecycle gates, and
   provenance useful as an in-memory projection. It did not justify a graph
   database, RDF/OWL/SHACL stack, or generator yet.
-- The project-knowledge pilot promoted one verified workflow practice to a
-  Protocol and one browser failure to a scoped Lesson. It supports the routing
-  method, but does not yet establish retrieval or consistency on a real project.
+- The project-knowledge promotion pilot promoted one verified workflow practice
+  to a Protocol and one browser failure to a scoped Lesson. The follow-up
+  routing trial caught three incomplete metadata records, then passed the
+  shell Protocol, repeated installer Runbook, and scoped negative routing. It
+  supports routing and repeatability, but does not establish model-quality
+  gains or multi-Agent handoff behavior.
 
 The current conclusion is a bounded protocol improvement, not a claim of
 general superiority. Full records remain in [`research/`](research/README.md).
@@ -318,16 +386,23 @@ At the start of ordinary work, the agent reads:
 
 ```text
 AGENTS.md
-CONTEXT.md
+docs/spec-agents/WORKFLOW.md
 STATUS.md
-ROADMAP.md
 ```
 
-It reads `EVIDENCE.md` when choosing a phase, checking a failed assumption,
-classifying a blocker, or deciding whether a phase can close. It reads the
+`STATUS.md` is the project's own state. A fresh install does not have one:
+`learn` creates it once there is real state to record. Its absence means no work
+is recorded yet — it is not a missing file to reconstruct or invent.
+
+It reads `CONTEXT.md` when the project has one; that file is the project's own
+context, not a framework document. It reads `EVIDENCE.md` when choosing what to
+work on next, checking a failed assumption, classifying a blocker, or deciding
+whether a SPEC can close. It reads the
 relevant records in `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
 `docs/lessons/` only when the affected intent points to them, and `archive/`
-only for explicit historical or regression questions.
+only for explicit historical or regression questions. When present, the
+project's `KERNEL.md` is read with the default context because it is the
+project's stable semantic boundary.
 
 The old `.phrase/` tree is legacy context, not a second default source of
 truth.
@@ -337,13 +412,14 @@ truth.
 When documents disagree:
 
 1. `AGENTS.md` defines workflow and safety rules.
-2. `CONTEXT.md`, `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
-   `docs/lessons/` define durable semantics, practices, operations, and lessons.
-3. Fresh, verified entries in `EVIDENCE.md` define current facts.
-4. A confirmed `.scratch/<feature>/SPEC.md` defines the living feature
+2. `docs/spec-agents/` defines workflow semantics and framework practice.
+3. `KERNEL.md`, `CONTEXT.md`, `docs/adr/`, `docs/protocols/`,
+   `docs/runbooks/`, and `docs/lessons/` define the project's own durable
+   semantics, context, practices, operations, and lessons.
+4. Fresh, verified entries in `EVIDENCE.md` define current facts.
+5. A confirmed `.scratch/<feature>/SPEC.md` defines the living feature
    contract.
-5. `STATUS.md` defines current execution state.
-6. `ROADMAP.md` defines phase direction.
+6. `STATUS.md` defines current execution state.
 7. `archive/` and `.phrase/` are historical context only.
 
 Fresh evidence can challenge a durable rule, but the conflict must be routed
@@ -364,23 +440,31 @@ through `plan` and recorded before implementation silently changes the model.
 Use the shortest valid path: no-change stops after `plan`; a settled small
 change may go directly to `do`; multi-context work uses all six actions.
 
-## Task Format
+## Slices and parallel work
 
-Tasks are phase-local. Use them only when they help coordinate the active work:
+`Slice` is the only execution unit. A slice lives at
+`.scratch/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
+acceptance, verification, status, and an optional `evidence_ref`. There is no
+second task list, and the repository records no future intent.
 
-```text
-taskNNN [ ] goal:<observable result> | scope:<files or area> | verify:<proof>
-```
+`STATUS.md` lists only the active SPECs, their blockers, and the next permitted
+action. A finished SPEC is removed from it.
 
-Do not pre-split future roadmap phases into tasks.
+Several SPECs may be active at once. Their scopes must not overlap — that is a
+`plan` responsibility, and isolating working copies does not fix it. Work that
+must run at the same time gets its own working copy: `jj workspace add` in a
+project with `.jj/`, `git worktree add` otherwise. See
+[`docs/spec-agents/parallel-work.md`](docs/spec-agents/parallel-work.md).
 
 ## Migration From v2/v3
 
 For an existing project, install the modern entry points and read `UPGRADE.md`.
-Use a `plan` pass to decide what should be promoted. Keep only durable rules in `CONTEXT.md` or
-`docs/adr/`, stable interfaces in `docs/protocols/`, current state in
-`STATUS.md`, and decision-relevant facts in `EVIDENCE.md`. Archive obsolete
-material instead of mechanically copying it into the default context.
+Use a `plan` pass to decide what should be promoted. Keep project ontology in
+`KERNEL.md`, project context in `CONTEXT.md`, workflow semantics in
+`docs/spec-agents/WORKFLOW.md` or `docs/adr/`, stable
+interfaces in `docs/protocols/`, current state in `STATUS.md`, and
+decision-relevant facts in `EVIDENCE.md`. Archive obsolete material instead of
+mechanically copying it into the default context.
 
 The old `.phrase/commands/` instructions are archived history, not a second
 default workflow.
@@ -411,9 +495,9 @@ default layout.
 
 ## 中文说明（当前 v4）
 
-SPEC-AGENTS v4 将稳定的项目语义模型与当前阶段的动态证据分开保存。
+SPEC-AGENTS v4 将稳定的项目语义模型与当前工作的动态证据分开保存。
 它不是要求 Agent 永远遵守一套不能修改的文档，而是在明确边界的前提下，
-允许通过验证后的证据演进当前阶段和后续规则。
+允许通过验证后的证据演进当前工作和后续规则。
 
 当前工作流是六个动作：
 
@@ -430,16 +514,35 @@ plan -> do -> check -> learn
 如果 `plan` 判断没有必要改变，就停止；只有跨多个上下文、需要保留设计契约
 或需要协调多个切片时，才使用 `capture` 和 `arrange`。
 
+### JJ 版本管理
+
+当项目存在 `.jj/` 时，SPEC-AGENTS 默认使用 Jujutsu（JJ）进行本地版本管理。
+这里要区分两个概念：`Change` 是语义或行为变更提案，`JJ Change` 是 JJ 的
+版本控制对象。
+
+```text
+plan / SPEC / Slice → JJ Change → bookmark → Git remote
+```
+
+使用 `jj status`、`jj log`、`jj diff` 查看状态，使用 `jj new`、`jj edit`、
+`jj describe` 组织本地工作，使用 `jj undo`、`jj op log` 恢复本地操作。远端发布
+必须得到明确授权，并通过 bookmark 和 `jj git push` 完成；普通 `do`/`check`
+不会隐式 push 或创建远端 bookmark。
+
+没有 `.jj/` 的项目继续使用原有 Git 工作流。SPEC-AGENTS 不会自动初始化 JJ；
+用户明确选择 colocated JJ 后，再按照 [JJ 项目设置 Runbook](docs/spec-agents/jj-project-setup.md)
+和 [JJ Change 管理 Protocol](docs/spec-agents/jj-change-management.md) 执行。
+
 ### v2、v3、v4 的区别
 
 | 版本 | 核心方法 | 知识如何保存 | 主要边界 |
 | --- | --- | --- | --- |
 | v2 | 静态 SPEC 文档链 | `spec_*`、`plan_*`、`task_*`、`change_*`、`issue_*` | 静态抽象较完整，但读取和维护成本高，旧计划容易变成噪音。 |
 | v3 | EDPP 证据驱动阶段 | `.phrase/decision.md`、`roadmap.md`、`current.md`、`evidence.md` | 动态演进更轻，但阶段知识没有稳定沉淀到对应的长期语义抽象。 |
-| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与阶段证据 | 用 `plan` 控制语义变化，用 `learn` 将经过验证的知识提升到长期边界；旧项目通过 `UPGRADE.md` 重建认知，不做机械兼容。 |
+| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与已验证 Evidence | 用 `plan` 控制语义变化，用 `learn` 将经过验证的知识提升到长期边界；旧项目通过 `UPGRADE.md` 重建认知，不做机械兼容。 |
 
 因此，v4 不是简单把 v2 或 v3 换一套文件名，而是补上“静态抽象—动态状态—
-证据—代码”的演进桥接：大原则保持稳定，当前阶段可以在明确边界内修改。
+证据—代码”的演进桥接：大原则保持稳定，当前工作可以在明确边界内修改。
 
 ### 设计目标
 
@@ -448,7 +551,7 @@ v4 围绕三个结果设计：
 1. **将本体论与 SPEC 结合。** 在要求 Agent 修改代码前，先明确项目中的概念、
    身份、关系、生命周期、不变量和 Action Contract。这是小型、可人工审查的
    语义模型，不是图数据库或正式本体运行时。
-2. **让项目知识可迭代、可追踪。** 当前 phase 可以变化，但长期规则只能经过
+2. **让项目知识可迭代、可追踪。** 当前工作可以变化，但长期规则只能经过
    明确决策和验证证据改变；每条被提升的规则都应能追溯到产生它的变更、验证和
    Evidence。
 3. **在长期开发中防止 Agent 偏离目标。** 稳定模型约束 Agent 能改什么，当前
@@ -470,20 +573,20 @@ v4 围绕三个结果设计：
                                      ↓
                          promote / revise / reject
                                      ↓
-                         稳定模型或下一阶段
+                         稳定模型或下一项工作
 ```
 
 | 层 | 记录什么 | 通常存放位置 | 变更规则 |
 | --- | --- | --- | --- |
-| Kernel | 概念、身份、关系、生命周期、不变量和 Action Contract | `CONTEXT.md`、`docs/adr/`、`docs/protocols/` | 语义变化必须先经过 `plan`；提升长期规则必须有验证证据。 |
+| Kernel | 被管理项目的概念、身份、关系、生命周期、不变量和 Action Contract | 项目 `KERNEL.md`；框架 `docs/spec-agents/WORKFLOW.md` | 首次 `start` 可从 confirmed facts 建立 K1；后续语义变化必须先经过 `plan` 并有验证证据。 |
 | SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.scratch/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
-| State | 当前 phase、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 issue 状态 | 随执行变化，但不能重新定义 Kernel。 |
+| State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 issue 状态 | 随执行变化，但不能重新定义 Kernel。 |
 | Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
 | Code | 受契约约束的实现和可观察行为 | 源码、测试和运行产物 | `do` 修改代码，`check` 证明或否定结果。 |
 
-Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件。实验中的 K1
-曾作为临时材料验证这条桥接；v4 默认仍把稳定模型放在根文件中，只有出现真实的
-影响分析需求时，才考虑增加本体基础设施。
+第一次 `start` 扫描在项目缺少 `KERNEL.md` 时建立只含 confirmed facts 的 K1。
+候选、冲突和 unknown 留在 Start Report，不能混入 enacted Kernel。这个文件是
+项目本体的最小稳定层，不是图数据库、正式 schema 或第二套需求文档。
 
 ### 知识如何迭代
 
@@ -498,10 +601,12 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
 ```
 
 - 局部实现事实留在 feature 记录中。
-- 已验证的概念、身份、关系、生命周期或不变量，才可以提升到 `CONTEXT.md`。
+- 已验证的项目概念、身份、关系、生命周期或不变量，才可以提升到项目的
+  `KERNEL.md`；项目自己的词汇和权威边界提升到 `CONTEXT.md`；只有 SPEC-AGENTS
+  自身的工作流语义才提升到 `docs/spec-agents/WORKFLOW.md`。
 - 可复用的接口或工作流边界放入 `docs/protocols/`。
 - 难以逆转的取舍放入 `docs/adr/`。
-- 当前阶段状态放入 `STATUS.md` 或 `ROADMAP.md`，不能偷偷提升为稳定模型。
+- 当前工作状态放入 `STATUS.md`，不能偷偷提升为稳定模型。
 - 被拒绝的方案保留在 Evidence 中，避免未来被当作新想法重复探索。
 
 因此，稳定陈述都应能沿着下面的路径回到它的来源和证明：
@@ -531,7 +636,7 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
 
 1. 按权威顺序开始：`AGENTS.md`、稳定语义模型和协议、最新 `EVIDENCE.md`、
    已确认的 SPEC，最后才是当前 State。
-2. 在当前 SPEC 或 phase brief 中持续保留目标、未改变基线、范围外内容和验收门槛。
+2. 在当前 SPEC 中持续保留目标、未改变基线、范围外内容和验收门槛。
 3. 每个行为变化都必须对应 Action Contract，写清前置条件、允许效果、不变量和
    验证方式。
 4. 实现中发现语义冲突时停止 `do`，回到 `plan`，不能偷偷改变模型或顺手加入一组
@@ -547,16 +652,20 @@ Kernel 是稳定语义内容，不要求新增一个名为 `KERNEL.md` 的文件
 ### 实验结论（简要）
 
 v4.0.0 的原始设计记录包含 9 个 v3/v4 与 Kernel 阶段、2 个专项 pilot，合计
-11 轮文档化实验；后续的项目知识晋升 pilot 单独记录在 `E-20260817-004`。
+11 轮文档化实验；后续的项目知识晋升与路由 pilot 分别记录在
+`E-20260817-004` 和 `E-20260817-005`。
 这些轮次多数是 `n=1`，不是统计学意义上的普遍性证明。结论是：
 
 - 初始 v3/v4 Pomodoro 对比显示：两种流程都不能自动保证行为验证；v4 改善了知识分类，但缺少 Kernel 的首次建立门槛。
 - 独立 A/B 中两边都通过同一套 R1–R12，不能据此声称 v4 产出质量有因果优势；不过小型 Kernel 的成本可接受，并确实提供了稳定语义词汇。
 - 兼容修改、冲突修改和跨领域修改均支持有限的
   `Kernel -> State -> Evidence -> Code` 追踪：冲突走 `reject`，兼容变化必须提出一个明确的 `revise` 方案，并保持旧不变量。
+- 首次 Kernel 建立修正已在真实 `md-mode` 项目上执行：`start` 在交给 `plan` 之前
+  创建了只含 confirmed facts 的 `KERNEL.md` K1，同时没有修改应用源码和测试。
+  这证明了初始化边界，不证明本体质量的普遍提升。
 - JSONL pilot 验证了 ID、独立流和 supersession，但没有降低该 fixture 的字节数或粗略 token；稳定文档继续使用 Markdown。
 - Ontology graph pilot 证明类型关系、动作、生命周期和 provenance 适合作为内存投影；目前没有足够证据引入图数据库、RDF/OWL/SHACL 或生成器。
-- Project knowledge pilot 将一条已验证的工作流约定提升为 Protocol，将一个浏览器失败提升为有范围的 Lesson；它支持路由方法，但还没有证明真实项目中的检索和一致性效果。
+- Project knowledge 晋升 pilot 将一条已验证的工作流约定提升为 Protocol，将一个浏览器失败提升为有范围的 Lesson。后续路由 trial 先捕获并修复 3 条缺少元数据的知识记录，再通过 shell Protocol、重复 installer Runbook 和有范围的负向路由；它支持路由与可重复性，但没有证明模型质量提升或 multi-Agent 交接效果。
 
 所以，v4 当前得到的是一个有实验边界的协议改进，而不是“某个版本普遍优于另一个版本”的结论。完整记录见 [`research/`](research/README.md)。
 
@@ -566,13 +675,28 @@ v4.0.0 的原始设计记录包含 9 个 v3/v4 与 Kernel 阶段、2 个专项 p
 
 ```text
 AGENTS.md
-CONTEXT.md
+docs/spec-agents/WORKFLOW.md
 STATUS.md
-ROADMAP.md
 ```
 
-只有在选择下一阶段、检查失败假设、分类 blocker 或判断阶段是否可以关闭时，
-才读取 `EVIDENCE.md`。长期决策、稳定实践、运行手册和经验教训分别按需读取
+`STATUS.md` 属于项目自己。新装的项目没有它：`learn` 在有真实状态要记时创建。
+它缺失说明这个项目还没有记录过工作，不是需要补齐或凭空重建的文件。
+
+`STATUS.md` 只列活跃的 SPEC、阻塞项和下一步；SPEC 完成即移除，结果留在
+`EVIDENCE.md`。仓库不记录未来意图。可以同时有多个活跃 SPEC，但它们的 scope
+必须不相交；需要同时执行时用 `jj workspace add` 或 `git worktree add` 隔离，
+见 [`docs/spec-agents/parallel-work.md`](docs/spec-agents/parallel-work.md)。
+
+`docs/spec-agents/` 是框架 doctrine，在每个被管项目里内容相同，只由安装器写入。
+其余文件都属于项目自己。
+
+如果项目已有 `KERNEL.md`，它也属于默认上下文；它记录项目本体，不替代
+`docs/spec-agents/WORKFLOW.md`。根 `CONTEXT.md` 归项目所有——安装器只发一份空
+骨架，之后不再写入；项目如果已有别的上下文入口（例如 `docs/HANDOFF.md`），
+就用那个，不要维护两套。
+
+只有在选择下一步做什么、检查失败假设、分类 blocker 或判断某个 SPEC 是否
+可以关闭时，才读取 `EVIDENCE.md`。长期决策、稳定实践、运行手册和经验教训分别按需读取
 `docs/adr/`、`docs/protocols/`、`docs/runbooks/` 和 `docs/lessons/`；`archive/`
 只用于明确的历史或回归问题。
 
@@ -586,8 +710,11 @@ ROADMAP.md
 - `research/history/`：旧版系统模型与 v3 EDPP 资料。
 
 这些内容是仓库研究档案，不是用户项目的默认上下文，也不会被
-`bin/spec-agents` 安装到用户项目。安装器只提供运行时所需的根文件、
-`docs/`、`archive/` 和六个 action skills。
+`bin/spec-agents` 安装到用户项目。安装器只发出 doctrine：`AGENTS.md`、
+`START.md`、`UPGRADE.md`、一份空的 `CONTEXT.md` 骨架、`docs/spec-agents/`
+和六个 action skills。本仓库自己的 `STATUS.md`、`EVIDENCE.md`、
+`archive/`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、`docs/lessons/`
+属于 Instance，永远不会安装到别的项目。
 
 ### v2/v3 项目升级
 
@@ -599,6 +726,19 @@ Read UPGRADE.md and execute the upgrade review.
 
 升级由 Agent 重建近期历史、扫描代码架构并请求用户确认；安装器不会自动
 移动、删除或总结旧项目材料。
+
+### start 启动入口
+
+安装新版入口后，项目可以先执行：
+
+```text
+Read START.md and execute the start review.
+```
+
+`START.md` 会检查项目状态、版本管理标记、近期历史和代码架构，生成
+`.scratch/start/REPORT.md`，并等待用户确认。现代项目确认后进入 `plan`；
+v2/v3 或混合项目转交 `UPGRADE.md`；缺少现代入口的项目只得到安装指引。
+它不会自动修改应用代码、覆盖项目认知或初始化 JJ。
 
 ## 中文说明（历史 v3 参考）
 

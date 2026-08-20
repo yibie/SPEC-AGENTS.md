@@ -14,4 +14,4 @@ Each lesson should state:
 
 A lesson is a scoped warning, not a universal law. If it becomes a durable
 invariant or a stable development agreement, promote it through `plan` into
-`CONTEXT.md` or `docs/protocols/` rather than silently changing its meaning.
+`KERNEL.md` or `docs/protocols/` rather than silently changing its meaning.

@@ -48,6 +48,10 @@ show_help() {
   echo ""
   echo "For an existing v2/v3 project, install the modern entry points and read"
   echo "UPGRADE.md. The upgrade review is performed by an Agent with user confirmation."
+  echo "The installer emits framework doctrine only. It never writes your project's"
+  echo "STATUS.md, ROADMAP.md, EVIDENCE.md, KERNEL.md, or docs/ knowledge classes."
+  echo ""
+  echo "After installation, read START.md to bootstrap the project's KERNEL.md and route the first plan."
 }
 
 if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
@@ -141,6 +145,21 @@ install_file() {
   fi
 }
 
+install_template() {
+  local source_file="$1"
+  local target_file="$2"
+
+  [ -f "$source_file" ] || return 0
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    echo "   ⚠️  Keeping existing file: $target_file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$target_file")"
+  # Always copy. A symlink would let the managed project write back into the
+  # SPEC-AGENTS source repository.
+  cp "$source_file" "$target_file"
+}
+
 install_dir_contents() {
   local source_dir="$1"
   local target_dir="$2"
@@ -175,13 +194,19 @@ install_agent() {
   fi
 }
 
-echo "   📦 Installing modern root layout..."
+# Doctrine only. Everything installed here is identical in every managed
+# project. This repository's own state -- STATUS.md, ROADMAP.md, EVIDENCE.md,
+# archive/, research/, bin/, docs/adr, docs/protocols, docs/runbooks,
+# docs/lessons -- is Instance and is never installed. Use this explicit
+# allowlist, not directory enumeration: enumerating docs/ is what previously
+# leaked this repository's own runbooks and lessons into managed projects.
+echo "   📦 Installing SPEC-AGENTS doctrine..."
 install_agent
-for file_name in CONTEXT.md ROADMAP.md STATUS.md EVIDENCE.md UPGRADE.md; do
+for file_name in START.md UPGRADE.md; do
   install_file "$REPO_ROOT/$file_name" "$TARGET_DIR/$file_name"
 done
-install_dir_contents "$REPO_ROOT/docs" "$TARGET_DIR/docs"
-install_dir_contents "$REPO_ROOT/archive" "$TARGET_DIR/archive"
+install_template "$REPO_ROOT/templates/CONTEXT.md" "$TARGET_DIR/CONTEXT.md"
+install_dir_contents "$REPO_ROOT/docs/spec-agents" "$TARGET_DIR/docs/spec-agents"
 install_dir_contents "$REPO_ROOT/skills" "$TARGET_DIR/skills"
 
 if [ "$HAS_LEGACY" == true ]; then
@@ -198,14 +223,22 @@ fi
 
 echo ""
 echo "✨ Done! Spec-AGENTS is ready."
-echo "   Installed:"
+echo "   Installed (framework doctrine, identical in every project):"
 echo "   - $TARGET_DIR/AGENTS.md"
-echo "   - $TARGET_DIR/CONTEXT.md"
-echo "   - $TARGET_DIR/ROADMAP.md"
-echo "   - $TARGET_DIR/STATUS.md"
-echo "   - $TARGET_DIR/EVIDENCE.md"
+echo "   - $TARGET_DIR/START.md"
 echo "   - $TARGET_DIR/UPGRADE.md"
-echo "   - $TARGET_DIR/docs"
-echo "   - $TARGET_DIR/archive"
+echo "   - $TARGET_DIR/docs/spec-agents/"
 echo "   - $TARGET_DIR/skills/{plan,capture,arrange,do,check,learn}"
-echo "   To start, simply tell your AI Agent: 'Read AGENTS.md'"
+echo "   - $TARGET_DIR/CONTEXT.md (empty skeleton; this file belongs to your project)"
+echo ""
+echo "   Not installed. These belong to your project and are created when needed:"
+echo "   - KERNEL.md      by the first Start scan, from confirmed project facts"
+echo "   - STATUS.md      by 'learn', when there is real state to record"
+echo "   - ROADMAP.md     by 'learn', when a phase direction is agreed"
+echo "   - EVIDENCE.md    by 'learn', on the first verified observation"
+echo "   - docs/adr, docs/protocols, docs/runbooks, docs/lessons"
+echo ""
+echo "   If your project already has a context entry point such as docs/HANDOFF.md,"
+echo "   keep it and delete or redirect the CONTEXT.md skeleton. Do not run two."
+echo ""
+echo "   To start, tell your AI Agent: 'Read START.md and execute the start review.'"

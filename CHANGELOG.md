@@ -1,5 +1,55 @@
 # Changelog
 
+## [4.2.0] — 2026-08-20
+
+**Breaking.** Retired `Phase` and `ROADMAP.md`.
+
+- `Phase` is no longer a concept. The unit of bounded work is the `SPEC` that
+  already existed at `.scratch/<feature>/SPEC.md`; no replacement concept was
+  introduced.
+- `ROADMAP.md` is retired. The repository no longer records future intent —
+  direction is decided in conversation and becomes durable only as a confirmed
+  SPEC.
+- `taskNNN` is retired. `Slice` is the only execution unit.
+- `STATUS.md` lists only active SPECs, their blockers, and the next permitted
+  action. A finished SPEC is removed from it; it never accumulates closed
+  sections.
+- Several SPECs may be active at once. Their scopes must not intersect, and
+  work that runs at the same time needs its own working copy. New doctrine
+  Protocol `docs/spec-agents/parallel-work.md` covers `jj workspace` and
+  `git worktree`, and states that isolation fixes execution interference, not
+  scope conflict.
+- `learn` loses its phase-boundary trigger; `arrange` is bounded by the
+  confirmed SPEC rather than the current phase.
+- `UPGRADE.md` gained a conversion section for a phase-shaped project. Nothing
+  is deleted automatically.
+- This repository's eleven phases are preserved at
+  `archive/roadmap-phases-10-20.md`.
+- Recorded as `docs/adr/0002-retire-phase.md`.
+
+## [4.1.0] — 2026-08-20
+
+**Breaking.** Separated framework doctrine from this repository's own state.
+
+- The installer no longer copies this repository's `STATUS.md`, `ROADMAP.md`,
+  `EVIDENCE.md`, `archive/`, or its own runbooks and lessons into managed
+  projects. Those files described this repository's phases, tasks, and
+  experiments and became false state pointers in every target.
+- The framework workflow model moved from root `CONTEXT.md` to
+  `docs/spec-agents/WORKFLOW.md`. The four framework protocol and runbook
+  records moved into `docs/spec-agents/` as well, so `docs/protocols/`,
+  `docs/runbooks/`, `docs/lessons/`, and `docs/adr/` belong entirely to the
+  managed project.
+- Root `CONTEXT.md` now belongs to the managed project. The installer emits an
+  empty skeleton from `templates/` and never writes it again.
+- `docs/` is installed through an explicit allowlist instead of directory
+  enumeration, which is what leaked instance material.
+- Files sourced from `templates/` are always copied, never symlinked. Under
+  `--link` a state document previously pointed back into the source repository.
+- `UPGRADE.md` gained a section for recognising and migrating a pre-split
+  install. Nothing is deleted automatically.
+- Recorded as `docs/adr/0001-framework-namespace-split.md`.
+
 ## [4.0.4] — 2026-08-17
 
 - Added the v2/v3/v4 comparison and concise experiment conclusions to the

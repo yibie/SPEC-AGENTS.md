@@ -1,6 +1,6 @@
 ---
 name: arrange
-description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的工作切片。适用于跨多个上下文的 feature、重构或迁移；不替代设计质询，也不创造未来阶段任务。
+description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的工作切片。适用于跨多个上下文的 feature、重构或迁移；不替代设计质询，也不为尚未确认的工作预拆切片。
 ---
 
 # Arrange
@@ -9,7 +9,7 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 
 ## 读取
 
-读取当前 feature 的 `SPEC.md`、相关 `CONTEXT.md`、ADR、Protocol、Runbook、Lesson 和现有 issue。只查当前 phase 的范围；不要把 roadmap 的远期内容提前拆出来。
+读取当前 feature 的 `SPEC.md`、项目 `KERNEL.md`（若存在）、相关 `docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、ADR、Protocol、Runbook、Lesson 和现有 issue。只查已确认 SPEC 的范围；不要把尚未确认的想法提前拆成切片。
 
 ## 切片规则
 

@@ -3,7 +3,9 @@
 status: active
 scope: browser form code that calls native form methods or properties
 applies_when: adding an element `id` or `name` to a form
+owner: project maintainer
 source: E-20260817-004; `research/experiments/room-v4-direct-repro/RESULTS.md`
+verification: `node --check`, the forbidden-API scan, and the real-browser submit matrix all pass after the control is renamed
 
 ## Observation
 
