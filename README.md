@@ -91,8 +91,15 @@ skills/
 Everything else belongs to your project and is created only when there is
 something real to record: `KERNEL.md` by the first `START.md` scan from that
 project's confirmed facts, `STATUS.md` and `EVIDENCE.md` by
-`learn`, and `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, `docs/lessons/`
-when knowledge is promoted into them.
+`learn`, `.specs/<feature>/` by `capture` and `arrange`, and `docs/adr/`,
+`docs/protocols/`, `docs/runbooks/`, `docs/lessons/` when knowledge is promoted
+into them.
+
+Two directories are easy to confuse. `.specs/` holds your confirmed work
+contracts — a SPEC and its slices — and is durable, so keep it in version
+control. `.scratch/` holds only one-shot reports awaiting your confirmation,
+such as `.scratch/start/REPORT.md`; consider ignoring it. The installer writes
+neither.
 
 The installer never writes this repository's own state, Evidence, or runbooks
 into your project. If your project already has a context entry point
@@ -237,7 +244,7 @@ living SPEC → State → Slice → Code
 | Layer | What it records | Normal home | Change rule |
 | --- | --- | --- | --- |
 | Kernel | Managed-project concepts, identities, relations, lifecycles, invariants, and Action Contracts | project `KERNEL.md`; workflow `docs/spec-agents/WORKFLOW.md` | The first Start may create confirmed-only K1; later semantic changes pass `plan` and require verified evidence. |
-| SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.scratch/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
+| SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.specs/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
 | State | Active SPECs, slices, blockers, verification status, and next permitted action | `STATUS.md` and local issue state | Changes with execution; it does not redefine the Kernel. |
 | Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
 | Code | The implementation and observable behavior constrained by the contracts | Source, tests, and runtime artifacts | `do` changes code; `check` proves or rejects the result. |
@@ -417,7 +424,7 @@ When documents disagree:
    `docs/runbooks/`, and `docs/lessons/` define the project's own durable
    semantics, context, practices, operations, and lessons.
 4. Fresh, verified entries in `EVIDENCE.md` define current facts.
-5. A confirmed `.scratch/<feature>/SPEC.md` defines the living feature
+5. A confirmed `.specs/<feature>/SPEC.md` defines the living feature
    contract.
 6. `STATUS.md` defines current execution state.
 7. `archive/` and `.phrase/` are historical context only.
@@ -443,7 +450,7 @@ change may go directly to `do`; multi-context work uses all six actions.
 ## Slices and parallel work
 
 `Slice` is the only execution unit. A slice lives at
-`.scratch/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
+`.specs/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
 acceptance, verification, status, and an optional `evidence_ref`. There is no
 second task list, and the repository records no future intent.
 
@@ -579,7 +586,7 @@ v4 围绕三个结果设计：
 | 层 | 记录什么 | 通常存放位置 | 变更规则 |
 | --- | --- | --- | --- |
 | Kernel | 被管理项目的概念、身份、关系、生命周期、不变量和 Action Contract | 项目 `KERNEL.md`；框架 `docs/spec-agents/WORKFLOW.md` | 首次 `start` 可从 confirmed facts 建立 K1；后续语义变化必须先经过 `plan` 并有验证证据。 |
-| SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.scratch/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
+| SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.specs/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
 | State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 issue 状态 | 随执行变化，但不能重新定义 Kernel。 |
 | Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
 | Code | 受契约约束的实现和可观察行为 | 源码、测试和运行产物 | `do` 修改代码，`check` 证明或否定结果。 |
@@ -712,7 +719,9 @@ STATUS.md
 这些内容是仓库研究档案，不是用户项目的默认上下文，也不会被
 `bin/spec-agents` 安装到用户项目。安装器只发出 doctrine：`AGENTS.md`、
 `START.md`、`UPGRADE.md`、一份空的 `CONTEXT.md` 骨架、`docs/spec-agents/`
-和六个 action skills。本仓库自己的 `STATUS.md`、`EVIDENCE.md`、
+和六个 action skills。项目自己的工作契约在 `.specs/<feature>/`（长期，纳入版本
+控制），一次性报告在 `.scratch/`（建议忽略），安装器两者都不写。本仓库自己的
+`STATUS.md`、`EVIDENCE.md`、
 `archive/`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、`docs/lessons/`
 属于 Instance，永远不会安装到别的项目。
 

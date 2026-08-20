@@ -20,7 +20,7 @@ description: 将已经确认的多上下文设计记录成可交接、可受控�
 创建或更新：
 
 ```text
-.scratch/<feature>/SPEC.md
+.specs/<feature>/SPEC.md
 ```
 
 不要在根目录再创建第二份 SPEC。目录不存在时按需创建；不要预建未来 feature 的文件。

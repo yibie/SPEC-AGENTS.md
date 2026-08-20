@@ -2,7 +2,7 @@
 
 status: done
 blocked_by:
-spec_ref: `.scratch/framework-namespace-split/SPEC.md`
+spec_ref: `.specs/framework-namespace-split/SPEC.md`
 context_ref: `docs/spec-agents/WORKFLOW.md`
 evidence_ref: `E-20260820-001`
 ## Goal

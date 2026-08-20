@@ -22,7 +22,7 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 ## 写入位置
 
 ```text
-.scratch/<feature>/issues/NN-<slug>.md
+.specs/<feature>/issues/NN-<slug>.md
 ```
 
 最小模板：

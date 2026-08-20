@@ -1,5 +1,23 @@
 # Changelog
 
+## [4.3.0] — 2026-08-20
+
+**Breaking.** Separated durable work contracts from scratch.
+
+- Confirmed SPECs and their slices moved from `.scratch/<feature>/` to
+  `.specs/<feature>/`. They are git-tracked, committed records of every
+  confirmed decision, and `.scratch` told the next context they were
+  disposable.
+- `.scratch/` now holds only one-shot reports awaiting user confirmation:
+  `start/REPORT.md` and `upgrade-review/REPORT.md`. Documentation recommends
+  ignoring it in version control; the framework does not write a project's
+  `.gitignore`.
+- `UPGRADE.md` gained a section for moving an existing project's SPECs. Nothing
+  is moved or deleted automatically.
+- `.spec-agents/` was chosen first and withdrawn: it would have shared a name
+  segment with `docs/spec-agents/` while having the opposite ownership.
+- Recorded as `docs/adr/0003-split-work-and-scratch.md`.
+
 ## [4.2.0] — 2026-08-20
 
 **Breaking.** Retired `Phase` and `ROADMAP.md`.

@@ -2,7 +2,7 @@
 
 status: done
 blocked_by: 01
-spec_ref: `.scratch/retire-phase/SPEC.md`
+spec_ref: `.specs/retire-phase/SPEC.md`
 context_ref: `docs/spec-agents/WORKFLOW.md`
 evidence_ref: `E-20260820-002`
 ## Goal

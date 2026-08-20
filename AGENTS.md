@@ -20,6 +20,12 @@ work is recorded yet — it is not a missing file to reconstruct or invent.
 project, written only by the installer. Everything else in the repository
 belongs to the project.
 
+Your confirmed work contracts live in `.specs/<feature>/` — a SPEC and its
+slices, written only by project work and never by the installer. They are
+durable: a contract stays there after its work closes. `.scratch/` is different
+and holds only one-shot reports awaiting your confirmation, such as
+`.scratch/start/REPORT.md`; consider ignoring it in version control.
+
 Read `KERNEL.md` when it exists. It is the managed project's stable semantic
 model; `docs/spec-agents/WORKFLOW.md` is the workflow model. If a project has no
 `KERNEL.md`, run `START.md` before changing application behavior.
@@ -82,7 +88,7 @@ When sources conflict, use this order:
    `docs/protocols/`, `docs/runbooks/`, and `docs/lessons/` for the project's
    own context, decisions, practices, operations, and lessons.
 4. Fresh, verified entries in `EVIDENCE.md`.
-5. A confirmed `.scratch/<feature>/SPEC.md`.
+5. A confirmed `.specs/<feature>/SPEC.md`.
 6. `STATUS.md` for current state.
 7. `archive/` and legacy `.phrase/` material.
 
@@ -119,14 +125,14 @@ understanding is confirmed.
 ### `capture`
 
 Use for confirmed work that must survive multiple contexts. Create or revise
-`.scratch/<feature>/SPEC.md`. Capture decisions already made; do not reopen
+`.specs/<feature>/SPEC.md`. Capture decisions already made; do not reopen
 them. A change to a goal, boundary, identity, relation, invariant, interface,
 or acceptance rule requires a new `plan` pass.
 
 ### `arrange`
 
 Use after a confirmed SPEC when the work needs independent slices. Write
-`.scratch/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
+`.specs/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
 acceptance, verification, status, and an optional empty `evidence_ref`.
 Prefer vertical slices. Show the split and dependency edges to the user before
 publishing it. Leave `evidence_ref` empty until `learn` records verification.
@@ -186,7 +192,7 @@ map the new behavior to an Action Contract before code changes.
 `STATUS.md` records only what is being worked on now: the active SPECs, their
 blockers, their verification state, and the next permitted action. When a SPEC
 is finished it is removed from `STATUS.md`; its result is already in
-`EVIDENCE.md` and its contract stays at `.scratch/<feature>/SPEC.md`. Never let
+`EVIDENCE.md` and its contract stays at `.specs/<feature>/SPEC.md`. Never let
 `STATUS.md` accumulate closed sections — that turns the state pointer into a
 second history ledger.
 
@@ -194,7 +200,7 @@ The repository does not record future intent. Direction is decided in
 conversation and becomes durable only when it becomes a confirmed SPEC.
 
 `Slice` is the only execution unit. A slice lives at
-`.scratch/<feature>/issues/NN-<slug>.md` and carries a goal, scope, dependency,
+`.specs/<feature>/issues/NN-<slug>.md` and carries a goal, scope, dependency,
 acceptance, verification, status, and an optional `evidence_ref`. Do not
 maintain a second task list anywhere.
 

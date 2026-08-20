@@ -49,8 +49,8 @@ Start 生成的、等待用户确认的项目认知候选记录。它必须区�
 
 ### Instance
 
-某一个仓库自己的状态与知识：`STATUS.md`、`ROADMAP.md`、`EVIDENCE.md`、
-`KERNEL.md`、根 `CONTEXT.md`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、
+某一个仓库自己的状态与知识：`STATUS.md`、`EVIDENCE.md`、`KERNEL.md`、
+根 `CONTEXT.md`、`.specs/`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、
 `docs/lessons/`、`archive/`。Instance 永远不被安装到另一个项目；把 Instance
 当模板发出去会在目标项目里产生假的状态指针。
 
@@ -67,11 +67,14 @@ Start 生成的、等待用户确认的项目认知候选记录。它必须区�
 
 ### SPEC
 
-跨上下文工作使用的活的设计契约。SPEC 记录已经确认的目标、边界、决定、Action Contracts 和验证入口；它低于 CONTEXT、ADR 和 Protocol，允许经 `plan` 控制修订。
+跨上下文工作使用的活的设计契约，持久保存在 `.specs/<feature>/SPEC.md`。SPEC
+记录已经确认的目标、边界、决定、Action Contracts 和验证入口；它低于 CONTEXT、
+ADR 和 Protocol，允许经 `plan` 控制修订。工作结束后契约留在原地，它是这次决定
+的记录，不是草稿。
 
 ### Slice
 
-一个新上下文可以完成、可以独立验证的工作单元，记录在 `.scratch/<feature>/issues/`。Slice 不拥有本体定义，也不能绕过 Plan 修改长期规则；完成验证后可以带一个可选的 `evidence_ref` 指向 Evidence。
+一个新上下文可以完成、可以独立验证的工作单元，记录在 `.specs/<feature>/issues/`。Slice 不拥有本体定义，也不能绕过 Plan 修改长期规则；完成验证后可以带一个可选的 `evidence_ref` 指向 Evidence。
 
 ### State
 
@@ -199,6 +202,11 @@ candidate → observed → verified → adopted → superseded / rejected
 - 两件工作需要同时占用工作副本时（并发构建或测试、多个 agent、一边写代码
   一边跑回归），必须先隔离：有 `.jj/` 用 `jj workspace add`，否则用
   `git worktree add`。串行地在 SPEC 之间切换不需要隔离。
+- `.specs/` 保存被 git 跟踪的长期工作契约；`.scratch/` 只保存等待用户确认的
+  一次性报告（`start/REPORT.md`、`upgrade-review/REPORT.md`）。建议项目在版本
+  控制中忽略 `.scratch/`，但框架不写项目的 `.gitignore`。
+- `docs/spec-agents/` 只由安装器写入，项目工作不改它；`.specs/` 只由项目工作
+  写入，安装器不碰它。两者名字相近但归属相反，引用时一律写完整路径。
 - `STATUS.md` 只记录活跃的 SPEC、阻塞项和下一步；SPEC 完成即从中移除，结果
   留在 `EVIDENCE.md`。它不保存已关闭的工作段落，也不是第二份历史账本。
 - `do` 不能静默改变 `KERNEL.md`、`CONTEXT.md`、`docs/spec-agents/`、ADR、

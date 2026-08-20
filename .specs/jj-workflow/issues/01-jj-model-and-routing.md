@@ -2,7 +2,7 @@
 
 status: done
 blocked_by:
-spec_ref: `.scratch/jj-workflow/SPEC.md`
+spec_ref: `.specs/jj-workflow/SPEC.md`
 context_ref: `CONTEXT.md`
 evidence_ref: `E-20260817-006`
 

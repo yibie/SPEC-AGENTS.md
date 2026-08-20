@@ -2,7 +2,7 @@
 
 status: done
 blocked_by:
-spec_ref: `.scratch/start-command/SPEC.md`
+spec_ref: `.specs/start-command/SPEC.md`
 context_ref: `CONTEXT.md`
 evidence_ref: `E-20260819-008`
 

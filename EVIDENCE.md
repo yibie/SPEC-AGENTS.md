@@ -784,3 +784,58 @@ fails on a closed section rather than another rule.
 - `docs/spec-agents/parallel-work.md`
 - `archive/roadmap-phases-10-20.md`
 - `.scratch/retire-phase/SPEC.md`
+
+## 2026-08-20 — a durable record was living in a directory named scratch (E-20260820-003)
+
+### Observation
+
+`.scratch/` held ten `<feature>/` directories with 34 git-tracked, committed
+files — the confirmed contract of every decision this project had made — beside
+the paths for `start/REPORT.md` and `upgrade-review/REPORT.md`, which are
+one-shot reports awaiting user confirmation. The directory was not ignored in
+version control.
+
+`docs/adr/0002-retire-phase.md`, decided hours earlier, had stated that a SPEC's
+contract stays in place after its work closes. That made the mismatch explicit:
+the record was durable by contract and disposable by name.
+
+### Interpretation
+
+The problem was not the name alone. Three lifetimes shared one directory, so no
+single name could be accurate; splitting had to come before renaming.
+
+The first name chosen for the durable half was `.spec-agents/`, for symmetry
+with `docs/spec-agents/`. The user rejected it after the symmetry was shown to
+be inverted: `docs/spec-agents/` is written by the installer and never by
+project work, and the new directory is the reverse. Two paths with the same
+name segment and opposite ownership would weaken the Doctrine/Instance boundary
+established the same day, in prose if not in path. `.specs/` avoids the
+collision and claims no visible project root name.
+
+### Recommended next action
+
+`.specs/` is hidden but should be committed, which is unusual. Watch whether
+contributors or agents overlook it. If they do, the fix is a better pointer
+from `AGENTS.md` and `README.md`, not a visible root name — a visible generic
+name is the collision that `docs/adr/0001-framework-namespace-split.md` exists
+to prevent.
+
+### Verification
+
+- No live file outside `archive/`, `research/`, and `.phrase/` points a SPEC or
+  a slice at `.scratch/`; the only remaining `.scratch/` references are
+  `start/REPORT.md` and `upgrade-review/REPORT.md`.
+- Ten directories moved with `git mv`; `git status` records 36 renames.
+- `.gitignore` in this repository ignores `.scratch/`.
+- Installer smoke passes unchanged; neither directory is in the payload.
+
+Known residual, not fixed: seven issue records from work completed before the
+framework namespace split still carry `context_ref: CONTEXT.md`. That value was
+correct when they were written — root `CONTEXT.md` was the workflow model then.
+Rewriting them would falsify a historical record, so they are left as-is and
+noted here instead.
+
+### References
+
+- `docs/adr/0003-split-work-and-scratch.md`
+- `.specs/split-work-and-scratch/SPEC.md`

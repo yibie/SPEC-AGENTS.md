@@ -101,7 +101,7 @@ below. Reinstall the modern entry points, then present this conversion for the
 user to approve:
 
 1. Each open `taskNNN` becomes a Slice under the SPEC it belongs to, at
-   `.scratch/<feature>/issues/NN-<slug>.md`. A task with no SPEC needs a `plan`
+   `.specs/<feature>/issues/NN-<slug>.md`. A task with no SPEC needs a `plan`
    pass before it becomes work — do not invent a SPEC to hold it.
 2. `STATUS.md` is rewritten to list only active SPECs, their blockers, and the
    next permitted action. Closed phase sections move to `archive/`.
@@ -113,6 +113,28 @@ user to approve:
 
 Nothing is deleted. If the project's phases encode something the SPEC model
 cannot hold, stop and ask rather than forcing the conversion.
+
+### SPECs under `.scratch/`
+
+A project installed before durable work contracts were separated from scratch
+keeps its SPECs and slices at `.scratch/<feature>/`. Recognise it by a
+`.scratch/<feature>/SPEC.md` that exists and is tracked in version control.
+
+Reinstall the modern entry points, then present this move for the user to
+approve:
+
+1. Every `.scratch/<feature>/` directory containing a `SPEC.md` moves to
+   `.specs/<feature>/`. Use the project's version-control move command so
+   history follows: `jj` records the rename automatically, `git mv` otherwise.
+2. `.scratch/start/REPORT.md` and `.scratch/upgrade-review/REPORT.md` stay
+   where they are. They are one-shot reports, not contracts.
+3. Recommend that the project ignore `.scratch/` in version control. Do not
+   edit the project's `.gitignore` — say what you recommend and let the user
+   decide.
+
+Nothing is moved or deleted before the user approves. If a `.scratch/` entry is
+neither a SPEC directory nor a known report, report it and ask rather than
+guessing which of the two it is.
 
 ## 2. Reconstruct recent project history
 

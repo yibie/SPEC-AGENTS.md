@@ -10,7 +10,7 @@ of a bounded piece of work, and the spine of a history ledger — and the second
 job won. Eleven phases accumulated here while `STATUS.md` grew its own parallel
 copy and `EVIDENCE.md` recorded every phase result a third time.
 
-The work boundary is now the SPEC at `.scratch/<feature>/SPEC.md`. What happened
+The work boundary is now the SPEC at `.specs/<feature>/SPEC.md`. What happened
 is in `EVIDENCE.md`. Nothing below is a current state pointer; read it only for
 an explicit historical or regression question.
 
