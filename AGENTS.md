@@ -12,206 +12,136 @@ docs/spec-agents/WORKFLOW.md
 STATUS.md
 ```
 
-`STATUS.md` is the project's own state. A fresh install does not have one:
-`learn` creates it once there is real state to record. Its absence means no
-work is recorded yet — it is not a missing file to reconstruct or invent.
+Who owns what:
 
-`docs/spec-agents/` holds SPEC-AGENTS doctrine: identical in every managed
-project, written only by the installer. Everything else in the repository
-belongs to the project.
+| Path | Owner | Written by |
+| --- | --- | --- |
+| `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`, `docs/spec-agents/` | SPEC-AGENTS doctrine | the installer only — no action writes these; a change to any of them belongs upstream (ADR 0001) |
+| `.specs/<feature>/` | the project | `capture` and `arrange`; durable, kept after the work closes (ADR 0003) |
+| `.scratch/` | the project | one-shot reports awaiting confirmation; consider ignoring it in version control (ADR 0003) |
+| `KERNEL.md`, `CONTEXT.md`, `STATUS.md`, `EVIDENCE.md`, `docs/{adr,protocols,runbooks,lessons}/` | the project | `learn` only (ADR 0004) |
+| everything else | the project | `do` — it is the project's `Code` (ADR 0004) |
 
-Your confirmed work contracts live in `.specs/<feature>/` — a SPEC and its
-slices, written only by project work and never by the installer. They are
-durable: a contract stays there after its work closes. `.scratch/` is different
-and holds only one-shot reports awaiting your confirmation, such as
-`.scratch/start/REPORT.md`; consider ignoring it in version control.
+In the SPEC-AGENTS repository itself the doctrine files are the product, so
+they are its `Code` and `do` writes them there.
 
-Read `KERNEL.md` when it exists. It is the managed project's stable semantic
-model; `docs/spec-agents/WORKFLOW.md` is the workflow model. If a project has no
-`KERNEL.md`, run `START.md` before changing application behavior.
+`STATUS.md` absent means no work is recorded yet, not a file to reconstruct.
 
-Read `CONTEXT.md` when it exists. It is the project's own context and
-vocabulary, not a framework document; the installer emits an empty skeleton and
-never writes it again. If the project keeps its orientation somewhere else, such
-as `docs/HANDOFF.md`, follow that instead and do not maintain two.
+Read `KERNEL.md` when it exists — the project's stable semantic model, distinct
+from `docs/spec-agents/WORKFLOW.md`, which is the workflow model. A project
+without one runs `START.md` before application behavior changes.
+
+Read `CONTEXT.md` when it exists — the project's own vocabulary, never written
+by the framework. If the project orients somewhere else, such as
+`docs/HANDOFF.md`, follow that and do not maintain two.
 
 Read `EVIDENCE.md` when choosing what to work on next, checking a failed
-assumption, classifying a blocker, or deciding whether a SPEC can close. Read the relevant
+assumption, classifying a blocker, or deciding whether a SPEC can close. Read a
 record under `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, or
-`docs/lessons/` when the intent points to it; do not load every knowledge class
-by default. Read `archive/` only for an explicit historical or regression
-question.
-
-The old `.phrase/` tree is legacy context. Read it only for migration,
-regression comparison, or explicit history; do not use it as a second default
-source of truth.
+`docs/lessons/` when the intent points at it. Read `archive/` and the legacy
+`.phrase/` tree only for explicit history or regression comparison.
 
 If `.phrase/` or legacy `spec_*`/`plan_*` markers exist, read `UPGRADE.md`
-before ordinary work. It is the user-confirmed migration Prompt; the installer
-does not infer or archive project knowledge.
+before ordinary work.
 
 ## Start entry
 
-When the user says `start`, `/start`, or asks to onboard/adapt a project, read
-`START.md` and execute the Start Review. Start is a bootstrap entry, not a
-seventh action: inspect the project, create an absent `KERNEL.md` from directly
-confirmed facts, write `.scratch/start/REPORT.md`, stop for user confirmation,
-then route a modern project to `plan` and a legacy/mixed project to
-`UPGRADE.md`. Never overwrite an existing Kernel during Start. If `START.md`
-is missing, report that the modern entry points must be installed first.
+On `start`, `/start`, or a request to onboard or adapt a project, read
+`START.md` and execute the Start Review. It is a bootstrap entry, not a seventh
+action: inspect, create an absent `KERNEL.md` from confirmed facts, write
+`.scratch/start/REPORT.md`, stop for confirmation, then route to `plan` or
+`UPGRADE.md`. Never overwrite an existing Kernel. It is re-runnable as a
+read-only re-scan (ADR 0005).
 
 ## Version-control layer
 
-When `.jj/` exists, use JJ as the local version-control interface. Treat the
-workflow `Change` and a `JJ Change` as different concepts:
+When `.jj/` exists, JJ is the local version-control interface. Inspect with
+`jj status`/`log`/`diff`, work with `jj new`/`edit`/`describe`, recover with
+`jj undo`/`op log`, and publish only after explicit authorization via a
+bookmark and `jj git push`. Do not substitute `git add`/`commit`/`stash`/
+`branch`/`checkout`. A workflow `Change` and a `JJ Change` are different things.
 
-- inspect with `jj status`, `jj log`, and `jj diff`;
-- start or switch local work with `jj new` and `jj edit`;
-- describe intent with `jj describe` and recover with `jj undo`/`jj op log`;
-- publish only after explicit authorization, using a bookmark and
-  `jj git push`;
-- do not use `git add`, `git commit`, `git stash`, `git branch`, or
-  `git checkout` as local JJ substitutes.
-
-If `.jj/` is absent, keep the project on its existing Git workflow or ask the
-user to opt into the [JJ change-management Protocol](docs/spec-agents/jj-change-management.md).
-Never initialize JJ automatically. Read the [JJ project setup Runbook](docs/spec-agents/jj-project-setup.md)
-when the user explicitly chooses colocated JJ.
+Without `.jj/`, keep the project's existing Git workflow. Never initialize JJ
+automatically. Details: [JJ change-management Protocol](docs/spec-agents/jj-change-management.md)
+and [JJ project setup Runbook](docs/spec-agents/jj-project-setup.md).
 
 ## Document authority
 
-When sources conflict, use this order:
+When sources conflict: `AGENTS.md` → `docs/spec-agents/` → `KERNEL.md` →
+`CONTEXT.md` and `docs/{adr,protocols,runbooks,lessons}/` → fresh verified
+`EVIDENCE.md` → a confirmed `.specs/<feature>/SPEC.md` → `STATUS.md` →
+`archive/` and legacy `.phrase/`.
 
-1. `AGENTS.md` for workflow and safety rules.
-2. `docs/spec-agents/` for workflow semantics and framework practice.
-3. `KERNEL.md` for managed-project semantics, then `CONTEXT.md`, `docs/adr/`,
-   `docs/protocols/`, `docs/runbooks/`, and `docs/lessons/` for the project's
-   own context, decisions, practices, operations, and lessons.
-4. Fresh, verified entries in `EVIDENCE.md`.
-5. A confirmed `.specs/<feature>/SPEC.md`.
-6. `STATUS.md` for current state.
-7. `archive/` and legacy `.phrase/` material.
-
-Fresh evidence can challenge a durable rule, but never silently overrides it.
-Route that conflict through `plan` and record the decision before changing
-application code or static documents.
+Fresh evidence can challenge a durable rule but never silently overrides it.
+Route that conflict through `plan` and record the decision first.
 
 ## Six actions
 
-The project uses six action-named skills. These names and contracts are ours;
-they are not aliases for another skill collection.
+Six action-named skills. These names and contracts are ours; they are not
+aliases for another skill collection. Each action's read list, write boundary,
+and completion condition live in `skills/<action>/SKILL.md`, which is read when
+the action runs — this section is only for choosing one.
 
 ```text
 plan → capture → arrange → do → check → learn
 ```
 
-Use the shortest valid path:
+- `plan` — any request that may change a concept, identity, relation,
+  lifecycle, invariant, Action Contract, architecture boundary, or work size.
+  Every route starts here.
+- `capture` — confirmed work that must survive more than one context.
+- `arrange` — a confirmed SPEC that needs independently verifiable slices.
+- `do` — one ready slice, or an `approve` route with no slice at all.
+- `check` — read-only verification after `do`, or a requested review.
+- `learn` — after verification, a failed assumption, a blocker, or a new fact
+  that changes later judgement. The only action that promotes knowledge.
+
+Routes out of `plan`:
 
 ```text
 plan
   ├─ no-change → stop
-  ├─ settled small change → do → check → learn
-  └─ multi-context change → capture → arrange → do → check → learn
+  ├─ approve → do → check → learn
+  └─ capture → arrange → do → check → learn
 ```
 
-### `plan`
-
-Use for any request that may change a concept, identity, relation, lifecycle,
-invariant, Action Contract, architecture boundary, or work size. Ask in design
-tree rounds. Confirm the need, unchanged baseline, definitions, compatibility,
-migration, and verification before routing. Do not edit files before shared
-understanding is confirmed.
-
-### `capture`
-
-Use for confirmed work that must survive multiple contexts. Create or revise
-`.specs/<feature>/SPEC.md`. Capture decisions already made; do not reopen
-them. A change to a goal, boundary, identity, relation, invariant, interface,
-or acceptance rule requires a new `plan` pass.
-
-### `arrange`
-
-Use after a confirmed SPEC when the work needs independent slices. Write
-`.specs/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
-acceptance, verification, status, and an optional empty `evidence_ref`.
-Prefer vertical slices. Show the split and dependency edges to the user before
-publishing it. Leave `evidence_ref` empty until `learn` records verification.
-
-### `do`
-
-Use for one ready, unblocked slice or a settled small change. Read the relevant
-SPEC, project `KERNEL.md` when present, WORKFLOW, CONTEXT, Protocol, Runbook, Lesson, tests, and callers. Make the smallest working change,
-run the required checks, and update only the local issue status and verification
-summary. Keep `evidence_ref` empty and do not write root Evidence. If semantics
-conflict, stop and return to `plan`.
-
-### `check`
-
-Use after `do` or for a requested review. Fix a comparison baseline and check
-two axes: the confirmed contract (SPEC, project `KERNEL.md`, WORKFLOW, CONTEXT, Protocol) and engineering
-standards (tests, types, security, accessibility, errors, and scope). Default
-to read-only; confirm facts are sufficient for `learn`, leave `evidence_ref`
-empty, and return required fixes to `do`.
-
-### `learn`
-
-Use after verification, a failed assumption, a blocker, or a new fact that
-changes later judgement.
-Append observation, interpretation, recommended next action, and verification
-to `EVIDENCE.md`. Classify verified reusable knowledge before promoting it:
-project concepts and invariants to `KERNEL.md`, project vocabulary and
-authority boundaries to `CONTEXT.md`, workflow concepts to
-`docs/spec-agents/WORKFLOW.md`, stable development agreements to
-`docs/protocols/`, repeatable operations to `docs/runbooks/`, scoped failures
-and practices to `docs/lessons/`, hard-to-reverse trade-offs to `docs/adr/`,
-and current state to `STATUS.md`. Every promoted record names its status,
-scope, applicability, source Evidence ID, and verification path. If an issue
-has `evidence_ref`, append the Evidence ID first, then write the same ID back to
-the issue; `learn` is the only writer and promoter.
+`approve` requires both: semantics unchanged, **and** the work completes in the
+current context. Size is not the test. It creates no SPEC and no slice, so
+`plan` hands `do` the contract that stays unchanged and one verifiable
+acceptance sentence, and `check` compares against that sentence. Only when the
+work may outlive the context does `plan` record one `STATUS.md` entry, which
+`learn` removes on completion. (See ADR 0002 for why size is not the test.)
 
 ## Static and dynamic model
 
-`KERNEL.md` is the managed project's stable semantic model: concepts,
-identities, relations, lifecycles, invariants, and Action Contracts.
-`docs/spec-agents/WORKFLOW.md` is the stable model of the SPEC-AGENTS workflow
-itself. `CONTEXT.md` is the project's own context and vocabulary. None of them
-contains a feature-local implementation plan.
+`KERNEL.md` is the project's stable semantic model; `docs/spec-agents/WORKFLOW.md`
+is the workflow's; `CONTEXT.md` is the project's vocabulary. None holds a
+feature-local plan. `STATUS.md` points at current state, `EVIDENCE.md` is an
+append-only ledger, a SPEC is a living contract below the durable model and
+above its slices. Slices are execution state, not ontology.
 
-`STATUS.md` is the current state pointer. `EVIDENCE.md` is an append-only
-decision-relevant ledger. `SPEC.md` is a living feature contract below the
-durable model and above its issues. `docs/protocols/`, `docs/runbooks/`, and
-`docs/lessons/` hold broader project knowledge without becoming default
-context. Issues are execution state, not ontology.
-
-Never let a ticket silently redefine the model. A compatible revision must name
-one concrete alternative, preserve the existing invariant/data contract, and
-map the new behavior to an Action Contract before code changes.
+Never let a ticket silently redefine the model. A compatible revision names one
+concrete alternative, preserves the existing invariant and data contract, and
+maps the new behavior to an Action Contract before code changes.
 
 ## SPEC and slice discipline
 
-`STATUS.md` records only what is being worked on now: the active SPECs, their
-blockers, their verification state, and the next permitted action. When a SPEC
-is finished it is removed from `STATUS.md`; its result is already in
-`EVIDENCE.md` and its contract stays at `.specs/<feature>/SPEC.md`. Never let
-`STATUS.md` accumulate closed sections — that turns the state pointer into a
-second history ledger.
+`STATUS.md` records only what is being worked on now: active SPECs, blockers,
+verification state, next permitted action. A finished SPEC is removed from it —
+never let it accumulate closed sections (ADR 0002). The repository records no
+future intent; direction becomes durable only as a confirmed SPEC.
 
-The repository does not record future intent. Direction is decided in
-conversation and becomes durable only when it becomes a confirmed SPEC.
+`Slice` is the only execution unit, at `.specs/<feature>/issues/NN-<slug>.md`,
+carrying goal, scope, dependency, acceptance, verification, status, an optional
+`evidence_ref`, `writer:` when its scope contains a file `do` does not own, and
+`authority:` — the module that owns the rule it touches, or `n/a: <reason>`.
+Maintain no second task list.
 
-`Slice` is the only execution unit. A slice lives at
-`.specs/<feature>/issues/NN-<slug>.md` and carries a goal, scope, dependency,
-acceptance, verification, status, and an optional `evidence_ref`. Do not
-maintain a second task list anywhere.
-
-Several SPECs may be active at once, under two different constraints:
-
-- their scopes must not overlap — overlapping scope is a `plan` failure, and
-  isolating working copies defers the conflict rather than solving it;
-- work that must run at the same time needs its own working copy:
-  `jj workspace add` in a project with `.jj/`, `git worktree add` otherwise.
-  Switching between SPECs serially needs no isolation. See the
-  [parallel-work Protocol](docs/spec-agents/parallel-work.md).
+Several SPECs may be active at once. Their scopes must not overlap — that is a
+`plan` responsibility, and isolating working copies does not fix it. Work that
+runs at the same time gets its own working copy: `jj workspace add`, or
+`git worktree add` in a Git-only project. Serial switching needs no isolation.
+See the [parallel-work Protocol](docs/spec-agents/parallel-work.md).
 
 A slice is complete only after its acceptance is checked, verification evidence
 exists, remaining blockers are recorded, the next step is written, and durable
@@ -234,12 +164,7 @@ rules are updated when required.
 
 ## Legacy upgrade
 
-Existing v2 and v3 projects use the root `UPGRADE.md` Prompt. It reconstructs
-recent history, scans the current code architecture, asks the user to confirm
-the candidate project cognition, and only then archives legacy material and
-promotes root documents. The installer does not infer or archive project
-knowledge.
-
-Old `.phrase/commands/` files are historical material. Read them only while
-following `UPGRADE.md` or for explicit regression research; do not use
-`/migrate-v3` as a new default entry point.
+Existing v2 and v3 projects use the root `UPGRADE.md` Prompt, which reconstructs
+history, scans the architecture, and asks the user to confirm before archiving
+anything. The installer never infers or archives project knowledge. Old
+`.phrase/commands/` files are historical material only.

@@ -9,15 +9,27 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 
 ## 读取
 
-读取当前 feature 的 `SPEC.md`、项目 `KERNEL.md`（若存在）、相关 `docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、ADR、Protocol、Runbook、Lesson 和现有 issue。只查已确认 SPEC 的范围；不要把尚未确认的想法提前拆成切片。
+读取当前 feature 的 `SPEC.md`、项目 `KERNEL.md`（若存在）、相关 `docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、ADR、Protocol、Runbook、Lesson 和现有 Slice。只查已确认 SPEC 的范围；不要把尚未确认的想法提前拆成切片。
 
 ## 切片规则
 
-- 一个 issue 对应一个新上下文可完成、可验证的结果。
+- 一个 Slice 对应一个新上下文可完成、可验证的结果。
 - 优先使用跨层的 tracer slice，而不是按文件或技术层机械拆分。
-- 明确 `blocked_by`；没有依赖的 issue 才能进入 `ready`。
+- 明确 `blocked_by`；没有依赖的 Slice 才能进入 `ready`。
 - 每个切片都指向 SPEC、相关 Action Contract 和验收证据。
-- 发现语义冲突时停止安排，回到 `plan`；不要在 issue 中偷偷改本体。
+- 切片的验收必须在它自己的 Scope 内可达。验收要求写 Scope 之外的文件，是
+  拆分错误，回到 `plan` 重新划分边界，不要留给 `do` 去撞。
+- 每个切片必须写 `authority:`——本切片所碰业务规则的唯一权威模块，按 Kernel
+  的 Architecture boundaries 填。既不引入也不修改业务规则时写
+  `n/a: <理由>`；**字段缺失不是有效答案**。做成必填而非条件必填是有意的：
+  条件必填把「这算不算业务规则」的判断交回写切片的人，而那正是出事时判断
+  错的地方。
+- Scope 含 `do` 不拥有的文件时，frontmatter 必须写 `writer:`。`do` 拥有
+  `Code`；`learn` 拥有 `KERNEL.md`、`CONTEXT.md`、`STATUS.md`、`EVIDENCE.md`
+  和 `docs/{adr,protocols,runbooks,lessons}/`；`capture` 拥有 SPEC。
+- 被管项目中，安装进来的 doctrine 不属于任何动作，不能出现在任何切片的
+  Scope 里；需要改它就去改上游。
+- 发现语义冲突时停止安排，回到 `plan`；不要在 Slice 中偷偷改本体。
 
 ## 写入位置
 
@@ -32,6 +44,8 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 
 status: ready | blocked | doing | done | stale
 blocked_by:
+writer:            # Scope 含 do 不拥有的文件时必填
+authority:         # 必填：本切片所碰规则的唯一权威模块，或 `n/a: <理由>`
 spec_ref:
 context_ref:
 evidence_ref:
@@ -47,4 +61,4 @@ evidence_ref:
 
 ## 完成条件
 
-每个 issue 都有可观察目标、边界、依赖、验收和验证方式；没有跨 issue 的隐含前置条件，也没有 roadmap 之外的工作。
+每个 Slice 都有可观察目标、边界、依赖、验收、验证方式和 `authority:`；每个 Slice 的验收在它自己的 Scope 内可达，越界写入的已声明 `writer:`；没有跨 Slice 的隐含前置条件。

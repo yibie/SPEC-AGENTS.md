@@ -57,7 +57,7 @@ context_refs:
 - 文字澄清、链接和验证补充可以直接修订。
 - 改变目标、边界、身份、关系、不变量、接口或验收标准，必须重新经过 `plan`。
 - 修订时保留 revision、原因、受影响的 CONTEXT/Protocol、兼容性、迁移和验证。
-- 受影响的 issue 标为 `stale`；不要让旧 issue 继续执行。
+- 受影响的 Slice 标为 `stale`；不要让旧 Slice 继续执行。
 
 ## 完成条件
 

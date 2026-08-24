@@ -2,9 +2,10 @@
 
 No SPEC is active.
 
-The last completed work separated durable work contracts from scratch
-(`E-20260820-003`). Its contract is at `.specs/split-work-and-scratch/SPEC.md`
-and its result is in `EVIDENCE.md`; neither is state, and neither belongs here.
+The last completed work made placement a checked property, after a field report
+in which all six gates passed and the result was wrong (`E-20260824-008`). Its
+contract is at `.specs/single-authority/SPEC.md` and its result is in
+`EVIDENCE.md`; neither is state, and neither belongs here.
 
 ## What this file is
 
@@ -45,6 +46,33 @@ None recorded.
 One follow-up is open, not started:
 
 Run `UPGRADE.md` against one real project installed before today's changes. It
-now carries three migration sections — pre-split layout, phase-shaped layout,
-and SPECs under `.scratch/` — and none of them has been run against a real
-project. Record where each classification step is wrong before relying on it.
+now carries four migration sections — pre-split layout, phase-shaped layout,
+SPECs under `.scratch/`, and locally modified doctrine — and none of them has
+been run against a real project. Record where each classification step is wrong
+before relying on it.
+
+The reference-integrity axis added to `check` has no automated enforcement. If
+a sixth reference breakage appears, the next step is a check that fails on an
+unresolvable reference, not another rule.
+
+The `plan-only`, `reject`, and `unresolved` routes have not been walked against
+their own contracts. The `approve` route was documented for months and could
+not be executed; the same defect class would look identical on those three.
+
+The reporting project's trial is still running and has not reported back.
+Nothing in `E-20260824-008` is confirmed to work in the field. When the result
+arrives, check whether `authority:` was answered honestly or filled with `n/a`
+under the same time pressure that produced the original defect.
+
+The mandatory read is now exactly 400 lines, at the ceiling. The next addition
+must remove something first. Nothing prevents it from growing past 400 again, and no check
+fails on it. If it does, the answer is a failing check on the line count.
+
+Three items from `mattpocock/skills` are unexamined, each needing its own
+`plan`: `implement`'s continuation loop, an external issue tracker for slices,
+and per-axis sub-agents with a word cap.
+
+`capture` does not require a SPEC to cover every decision its `plan` round
+produced, and nothing downstream can detect the omission — `arrange` and `check`
+both compare against the SPEC, not against the round. One decision was already
+lost this way (`E-20260821-006`). This needs its own `plan`.

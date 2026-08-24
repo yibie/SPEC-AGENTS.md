@@ -1,5 +1,124 @@
 # Changelog
 
+## [4.7.0] — 2026-08-24
+
+**Breaking.** Made placement a checked property, after a field report in which
+six gates passed and the result was wrong.
+
+- `Architecture boundaries` in the Kernel is now the authority map: for each
+  rule that could live in more than one place, the one module that owns it,
+  named by path. Single authority constrains where a rule is decided, not what
+  it decides.
+- Every slice declares `authority:`, or `n/a: <reason>`. Required rather than
+  conditional — a conditional field returns the "is this a business rule?"
+  judgment to the slice author, which is the judgment that failed.
+- `do` compares the target site against the map before writing and returns to
+  `plan` if it is not there.
+- `check`'s contract axis gains a named authority item with three tells: a
+  second site for a rule that already has one, a client reimplementing a
+  server-enforced rule, derived state persisted twice. Conformance to
+  `KERNEL.md` does not detect duplication, and the ontology-impact question
+  answers "no" for it.
+- `check` declares whether it ran in the context that executed `do`. When it
+  did, the authority item needs positive evidence rather than absence of
+  suspicion.
+- New Protocol `docs/spec-agents/single-authority.md`: the rule is not "never
+  duplicate", divergence is the failure, and a second site owes a same-input
+  equivalence test. It also records why green tests do not protect — a test at
+  the implementation's own layer cannot show the layer is wrong.
+- Recorded as `docs/adr/0006-single-authority.md`.
+
+## [4.6.0] — 2026-08-22
+
+Cut the mandatory read by a third; no rule removed.
+
+- `AGENTS.md` + `docs/spec-agents/WORKFLOW.md`: 586 → 399 lines. Two days of
+  defect fixes had grown it from 299, each addition justified and each applied
+  by adding prose to the file every task must read.
+- `AGENTS.md`'s `## Six actions` was 111 lines restating the six `SKILL.md`
+  files, which are read in full when the action runs. It is now a 38-line
+  router: enough to choose an action, nothing needed after choosing.
+- Rule rationale moved into the ADR that records the decision, with a pointer
+  left beside the rule. Two reasons stayed inline, both for rules observed
+  broken while visible.
+- `check`'s engineering axis gained Fowler's twelve code smells as a named
+  baseline, adapted from `mattpocock/skills`. `check` is not mandatory reading,
+  so this costs nothing per task — which is the point.
+- No ADR: no decision changed.
+
+## [4.5.0] — 2026-08-21
+
+Made ontology drift detectable.
+
+- `check` gains a fourth finding, `semantic`, which routes to `plan` instead of
+  `do`. Previously all three finding types returned to `do`, so a code/Kernel
+  conflict could only be filed as a `blocker` and sent back to change the code.
+- `check` never decides whether the code or the Kernel is wrong. That is
+  `plan`'s job, and deciding it in `check` bypasses the rule that Kernel
+  evolution passes `plan`.
+- Every `check` answers one question in writing, including when the answer is
+  no: did this change add, alter, or retire a concept, identity, relation,
+  lifecycle, invariant, or Action Contract? Adding one the Kernel lacks violates
+  nothing, so no axis catches it.
+- Each enacted Kernel entry carries `since:` and `source:`. No per-entry version
+  number and no in-file changelog: git gives per-line history, `source:` gives
+  which decision admitted the entry.
+- `start` is re-runnable as a re-scan. It writes nothing to `KERNEL.md` and
+  produces a `KernelStatus` plus a difference report. This is what produces
+  `stale` and `contradicted`, which were defined but never emitted.
+- A provenance-only Kernel revision still advances the file version. This rule
+  was decided in the `docs/adr/0004` round and lost at `capture`; it lands here.
+- Recorded as `docs/adr/0005-kernel-drift-detection.md`.
+
+## [4.4.1] — 2026-08-21
+
+Repaired the `approve` route, which was documented but could not be executed.
+
+- `plan` routed `approve` with no artifact, while `do` required a target slice,
+  a slice status, and a non-stale SPEC, and `check` listed the slice among its
+  required inputs. On that route none of those exist. An agent could only
+  ignore the contract or invent a slice for a small change — manufacturing the
+  ticket the doctrine resists.
+- `approve` now requires two conditions: semantics unchanged **and** the work
+  completes in the current context. Size is not the test.
+- `approve` hands `do` the contract that stays unchanged and one verifiable
+  acceptance sentence. Neither is a file. `plan` records one `STATUS.md` entry
+  only when the work may outlive the current context.
+- `do` and `check` state preconditions per path. Neither creates a slice on the
+  short path; `arrange` remains the only creator.
+- Terminology converged: the concept is `Slice`, and a file is named by its full
+  path. Six skills had used "issue" 26 times against 15 for `Slice`.
+- No ADR: this repairs a contract to match the documented model.
+
+## [4.4.0] — 2026-08-20
+
+**Breaking.** Defined `Code`, protected doctrine, and added a reference-integrity
+check.
+
+- `Code` is now a Core Concept: the artifact constrained by the SPEC, the
+  Kernel, and the Action Contracts. Whatever the product is made of is that
+  project's `Code`. In SPEC-AGENTS itself the doctrine documents and `bin/` are
+  its `Code`; knowledge *about* the product never is, in any project.
+- Installed doctrine — `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`,
+  `docs/spec-agents/` — is not written by any action in a managed project.
+  Previously only `docs/spec-agents/` was named, and only against "silent"
+  changes.
+- `check` gains a third axis: every `source`, `spec_ref`, `context_ref`,
+  `evidence_ref`, relative link, and quoted path the change touches must still
+  resolve. Deliberately historical references are recorded, not repaired.
+- A slice whose scope contains a file `do` does not own declares `writer:`, and
+  `arrange` now requires that each slice's verification be reachable within its
+  own scope.
+- The `START.md` Kernel template becomes eight sections matching the Kernel's
+  own definition, adding `Identities` and `Lifecycles` and splitting
+  `Actions and invariants` so that an Action Contract's five fields are all
+  named. Existing Kernels are not required to restructure.
+- `UPGRADE.md` gained a section for detecting locally modified doctrine. It
+  reverts nothing.
+- ADR 0001, 0002, and 0003 were written under the wrong authoring contract and
+  are individually ratified in `EVIDENCE.md`; no content was reverted.
+- Recorded as `docs/adr/0004-code-and-write-boundaries.md`.
+
 ## [4.3.0] — 2026-08-20
 
 **Breaking.** Separated durable work contracts from scratch.

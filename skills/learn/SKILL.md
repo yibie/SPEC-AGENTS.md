@@ -28,13 +28,13 @@ bookmark 和 `jj diff`/`jj log` 结果；不要把 JJ Change 当作语义 Change
 要求远端发布才能完成本地 `learn`。Git-only 项目继续记录其现有 commit/branch
 证据。
 
-如果来源 issue 有 `evidence_ref`：先为本次结果分配稳定 Evidence ID，追加
-`EVIDENCE.md`，验证写入成功后，再把同一个 ID 回写 issue。不要在验证前
+如果来源 Slice 有 `evidence_ref`：先为本次结果分配稳定 Evidence ID，追加
+`EVIDENCE.md`，验证写入成功后，再把同一个 ID 回写 Slice。不要在验证前
 预填链接；`learn` 是唯一写入者。
 
 ## 判断知识类别与提升层级
 
-- 只影响当前任务：留在 issue/SPEC，不提升。
+- 只影响当前任务：留在 Slice 或 SPEC，不提升；短路径上不留任何记录。
 - 可复用但尚未成为规则的事实、失败假设或验证结果：追加 `EVIDENCE.md`。
 - 项目稳定概念、身份、关系、生命周期或不变量：经 `plan` 确认后更新项目
   `KERNEL.md`；项目自己的词汇和权威边界更新 `CONTEXT.md`；只有 SPEC-AGENTS

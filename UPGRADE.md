@@ -136,6 +136,32 @@ Nothing is moved or deleted before the user approves. If a `.scratch/` entry is
 neither a SPEC directory nor a known report, report it and ask rather than
 guessing which of the two it is.
 
+### Locally modified doctrine
+
+Installed doctrine is identical in every project and is written only by the
+installer: `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`, and
+`docs/spec-agents/`. A project that edited any of them locally has a change
+that the next install silently reverts and that no other project can see.
+
+Detect it by comparing each installed file against the upstream copy in the
+SPEC-AGENTS repository. Report every difference with the file, the lines, and
+what the local version does differently.
+
+Do not revert anything. A local edit is evidence that someone needed something
+the doctrine did not provide, and reverting it destroys that evidence. Present
+each difference to the user with three routes and let them choose per file:
+
+1. the need is general — take it upstream as a `plan` in the SPEC-AGENTS
+   repository, then reinstall;
+2. the need is local and belongs elsewhere — move it into this project's own
+   `CONTEXT.md`, a Protocol, or a Runbook, where the installer will not touch
+   it;
+3. the edit is obsolete — discard it, with the user saying so explicitly.
+
+If a slice in this project's `.specs/` has installed doctrine in its scope,
+report that too: the slice belongs upstream, not here, and `arrange` should
+have refused it.
+
 ## 2. Reconstruct recent project history
 
 For v2, inspect the most recent active phase and its related SPEC, plan, task,

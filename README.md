@@ -245,14 +245,32 @@ living SPEC → State → Slice → Code
 | --- | --- | --- | --- |
 | Kernel | Managed-project concepts, identities, relations, lifecycles, invariants, and Action Contracts | project `KERNEL.md`; workflow `docs/spec-agents/WORKFLOW.md` | The first Start may create confirmed-only K1; later semantic changes pass `plan` and require verified evidence. |
 | SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.specs/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
-| State | Active SPECs, slices, blockers, verification status, and next permitted action | `STATUS.md` and local issue state | Changes with execution; it does not redefine the Kernel. |
+| State | Active SPECs, slices, blockers, verification status, and next permitted action | `STATUS.md` and local slice state | Changes with execution; it does not redefine the Kernel. |
 | Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
-| Code | The implementation and observable behavior constrained by the contracts | Source, tests, and runtime artifacts | `do` changes code; `check` proves or rejects the result. |
+| Code | The artifact constrained by the contracts — whatever the product is made of | Source, tests, and runtime artifacts; in SPEC-AGENTS itself, the doctrine documents and `bin/` | `do` writes it; `check` proves or rejects the result. Knowledge *about* the product is not Code and belongs to `learn`. |
 
 The first `START.md` run creates the project's `KERNEL.md` when the bounded scan
-finds stable facts. The file is deliberately small and human-readable; it is
-not a formal ontology schema, graph database, generator, or second requirements
-document. `docs/spec-agents/WORKFLOW.md` remains the workflow model for
+finds stable facts. It has eight sections — Concepts, Identities, Relations,
+Lifecycles, Action Contracts, Invariants, Architecture boundaries, and Source
+evidence — one per element the Kernel records. Identity and lifecycle get their
+own sections on purpose: an identity criterion filed under Concepts reads as a
+concept, and a lifecycle written as prose invariants leaves the reader to
+reassemble the state machine. Each Action Contract carries all five fields:
+precondition, input, permitted effect, invariant, verification.
+
+Every enacted entry carries `since:` — the Kernel version at which its current
+meaning was set — and `source:` — the code path, Evidence, or decision that
+admitted it. There is no per-entry version number and no changelog inside the
+file: git already gives per-line history, while `source:` carries what git
+cannot, namely which decision let the entry in.
+
+`start` can be run again as a re-scan. It writes nothing to `KERNEL.md` and
+reports a `KernelStatus` plus the differences, because nothing else compares
+the Kernel against reality — `check` uses the Kernel as the ruler, never as the
+measured thing.
+
+The file is deliberately small and human-readable; it is not a formal ontology
+schema, graph database, generator, or second requirements document. `docs/spec-agents/WORKFLOW.md` remains the workflow model for
 SPEC-AGENTS itself, and root `CONTEXT.md` belongs to the project.
 
 ## Knowledge evolution
@@ -444,8 +462,11 @@ through `plan` and recorded before implementation silently changes the model.
    standards.
 6. `learn`: append verified evidence and promote only reusable knowledge.
 
-Use the shortest valid path: no-change stops after `plan`; a settled small
-change may go directly to `do`; multi-context work uses all six actions.
+Use the shortest valid path. `no-change` stops after `plan`. `approve` goes
+straight to `do` when semantics are unchanged **and** the work completes in the
+current context — it creates no SPEC and no slice, so `plan` hands `do` the
+contract that stays unchanged and one verifiable acceptance sentence. Anything
+that cannot finish in one context uses all six actions.
 
 ## Slices and parallel work
 
@@ -587,13 +608,29 @@ v4 围绕三个结果设计：
 | --- | --- | --- | --- |
 | Kernel | 被管理项目的概念、身份、关系、生命周期、不变量和 Action Contract | 项目 `KERNEL.md`；框架 `docs/spec-agents/WORKFLOW.md` | 首次 `start` 可从 confirmed facts 建立 K1；后续语义变化必须先经过 `plan` 并有验证证据。 |
 | SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.specs/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
-| State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 issue 状态 | 随执行变化，但不能重新定义 Kernel。 |
+| State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 Slice 状态 | 随执行变化，但不能重新定义 Kernel。 |
 | Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
 | Code | 受契约约束的实现和可观察行为 | 源码、测试和运行产物 | `do` 修改代码，`check` 证明或否定结果。 |
 
 第一次 `start` 扫描在项目缺少 `KERNEL.md` 时建立只含 confirmed facts 的 K1。
-候选、冲突和 unknown 留在 Start Report，不能混入 enacted Kernel。这个文件是
-项目本体的最小稳定层，不是图数据库、正式 schema 或第二套需求文档。
+候选、冲突和 unknown 留在 Start Report，不能混入 enacted Kernel。
+
+它有八个小节 —— Concepts、Identities、Relations、Lifecycles、Action
+Contracts、Invariants、Architecture boundaries、Source evidence —— 与 Kernel
+记录的每一项一一对应。身份和生命周期单独成节是有意的：身份判据写进 Concepts
+就读成了一个概念，生命周期写成散文不变量就要读者自己拼回状态机。每条 Action
+Contract 带全五个字段：前置条件、输入、允许效果、不变量、验证方式。
+
+每条 enacted 记录带 `since:`（这条含义是在哪个 Kernel 版本定下的）和
+`source:`（准入它的代码路径、Evidence 或决定）。不设逐项版本号，也不在文件内
+维护 changelog —— git 已经给了逐行历史，而 `source:` 携带 git 给不了的东西：
+是哪个决定让它进来的。
+
+`start` 可以作为 re-scan 重跑。它不写 `KERNEL.md`，只产出 `KernelStatus` 和
+差异报告 —— 因为没有别的动作会拿 Kernel 与现实反向比对，`check` 只把 Kernel
+当尺子，从不当被测物。
+
+这个文件是项目本体的最小稳定层，不是图数据库、正式 schema 或第二套需求文档。
 
 ### 知识如何迭代
 

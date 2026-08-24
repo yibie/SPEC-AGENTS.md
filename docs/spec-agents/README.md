@@ -5,11 +5,19 @@ project that installs SPEC-AGENTS, and the SPEC-AGENTS installer is the only
 thing that writes it. Do not edit these files as part of project work — a local edit is
 overwritten by the next install and is invisible to every other project.
 
+The same rule covers the doctrine that lives outside this directory:
+`AGENTS.md`, `START.md`, `UPGRADE.md`, and `skills/`. All five are installed,
+and no action writes any of them here. If a slice's scope contains one of them,
+that work belongs upstream in the SPEC-AGENTS repository, not in this project —
+`arrange` should refuse the slice rather than let `do` discover it.
+
 - `WORKFLOW.md` — the workflow's stable semantic model: the concepts,
   relations, lifecycles, and invariants behind the six actions.
 - `evidence-links.md` — when a Slice may carry an Evidence ID, and who writes it.
 - `knowledge-promotion.md` — where a verified fact belongs once `learn`
   classifies it.
+- `single-authority.md` — where a rule is allowed to live, and what a second
+  implementation owes.
 - `parallel-work.md` — when several SPECs may be active, and when concurrent
   work needs its own working copy.
 - `jj-change-management.md` — local version control in a project with `.jj/`.
