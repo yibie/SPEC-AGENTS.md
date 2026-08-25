@@ -54,12 +54,17 @@ decision: no-change | revise | approve | reject | unresolved
 用户确认共享理解后，只选择一个结果：
 
 - `no-change`：停止，不创建 SPEC、不改代码。
-- `plan-only`：输出边界明确的计划，等待执行授权。
+- `plan-only`：输出边界明确的计划，等待执行授权。获得授权后：单上下文可完成的
+  交给 `do`（`do` 的短路径接受已授权的 `plan-only`），跨上下文的交给 `capture`。
 - `approve`：语义不变**且**当前上下文内可完成，交给 `do`。两个条件都要满足；
   语义不变但一个上下文完不成的工作走 `capture`——它需要的是可交接的契约，
-  不是语义门。
-- `compatible revise`：明确一个兼容替代方案，保留旧不变量和数据契约，交给 `capture` 或 `do`。
-- `breaking`：先记录迁移方案和 ADR，不能伪装成兼容修改。
+  不是语义门。**大小不是判据**：Change Boundary 已经写明一个很小的 diff
+  也可能是语义变化。这条路径不产生 SPEC 也不产生 Slice。
+- `compatible revise`：明确一个兼容替代方案，保留旧不变量和数据契约。跨上下文的
+  交给 `capture`，单上下文可完成的交给 `do`（`do` 的短路径接受它）。
+- `breaking`：必须确定迁移方案，由 `capture` 写进 SPEC，不能伪装成兼容修改。
+  **ADR 由 `learn` 在收尾时写**，和其它长期记录一样——此刻还没有任何东西被
+  验证过，`learn` 的触发条件尚未满足（见 `docs/adr/0004`）。
 - `reject` / `unresolved`：停止；只有用户需要长期记忆时才交给 `learn` 留痕。
 
 ## `approve` 必须交出什么

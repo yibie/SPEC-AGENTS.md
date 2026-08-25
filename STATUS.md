@@ -2,10 +2,10 @@
 
 No SPEC is active.
 
-The last completed work made placement a checked property, after a field report
-in which all six gates passed and the result was wrong (`E-20260824-008`). Its
-contract is at `.specs/single-authority/SPEC.md` and its result is in
-`EVIDENCE.md`; neither is state, and neither belongs here.
+The last completed work repaired five routes that had no satisfiable next step,
+found by an independent review of doctrine that had been self-verified for three
+days (`E-20260824-009`). Its contract is at `.specs/route-repair/SPEC.md` and
+its result is in `EVIDENCE.md`; neither is state, and neither belongs here.
 
 ## What this file is
 
@@ -58,6 +58,13 @@ unresolvable reference, not another rule.
 The `plan-only`, `reject`, and `unresolved` routes have not been walked against
 their own contracts. The `approve` route was documented for months and could
 not be executed; the same defect class would look identical on those three.
+
+Walking a route — tracing each `plan` outcome against the preconditions that
+must accept it — found a defect that reading the same files did not. That walk
+is in no action's contract. It belongs somewhere.
+
+Whether an independent review should run at a fixed cadence, rather than when
+someone thinks to ask, is now an open question with one data point behind it.
 
 The reporting project's trial is still running and has not reported back.
 Nothing in `E-20260824-008` is confirmed to work in the field. When the result

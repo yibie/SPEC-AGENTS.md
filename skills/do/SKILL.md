@@ -21,7 +21,7 @@ Protocol、Runbook、Lesson。确认：
 - 所有 `blocked_by` 已完成；
 - SPEC 没有 `stale`；
 - Slice 未声明 `writer:`，或声明的就是 `do`；
-- Slice 的 `authority:` 与 Kernel 的 Architecture boundaries 对得上；
+- Slice 的 `authority:` 已对照过 Kernel 的 Architecture boundaries（见下）；
 - 当前代码、测试和配置与任务范围一致。
 
 ### 短路径（`plan` 直接给出 `approve`）
@@ -31,7 +31,8 @@ Protocol、Runbook、Lesson。确认：
 `CONTEXT.md`、项目 `KERNEL.md`（若存在）、`STATUS.md` 和必要的 Protocol、
 Runbook、Lesson。确认：
 
-- `plan` 给出的结果是 `approve`；
+- `plan` 给出的结果允许直接执行：`approve`；或已获用户明确授权的 `plan-only`；
+  或 `compatible revise` 且该替代方案在当前上下文内可完成；
 - 它交出的「保持不变的契约」和那句验收都已知；
 - 工作仍然可以在当前上下文内完成。
 
@@ -40,9 +41,16 @@ Runbook、Lesson。确认：
 ### 两条路径都适用：先对权威落点
 
 动手前把这次要写的位置，对照项目 `KERNEL.md` 的 Architecture boundaries
-（权威落点地图）。**目标位置不在图上就停下，回到 `plan`** —— 要么地图不全，
-要么落点不对，两者都不是 `do` 能自己决定的。短路径上没有 Slice，就直接拿
-打算落笔的模块去对。
+（权威落点地图）。短路径上没有 Slice，就直接拿打算落笔的模块去对。两种结果：
+
+- **图上有这条规则，而目标位置不是它** —— 停下回到 `plan`。要么落点不对，
+  要么地图该改，两者都不是 `do` 能自己决定的。
+- **图不存在，或图上没有覆盖这条规则的条目** —— **不要停**。记下打算落笔的
+  位置，产出一个 `semantic` 发现交给 `plan`，然后继续执行。
+
+第二种情况刻意不阻断：存量 Kernel 本来就不要求回填这张图（见 `START.md`），
+把地图缺失变成硬停会让合规项目动不了，而一条动不了的规则一定会被绕过。缺失
+是 Kernel 的缺口，不是这次工作的缺陷 —— 交给拥有 Kernel 变更的那道门去补。
 
 `do` 从不修改这张图。在症状出现的那一层顺手加分支，是功能生效但生效在错误
 位置的主要方式。

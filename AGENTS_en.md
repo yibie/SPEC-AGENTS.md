@@ -48,23 +48,17 @@ before ordinary work.
 ## Start entry
 
 On `start`, `/start`, or a request to onboard or adapt a project, read
-`START.md` and execute the Start Review. It is a bootstrap entry, not a seventh
-action: inspect, create an absent `KERNEL.md` from confirmed facts, write
-`.scratch/start/REPORT.md`, stop for confirmation, then route to `plan` or
-`UPGRADE.md`. Never overwrite an existing Kernel. It is re-runnable as a
-read-only re-scan (ADR 0005).
+`START.md` and execute it. It is a bootstrap entry, not a seventh action, and it
+is re-runnable as a read-only re-scan. Procedure, routing table, Kernel
+template, and write boundary are all in `START.md`.
 
 ## Version-control layer
 
-When `.jj/` exists, JJ is the local version-control interface. Inspect with
-`jj status`/`log`/`diff`, work with `jj new`/`edit`/`describe`, recover with
-`jj undo`/`op log`, and publish only after explicit authorization via a
-bookmark and `jj git push`. Do not substitute `git add`/`commit`/`stash`/
-`branch`/`checkout`. A workflow `Change` and a `JJ Change` are different things.
-
-Without `.jj/`, keep the project's existing Git workflow. Never initialize JJ
-automatically. Details: [JJ change-management Protocol](docs/spec-agents/jj-change-management.md)
-and [JJ project setup Runbook](docs/spec-agents/jj-project-setup.md).
+When `.jj/` exists, JJ is the local version-control interface and a workflow
+`Change` is not a `JJ Change`. Never initialize JJ automatically; without
+`.jj/`, keep the project's existing Git workflow. Commands and publishing rules:
+[JJ change-management Protocol](docs/spec-agents/jj-change-management.md),
+[JJ project setup Runbook](docs/spec-agents/jj-project-setup.md).
 
 ## Document authority
 
@@ -100,18 +94,12 @@ plan → capture → arrange → do → check → learn
 Routes out of `plan`:
 
 ```text
-plan
-  ├─ no-change → stop
-  ├─ approve → do → check → learn
-  └─ capture → arrange → do → check → learn
+plan → (see skills/plan/SKILL.md for the six outcomes and where each one goes)
 ```
 
-`approve` requires both: semantics unchanged, **and** the work completes in the
-current context. Size is not the test. It creates no SPEC and no slice, so
-`plan` hands `do` the contract that stays unchanged and one verifiable
-acceptance sentence, and `check` compares against that sentence. Only when the
-work may outlive the context does `plan` record one `STATUS.md` entry, which
-`learn` removes on completion. (See ADR 0002 for why size is not the test.)
+Every route begins at `plan`. Which outcome applies, and what each one hands to
+the next action, is defined in `skills/plan/SKILL.md` and nowhere else — a
+second copy here is what let the two drift apart.
 
 ## Static and dynamic model
 
@@ -127,26 +115,12 @@ maps the new behavior to an Action Contract before code changes.
 
 ## SPEC and slice discipline
 
-`STATUS.md` records only what is being worked on now: active SPECs, blockers,
-verification state, next permitted action. A finished SPEC is removed from it —
-never let it accumulate closed sections (ADR 0002). The repository records no
-future intent; direction becomes durable only as a confirmed SPEC.
-
-`Slice` is the only execution unit, at `.specs/<feature>/issues/NN-<slug>.md`,
-carrying goal, scope, dependency, acceptance, verification, status, an optional
-`evidence_ref`, `writer:` when its scope contains a file `do` does not own, and
-`authority:` — the module that owns the rule it touches, or `n/a: <reason>`.
-Maintain no second task list.
-
-Several SPECs may be active at once. Their scopes must not overlap — that is a
-`plan` responsibility, and isolating working copies does not fix it. Work that
-runs at the same time gets its own working copy: `jj workspace add`, or
-`git worktree add` in a Git-only project. Serial switching needs no isolation.
-See the [parallel-work Protocol](docs/spec-agents/parallel-work.md).
-
-A slice is complete only after its acceptance is checked, verification evidence
-exists, remaining blockers are recorded, the next step is written, and durable
-rules are updated when required.
+`STATUS.md` records only what is being worked on now; a finished SPEC is removed
+from it and the repository records no future intent (ADR 0002). Confirmed work
+lives at `.specs/<feature>/`, and `Slice` is the only execution unit — its
+fields, the reachability rule, and the parallel-work constraints are defined in
+`skills/arrange/SKILL.md` and
+[the parallel-work Protocol](docs/spec-agents/parallel-work.md).
 
 ## Safety and scope
 

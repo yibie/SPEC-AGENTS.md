@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.7.1] — 2026-08-24
+
+Repaired five routes that had no satisfiable next step, found by an independent
+review.
+
+- `do` required the Kernel's authority map while `START.md` said an existing
+  Kernel need not have one — a conforming project could enter neither execution
+  path. The comparison is now conditional: no map means a `semantic` finding to
+  `plan`, not a stop.
+- `AGENTS.md` drew three routes out of `plan` while `plan` emits six. The route
+  diagram is gone; `skills/plan/SKILL.md` is the single routing authority, and
+  the `approve` two-part test now exists in exactly one file.
+- `plan-only`, `compatible revise` routed to `do`, and `breaking` each had no
+  action whose preconditions would accept them. All three now do. `breaking`
+  states the migration in the SPEC; the ADR stays with `learn` (ADR 0004).
+- `learn`'s triggers now name a rejected or unresolved proposal.
+- `authority:` states what it guarantees — an answer, not a correct one — and
+  `check` verifies `n/a` against the diff, which `arrange` cannot see.
+- `Start entry`, `Version-control layer`, and `SPEC and slice discipline` sank
+  to their skills and Protocols. Mandatory read 400 → 374.
+- No ADR: this repairs contracts to match ADR 0004 and ADR 0006.
+
 ## [4.7.0] — 2026-08-24
 
 **Breaking.** Made placement a checked property, after a field report in which

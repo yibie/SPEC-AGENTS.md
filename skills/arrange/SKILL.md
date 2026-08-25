@@ -22,8 +22,10 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
 - 每个切片必须写 `authority:`——本切片所碰业务规则的唯一权威模块，按 Kernel
   的 Architecture boundaries 填。既不引入也不修改业务规则时写
   `n/a: <理由>`；**字段缺失不是有效答案**。做成必填而非条件必填是有意的：
-  条件必填把「这算不算业务规则」的判断交回写切片的人，而那正是出事时判断
-  错的地方。
+  它强制这个判断被写下来、可复核，而不是默默不做。
+  但要清楚它保证什么——**它保证有一个答案，不保证答案是对的**。`n/a` 仍然把
+  「这算不算业务规则」的分类交回写切片的人，而 `arrange` 只读意图、读不到
+  diff，核不了这个分类。核它的地方是 `check`。
 - Scope 含 `do` 不拥有的文件时，frontmatter 必须写 `writer:`。`do` 拥有
   `Code`；`learn` 拥有 `KERNEL.md`、`CONTEXT.md`、`STATUS.md`、`EVIDENCE.md`
   和 `docs/{adr,protocols,runbooks,lessons}/`；`capture` 拥有 SPEC。

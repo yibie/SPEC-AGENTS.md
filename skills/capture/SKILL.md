@@ -9,7 +9,9 @@ description: 将已经确认的多上下文设计记录成可交接、可受控�
 
 ## 前置条件
 
-- `plan` 已结束并得到 `approve`、`compatible revise` 或明确的 `plan-only` 执行授权。
+- `plan` 已结束并得到 `approve`、`compatible revise`、`breaking`，或明确的
+  `plan-only` 执行授权。`breaking` 时，SPEC 必须包含迁移方案；ADR 不在这里写，
+  由 `learn` 收尾时写。
 - 设计需要跨多个上下文，或必须交给之后的 agent 继续。
 - `docs/spec-agents/WORKFLOW.md`、`CONTEXT.md`、项目 `KERNEL.md`（若存在）、
   相关 ADR、Protocol、Runbook 和

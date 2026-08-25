@@ -1333,3 +1333,118 @@ original defect — a required field records an answer, not a good one.
 - `docs/adr/0006-single-authority.md`
 - `docs/spec-agents/single-authority.md`
 - `.specs/single-authority/SPEC.md`
+
+## 2026-08-24 — an independent review found in one pass what three days of self-review missed (E-20260824-009)
+
+### Observation
+
+`codex exec` was run read-only against the doctrine with four failure classes to
+look for. It returned seven findings. Four were verified against the files and
+are load-bearing. Three of those four were introduced the previous day, by the
+author who then verified the work.
+
+**`do` could not start in a conforming project.** `skills/do/SKILL.md` required
+the slice's `authority:` to match the Kernel's authority map and stopped when the
+target was not on it. `START.md` states an existing Kernel need not back-fill
+that map. Both halves were written in the same SPEC, hours apart. A project with
+a thin Kernel could enter neither execution path.
+
+**The router and `plan` disagreed about the routes.** `AGENTS.md` drew three
+routes; `skills/plan/SKILL.md` emits six outcomes. The three-route diagram came
+from the context-compression round, which collapsed six into three while
+shortening. A single-authority violation in the doctrine, in the same week the
+single-authority Protocol was written.
+
+**`plan-only` had no next action.** `do` accepted only `approve`; `capture`
+accepted an authorized `plan-only` but also required multiple contexts. A
+single-context authorized `plan-only` could enter neither.
+
+**`breaking` was circular.** `plan` required an ADR before proceeding; `capture`
+did not accept `breaking`; ADR authorship belongs to `learn` (ADR 0004), which
+fires after verification. The author hit this personally twice in one session,
+corrected the ADR authorship, and never revisited `plan`'s wording.
+
+Walking all six outcomes during the repair found a fifth: `plan` routed
+`compatible revise` to "`capture` or `do`", and `do`'s preconditions accepted
+neither `compatible revise` nor anything but `approve`. That branch was dead
+too. `reject`/`unresolved` routed to `learn` for a durable trace, but `learn`'s
+triggers did not name a rejected proposal.
+
+### Interpretation
+
+The review's own conclusion is a better diagnosis of the preceding three days
+than anything produced inside them:
+
+> making a rule visible everywhere is not the same as making it executable;
+> several gates now pass on document shape while the route underneath has no
+> satisfiable next step.
+
+Three of seven findings — five of the defects once the walk is counted — are
+routes with no satisfiable next step. The three days before this added required
+fields, required questions, and named checks. All of that is visibility. None of
+it tests whether the route it guards can be completed.
+
+`do`'s map requirement is the clearest instance: a gate demanding a document
+that the same doctrine, in the same SPEC, says need not exist. It passes every
+review that reads it as a sentence and fails the first project that runs it.
+
+This is empirical support for ADR 0006's claim, obtained on the author rather
+than on a managed project. That ADR argued a context which made a decision is
+structurally poor at auditing it, and declined to mandate independent review on
+cost grounds. One independent pass, on a doctrine that had been self-verified
+continuously for three days, produced four verified defects in a single run.
+The cost argument still holds; the effectiveness argument is now measured.
+
+### Findings not acted on
+
+Two of the seven were mandatory-read judgments naming sections beyond the three
+that were sunk. They are not wrong, but the mandatory read is now 374 lines,
+below the 400 ceiling, and further reduction without a specific complaint
+becomes trimming for its own sake.
+
+### Operational note
+
+The first review attempt hung for two hours with no output. Cause:
+`codex-cli 0.149.0` cannot decode the server's model list — it returns a
+reasoning-effort variant `max` that this client's enum does not contain, so
+`failed to refresh available models` blocks startup. Two of the author's own
+diagnoses along the way were wrong and were corrected: "no `codex exec` process
+exists" (a `head -5` had truncated it) and "blocked reading stdin" (an untested
+hypothesis). Working invocation:
+
+```bash
+codex exec --sandbox read-only --skip-git-repo-check \
+  -c model="gpt-5.5" -c model_reasoning_effort="high" "<prompt>" </dev/null > out.txt 2>&1
+```
+
+Piping to `tail` also hid all progress, since `tail` buffers to EOF.
+
+### Recommended next action
+
+Walking a route is cheap and finds what reading it does not — the fifth defect
+appeared only when the six outcomes were traced one at a time against the
+preconditions that must accept them. That walk is not in any action's contract.
+It belongs somewhere, and this entry does not decide where.
+
+The reporting project's `authority:` trial is still outstanding, and now so is
+the question of whether an independent pass should run at a fixed cadence rather
+than when someone thinks to ask for one.
+
+### Verification
+
+- Every one of the six `plan` outcomes was walked individually against the
+  preconditions of the action that must accept it; all now have a satisfiable
+  next step.
+- A project with no authority map completes `do` on both paths, emitting a
+  `semantic` finding instead of stopping.
+- The `approve` two-part test appears in exactly one file.
+- `AGENTS.md` carries no route diagram and names `skills/plan/SKILL.md` as the
+  authority.
+- Three sections sank; each sunk rule was confirmed present in its destination.
+- Mandatory read 400 → 374.
+- Installer smoke passes; `git diff --check` is clean.
+
+### References
+
+- `.specs/route-repair/SPEC.md`
+- `docs/adr/0004-code-and-write-boundaries.md`, `docs/adr/0006-single-authority.md`
