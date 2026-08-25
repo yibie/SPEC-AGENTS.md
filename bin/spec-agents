@@ -5,7 +5,7 @@ set -e
 # 自动定位仓库根目录（即脚本所在目录的上一级）
 # 兼容 macOS/Linux 的 readlink 问题
 
-VERSION="4.0.0"
+VERSION="4.1.0"
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do

@@ -1,6 +1,16 @@
 # Changelog
 
-## [4.7.1] — 2026-08-24
+## [4.1.0] — 2026-08-24
+
+**Breaking.** Everything since v4.0.4, released as one version. The intermediate
+numbers 4.1.0 through 4.7.1 appeared in this file during development and were
+never tagged or released; they are folded in below as sections.
+
+The framework's own documents are now separated from the state of the repository
+that produces them, `Phase` is retired, placement is a checked property, and the
+read every task pays for is 374 lines instead of 586.
+
+### Route repair — make every documented route executable
 
 Repaired five routes that had no satisfiable next step, found by an independent
 review.
@@ -22,7 +32,7 @@ review.
   to their skills and Protocols. Mandatory read 400 → 374.
 - No ADR: this repairs contracts to match ADR 0004 and ADR 0006.
 
-## [4.7.0] — 2026-08-24
+### Single authority — make placement a checked property
 
 **Breaking.** Made placement a checked property, after a field report in which
 six gates passed and the result was wrong.
@@ -50,7 +60,7 @@ six gates passed and the result was wrong.
   the implementation's own layer cannot show the layer is wrong.
 - Recorded as `docs/adr/0006-single-authority.md`.
 
-## [4.6.0] — 2026-08-22
+### Context budget — cut the mandatory read by a third
 
 Cut the mandatory read by a third; no rule removed.
 
@@ -68,7 +78,7 @@ Cut the mandatory read by a third; no rule removed.
   so this costs nothing per task — which is the point.
 - No ADR: no decision changed.
 
-## [4.5.0] — 2026-08-21
+### Kernel drift — make the Kernel findable-wrong
 
 Made ontology drift detectable.
 
@@ -92,7 +102,7 @@ Made ontology drift detectable.
   was decided in the `docs/adr/0004` round and lost at `capture`; it lands here.
 - Recorded as `docs/adr/0005-kernel-drift-detection.md`.
 
-## [4.4.1] — 2026-08-21
+### Short path — make the `approve` route executable
 
 Repaired the `approve` route, which was documented but could not be executed.
 
@@ -112,7 +122,7 @@ Repaired the `approve` route, which was documented but could not be executed.
   path. Six skills had used "issue" 26 times against 15 for `Slice`.
 - No ADR: this repairs a contract to match the documented model.
 
-## [4.4.0] — 2026-08-20
+### Code and write boundaries
 
 **Breaking.** Defined `Code`, protected doctrine, and added a reference-integrity
 check.
@@ -141,7 +151,7 @@ check.
   are individually ratified in `EVIDENCE.md`; no content was reverted.
 - Recorded as `docs/adr/0004-code-and-write-boundaries.md`.
 
-## [4.3.0] — 2026-08-20
+### Durable work contracts move out of `.scratch`
 
 **Breaking.** Separated durable work contracts from scratch.
 
@@ -159,7 +169,7 @@ check.
   segment with `docs/spec-agents/` while having the opposite ownership.
 - Recorded as `docs/adr/0003-split-work-and-scratch.md`.
 
-## [4.2.0] — 2026-08-20
+### Retire `Phase` and `ROADMAP.md`
 
 **Breaking.** Retired `Phase` and `ROADMAP.md`.
 
@@ -186,7 +196,7 @@ check.
   `archive/roadmap-phases-10-20.md`.
 - Recorded as `docs/adr/0002-retire-phase.md`.
 
-## [4.1.0] — 2026-08-20
+### Split framework doctrine from repository instance state
 
 **Breaking.** Separated framework doctrine from this repository's own state.
 
