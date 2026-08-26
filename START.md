@@ -153,12 +153,36 @@ Keep them distinct:
   collapsing those two turns single authority into frozen behavior and makes
   the map an obstacle instead of a tool.
 
+  Each entry is one fixed line, so a script can read this section:
+
   ```markdown
   ## Architecture boundaries
 
-  - <rule name> — authority: `<path/to/module>`
+  - <rule name> — authority: `<path/to/module>` | owned
+  - <rule name> — authority: `<path/to/module>` | source-backed
     second site: `<path>` (<why it is unavoidable>; equivalence test: `<path>`)
+  - <rule name> — authority: `<path/to/module>` | derived
   ```
+
+  The state after the pipe says who decides:
+
+  - `owned` — this project's semantic layer decides it; nothing outside supplies
+    it.
+  - `source-backed` — a system of record owns it. The project may read and write
+    through, but the source governs.
+  - `derived` — computed from other state. **It has no write path**, and
+    persisting it anywhere is the defect. A `derived` entry never carries a
+    second site.
+
+  `derived` has to be written down. In a running system, derived state is
+  protected by absence — nothing declares it writable, so nothing can write it.
+  A prose map has no such mechanism: absence there means nobody thought about
+  it. Stating it converts a silent omission into a stated prohibition.
+
+  This is a fixed line inside a Markdown document, not a schema. The Kernel is
+  still written and read by people, and no other section gains machine-required
+  structure. `docs/spec-agents/check-kernel.sh` reads this section and nothing
+  else.
 
   An existing Kernel is not required to back-fill this section. A re-scan
   reports a missing or thin authority map as a gap.

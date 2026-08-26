@@ -16,6 +16,10 @@ that work belongs upstream in the SPEC-AGENTS repository, not in this project �
 - `evidence-links.md` — when a Slice may carry an Evidence ID, and who writes it.
 - `knowledge-promotion.md` — where a verified fact belongs once `learn`
   classifies it.
+- `check-kernel.sh` — the only executable here. Verifies the *form* of this
+  project's authority map: entries parse, paths exist, a `derived` rule has no
+  second site. Run it as `docs/spec-agents/check-kernel.sh .`. It does not check
+  that the map is complete or true.
 - `single-authority.md` — where a rule is allowed to live, and what a second
   implementation owes.
 - `parallel-work.md` — when several SPECs may be active, and when concurrent

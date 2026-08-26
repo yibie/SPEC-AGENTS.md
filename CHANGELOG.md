@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.2.0] — 2026-08-25
+
+The authority map becomes checkable, and the payload gains its first executable.
+
+- Nothing read `KERNEL.md`. The authority map and everything added around it the
+  previous two days were enforced only by an agent honoring a sentence.
+- `Architecture boundaries` entries take one fixed line, with an authority state:
+  `owned`, `source-backed`, or `derived`. A `derived` rule has no write path and
+  persisting it is the defect — the state that makes "derived state persisted
+  twice" expressible, borrowed from `gura105/operational-ontology`.
+- `docs/spec-agents/check-kernel.sh` ships with the doctrine and verifies the
+  map's *form*: entries parse, paths exist, `derived` carries no second site, a
+  second site names an equivalence test that exists. It does not check that the
+  map is complete or true.
+- The Kernel stays human-written Markdown. One section gains a fixed line; no
+  other structure is machine-required, so the standing invariant against formal
+  schemas is intact.
+- `tests/doctrine-check.sh` enforces three things that had depended on someone
+  remembering: the 400-line mandatory read ceiling, ADR pointer resolution, and
+  no stale CHANGELOG citations.
+
 ## [4.1.0] — 2026-08-24
 
 **Breaking.** Everything since v4.0.4, released as one version. The intermediate

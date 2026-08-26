@@ -42,7 +42,8 @@ The target contains exactly this doctrine, and nothing else:
 ```text
 AGENTS.md  START.md  UPGRADE.md  CONTEXT.md
 docs/spec-agents/README.md
-docs/spec-agents/{WORKFLOW,parallel-work,evidence-links,knowledge-promotion,jj-change-management,jj-project-setup}.md
+docs/spec-agents/check-kernel.sh          (must be executable)
+docs/spec-agents/{WORKFLOW,single-authority,parallel-work,evidence-links,knowledge-promotion,jj-change-management,jj-project-setup}.md
 skills/{plan,capture,arrange,do,check,learn}/
 ```
 
@@ -64,6 +65,19 @@ done
 `KERNEL.md` is absent because the first `START.md` scan creates it from the
 project's confirmed facts. `STATUS.md`, `ROADMAP.md`, and `EVIDENCE.md` are
 absent because `learn` creates them on the first real write.
+
+### Executable assertion
+
+The payload is documents plus exactly one script. It must arrive runnable:
+
+```bash
+[ -x "$TARGET_ROOT/project/docs/spec-agents/check-kernel.sh" ] \
+  || { echo "checker lost its executable bit" >&2; exit 1; }
+( cd "$TARGET_ROOT/project" && ./docs/spec-agents/check-kernel.sh . ) \
+  || { echo "shipped checker fails on a fresh install" >&2; exit 1; }
+```
+
+A fresh install has no `KERNEL.md`, so the checker must exit 0 with a notice.
 
 ### Leakage assertion
 

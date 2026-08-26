@@ -1448,3 +1448,111 @@ than when someone thinks to ask for one.
 
 - `.specs/route-repair/SPEC.md`
 - `docs/adr/0004-code-and-write-boundaries.md`, `docs/adr/0006-single-authority.md`
+
+## 2026-08-25 — nothing read the Kernel (E-20260825-010)
+
+### Observation
+
+`bin/spec-agents`, `tests/`, and every Runbook were searched for a reader of
+`KERNEL.md`. There was none. The authority map, `authority:` on slices,
+per-entry `since:`/`source:`, and the eight-section shape — all added in the two
+days prior — were enforced only by an agent choosing to honor a sentence.
+
+The installed payload was 24 files, all Markdown and YAML. A check that must
+read a project's Kernel had nowhere to run: this repository has no `KERNEL.md`
+(its semantic model is `docs/spec-agents/WORKFLOW.md`, which is doctrine), and
+nothing executable reached a managed project.
+
+### Interpretation
+
+This is the criticism from `E-20260824-009` reproduced one layer down. An
+authority map was added because placement had gone unchecked; the map itself was
+then unchecked. Adding a required field and adding enforcement are different
+acts, and only the first had happened.
+
+`gura105/operational-ontology` was the prompt for looking. Its objects, links,
+and actions are near-isomorphic to this Kernel's Concepts, Relations, and Action
+Contracts — the same idea, one layer down, where preconditions are functions a
+runtime calls and authority is declared in keys the runtime enforces. In that
+shape the fifteen violations from `E-20260824-008` could not have occurred:
+writes only pass through named actions, and authority is declared per field.
+
+### Borrowed, and not
+
+Borrowed: the three authority states. That project separates ontology-owned
+state from source-backed state, and derived state simply has no write path. The
+authority map here recorded only which module owns a rule, so "derived state
+persisted twice" — one of the fifteen violations — was inexpressible.
+
+`derived` is the state that pays for itself. In a runtime, derived state is
+protected by absence: nothing declares it writable. A prose map has no such
+mechanism, and absence there means nobody thought about it. Writing it down
+converts a silent omission into a stated prohibition.
+
+Not borrowed: the runtime, the MCP surface, the write-back model. Those solve
+authority over *data in a running system*. This framework governs authority over
+*code and knowledge at authoring time*, and no precondition can be attached to
+an agent deciding to add a branch in the wrong module.
+
+Also not borrowed, and recorded as deferred: that project's discipline of naming
+the four implementation choices it makes visible, including what a missing
+policy defaults to.
+
+### Payload composition changed
+
+`docs/spec-agents/check-kernel.sh` is the first executable the installer ships.
+The payload had been documents only. A checker that reads a project's Kernel has
+to run where that Kernel is, and the alternative — a Runbook describing the
+check in prose — is the failure mode being corrected, not a fix for it.
+
+The checker verifies form: entries parse, paths exist, a `derived` rule carries
+no second site, a second site names an equivalence test that exists. It does not
+verify that the map is complete or true. A map can be perfectly formed and
+wrong; judging that remains `check`'s placement item, and both the script header
+and the Protocol say so.
+
+Each of its eight behaviors was proven against a temporary fixture rather than
+asserted, including the two that must pass silently: absent `KERNEL.md` and an
+absent `Architecture boundaries` section both exit 0 with a notice, because
+ADR 0006 promised existing Kernels need not back-fill.
+
+### Three procedures became checks
+
+`tests/doctrine-check.sh` enforces what `STATUS.md` had been carrying as
+depending on someone remembering: the mandatory read stays at or under 400
+lines, every `ADR NNNN` pointer resolves, and no file cites a CHANGELOG heading
+that no longer exists. Each had already failed here at least once. Padding the
+mandatory read past the ceiling was used to prove the first one fails.
+
+### A finding from this round's own verification
+
+The installer smoke test has been re-implemented by hand in a session scratch
+directory on every round that ran it, and the directory was cleared between
+sessions. One verification claim in this round was made against a script that no
+longer existed; the grep returned nothing and was misread as a pass, and the
+smoke was re-run from the Runbook to establish the result.
+
+`docs/runbooks/installer-smoke.md` is prose describing a procedure. The
+procedure has been executed correctly each time and has left nothing behind. It
+is the same class as the map: a check that depends on someone re-deriving it.
+Recorded, not fixed here — it needs its own `plan`, and doing it inside this
+SPEC would be the scope creep this workflow exists to prevent.
+
+### Verification
+
+- Eight fixtures cover `check-kernel.sh`: valid map, absent Kernel, absent
+  section, malformed entry, missing authority path, `derived` with a second
+  site, second site without an equivalence test, missing equivalence test.
+- `tests/doctrine-check.sh` passes here and fails when the mandatory read is
+  padded to 434 lines.
+- The installer ships the checker with its executable bit intact, and it runs in
+  a freshly installed project.
+- Full installer smoke re-run from the Runbook: idempotency, absent set,
+  leakage, link mode, executable, link resolution, source refusal — all pass.
+- `bash -n` on both scripts; `git diff --check` clean.
+
+### References
+
+- `.specs/checkable-authority/SPEC.md`
+- `docs/spec-agents/check-kernel.sh`, `tests/doctrine-check.sh`
+- `gura105/operational-ontology`

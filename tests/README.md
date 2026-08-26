@@ -28,3 +28,20 @@ Use `--keep` to inspect generated fixtures:
 This test does not prove that one model writes better code. It measures protocol
 overhead: how much context and bookkeeping an agent must carry before and after
 the same development slice.
+
+## `doctrine-check.sh`
+
+Checks this repository's own doctrine. Instance, not shipped. It enforces the
+three things `STATUS.md` had been carrying as "depends on someone remembering":
+the mandatory read stays at or under 400 lines, every `ADR NNNN` pointer
+resolves, and no file cites a CHANGELOG heading that no longer exists. Each has
+failed here at least once.
+
+Run from the repository root:
+
+```bash
+tests/doctrine-check.sh
+```
+
+The shipped counterpart is `docs/spec-agents/check-kernel.sh`, which checks a
+*managed project's* authority map and travels with the installer.

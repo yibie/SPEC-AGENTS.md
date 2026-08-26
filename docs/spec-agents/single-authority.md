@@ -10,7 +10,17 @@ verification: every rule that exists in two places has a same-input equivalence 
 ## What single authority means
 
 Each rule has one module that owns it. That module is recorded in the project
-Kernel's `Architecture boundaries` — the authority map — by path.
+Kernel's `Architecture boundaries` — the authority map — by path, on one fixed
+line, with one of three states:
+
+- `owned` — the project's semantic layer decides it.
+- `source-backed` — a system of record owns it; the project writes through.
+- `derived` — computed. It has no write path; persisting it is the defect.
+
+`docs/spec-agents/check-kernel.sh` verifies the form of these entries and that
+the paths exist. It does not verify that the map is complete or that its entries
+are true — a map can be perfectly formed and wrong. That is what `check`'s
+placement item is for.
 
 Single authority constrains **where a rule is decided, not what it decides**.
 The content of an authoritative rule stays freely revisable through `plan`.

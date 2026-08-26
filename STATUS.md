@@ -2,10 +2,10 @@
 
 No SPEC is active.
 
-The last completed work repaired five routes that had no satisfiable next step,
-found by an independent review of doctrine that had been self-verified for three
-days (`E-20260824-009`). Its contract is at `.specs/route-repair/SPEC.md` and
-its result is in `EVIDENCE.md`; neither is state, and neither belongs here.
+The last completed work made the authority map checkable and shipped the first
+executable in the payload (`E-20260825-010`). Its contract is at
+`.specs/checkable-authority/SPEC.md` and its result is in `EVIDENCE.md`; neither
+is state, and neither belongs here.
 
 ## What this file is
 
@@ -50,6 +50,15 @@ now carries four migration sections — pre-split layout, phase-shaped layout,
 SPECs under `.scratch/`, and locally modified doctrine — and none of them has
 been run against a real project. Record where each classification step is wrong
 before relying on it.
+
+`docs/runbooks/installer-smoke.md` is prose. The smoke test has been hand-written
+into a session scratch directory every time it ran, and cleared between sessions;
+one verification claim was made against a script that no longer existed. It needs
+its own `plan`.
+
+`gura105/operational-ontology` names the four implementation choices it makes
+visible, including what a missing policy defaults to. That discipline was not
+borrowed and has no home yet — Kernel section, Protocol, or neither.
 
 The reference-integrity axis added to `check` has no automated enforcement. If
 a sixth reference breakage appears, the next step is a check that fails on an
