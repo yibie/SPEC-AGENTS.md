@@ -1,6 +1,6 @@
 # Start project bootstrap entry
 
-status: revised
+status: verified
 revision: 2
 context_refs: `CONTEXT.md`, `AGENTS.md`, `START.md`, `UPGRADE.md`, `README.md`
 

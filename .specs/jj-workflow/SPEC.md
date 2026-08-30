@@ -1,6 +1,6 @@
 # JJ as the default version-control workflow
 
-status: confirmed
+status: verified
 revision: 1
 context_refs: `CONTEXT.md`, `AGENTS.md`, `AGENTS_en.md`, `UPGRADE.md`
 

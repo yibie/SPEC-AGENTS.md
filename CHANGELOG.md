@@ -1,5 +1,61 @@
 # Changelog
 
+## [4.5.0] — 2026-08-29
+
+**Breaking.** The Kernel delta is declared before the code.
+
+- A SPEC whose Change crosses the Change Boundary declares its proposed Kernel
+  delta in `## Model delta`, with a machine-readable `kernel_delta:`
+  frontmatter field (`none`, or `add | revise | supersede | retire` entries).
+  `do` implements against it; `learn` promotes exactly it or stops.
+- Absent field reads as `none` — a named legacy default, zero back-fill.
+  `capture` makes the field mandatory on new SPECs and refuses to drop a
+  `plan` round's `kernel_promotion`.
+- `gate do` refuses entries without a Model delta section and an empty field;
+  `check-state` requires a verified SPEC's entries to resolve to Kernel
+  provenance where a `KERNEL.md` exists. `tests/kernel-delta-check.sh` (seventeen fixtures) covers
+  the seams.
+- Recorded as `docs/adr/0009-kernel-delta-declaration.md`.
+
+## [4.4.0] — 2026-08-29
+
+**Breaking.** SPEC gets a lifecycle, and `learn` closes both levels.
+
+- `docs/spec-agents/WORKFLOW.md` gives SPEC a lifecycle line —
+  `draft → confirmed → in-progress → revised → verified → superseded` — and a
+  terminal edge. `verified` had been enforced by the CLI and defined nowhere.
+- `learn` is the only action that writes a terminal state: a slice's
+  `evidence_ref` and `done` together after `check`, and a SPEC's `verified`
+  when every slice is `done`, the Evidence is appended, and the SPEC leaves
+  `STATUS.md` in the same act. `do` leaves a finished slice at `doing`.
+- The CLI's two terminal-state refusals cite the Lifecycle line and
+  `skills/learn/SKILL.md`. Logic unchanged.
+- A SPEC with no slices reaches `verified` only when the Evidence names each
+  of its deliverables as verified; nothing is read as vacuously true. Found
+  while classifying three SPECs that had sat at `confirmed` with zero slices
+  for eleven days; all three are now `verified` on named evidence.
+- Recorded as `docs/adr/0008-spec-lifecycle.md`.
+
+## [4.3.0] — 2026-08-26
+
+**Breaking.** The six actions get gates.
+
+- `spec-agents gate <action> [target]` checks an action's mechanical
+  preconditions and refuses with the reason and the document that states it.
+  `transition` changes a slice's state only after verifying the invariants for
+  that state. `check-state`, `status`, and `ready` report.
+- The CLI does not print skill prose. `skills/<action>/SKILL.md` stays the
+  single authority for what an action means; the gate says only whether it may
+  begin.
+- `AGENTS.md` points at the tool and the skills instead of explaining the
+  workflow. Without the tool, the skills are read directly and the gates checked
+  by hand — the workflow degrades, it does not disappear.
+- Bash, no new dependency. A managed project still installs nothing.
+- Five SPECs had every slice `done` while their own status said otherwise.
+  Repaired. Reaching that number took four attempts, three of which produced
+  confident wrong answers — recorded as the actual case for the tool.
+- Recorded as `docs/adr/0007-workflow-cli.md`.
+
 ## [4.2.0] — 2026-08-25
 
 The authority map becomes checkable, and the payload gains its first executable.

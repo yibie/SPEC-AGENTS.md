@@ -28,7 +28,8 @@ description: 将已确认的 SPEC 安排成可独立验证、带依赖关系的�
   diff，核不了这个分类。核它的地方是 `check`。
 - Scope 含 `do` 不拥有的文件时，frontmatter 必须写 `writer:`。`do` 拥有
   `Code`；`learn` 拥有 `KERNEL.md`、`CONTEXT.md`、`STATUS.md`、`EVIDENCE.md`
-  和 `docs/{adr,protocols,runbooks,lessons}/`；`capture` 拥有 SPEC。
+  和 `docs/{adr,protocols,runbooks,lessons}/`；`capture` 拥有 SPEC 文档，
+  而 Slice 与 SPEC 的终态由 `learn` 在收尾写入。
 - 被管项目中，安装进来的 doctrine 不属于任何动作，不能出现在任何切片的
   Scope 里；需要改它就去改上游。
 - 发现语义冲突时停止安排，回到 `plan`；不要在 Slice 中偷偷改本体。

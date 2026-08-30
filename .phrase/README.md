@@ -6,7 +6,6 @@ default context for new work.
 Use the root documents instead:
 
 - `CONTEXT.md`
-- `ROADMAP.md`
 - `STATUS.md`
 - `EVIDENCE.md`
 - `docs/adr/`

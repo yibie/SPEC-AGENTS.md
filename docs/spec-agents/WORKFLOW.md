@@ -70,6 +70,15 @@ Start 生成的、等待用户确认的项目认知候选记录。它必须区�
 目标、边界、决定、Action Contracts 和验证入口。低于 CONTEXT、ADR 和 Protocol，
 经 `plan` 控制修订。工作结束后留在原地（ADR 0003）。
 
+对于跨过 Change Boundary 的 Change，SPEC 的 `## Model delta` 是拟议的 Kernel
+delta：工作验证后，将在项目 `KERNEL.md`（本仓库为 `WORKFLOW.md`）中新增、修订、
+取代或退役的概念、身份、关系、生命周期状态、不变量或 Action Contract。`do`
+据此实现，`learn` 只按原样提升它。提议状态由 SPEC 自身的 lifecycle 承载；
+`kernel:` 行不增加 `proposed` 状态。
+
+没有 `kernel_delta:` frontmatter 字段的 SPEC 按 `kernel_delta: none` 读取。这是
+有意保留的 legacy 默认值，不是未知状态；字段的动词为 `add | revise | supersede | retire`。
+
 ### Slice
 
 一个新上下文可以完成、可以独立验证的工作单元，记录在 `.specs/<feature>/issues/`。Slice 不拥有本体定义，也不能绕过 Plan 修改长期规则；完成验证后可以带一个可选的 `evidence_ref` 指向 Evidence。
@@ -123,6 +132,7 @@ Lesson，不等于某个固定文件。
 Change --plan--> Plan --capture--> SPEC --arrange--> Slice* --do--> Code
 Code --check--> Verification --learn--> Evidence
 Slice --evidence_ref (optional, post-verification)--> Evidence
+SPEC --learn when every Slice is done--> SPEC(verified)
 Evidence --promote when durable--> Project Kernel | Context | Protocol | ADR
 
 Start --inspects--> ProjectState;  --classifies--> KernelStatus
@@ -149,11 +159,16 @@ Bookmark --bridges_to--> Git remote
 ```text
 work:    candidate → planned → captured → arranged → doing → checked → learned
                                               ↘ blocked / stale / rejected
+spec:    draft → confirmed → in-progress → revised → verified → superseded
 start:   unseen → inspected → kernel_bootstrapped → report_ready
                             → user_confirmed → handed_off   ↘ rejected / blocked
 kernel:  absent → bootstrapped(K1) → enacted → revised(Kn) → superseded / rejected
 knowledge: candidate → observed → verified → adopted → superseded / rejected
 ```
+
+`verified` 是 SPEC 完成工作后的终态，由 `learn` 在收尾时写入；它的前置条件在
+`skills/learn/SKILL.md`，不在这里复述。`superseded` 是另一条出口——被另一份
+SPEC 取代——两者不是同义词。
 
 只重锚 `source`、enacted 语义零变化的修订仍是一次 `revised(Kn)`，此时每条
 记录的 `since:` 不变。每条记录带自己的 `since:` 与 `source:`；版本号只在文件
@@ -220,6 +235,7 @@ knowledge: candidate → observed → verified → adopted → superseded / reje
 新增、重命名、拆分、合并、废弃或重新定义概念、身份、关系、生命周期、不变量、
 Action Contract，或改变 Protocol、Runbook、Lesson 的适用范围、约束效果和验收
 方式，都是语义变化；即使代码 diff 很小，也必须走 `plan`。
+语义变化必须在 `do` 开始前于 SPEC 的 `## Model delta` / `kernel_delta:` 中声明。
 
 ## Legacy Upgrade Boundary
 

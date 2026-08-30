@@ -17,9 +17,10 @@ Who owns what:
 | Path | Owner | Written by |
 | --- | --- | --- |
 | `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`, `docs/spec-agents/` | SPEC-AGENTS doctrine | the installer only — no action writes these; a change to any of them belongs upstream (ADR 0001) |
-| `.specs/<feature>/` | the project | `capture` and `arrange`; durable, kept after the work closes (ADR 0003) |
+| `.specs/<feature>/` | the project | `capture` writes the SPEC and `arrange` its slices; on a revision `capture` also marks affected slices `stale`. `do` writes a slice's verification summary and leaves it `doing`; `learn` closes it with `evidence_ref` and `done`, and marks the SPEC `verified`. Durable, kept after the work closes (ADR 0003) |
 | `.scratch/` | the project | one-shot reports awaiting confirmation; consider ignoring it in version control (ADR 0003) |
-| `KERNEL.md`, `CONTEXT.md`, `STATUS.md`, `EVIDENCE.md`, `docs/{adr,protocols,runbooks,lessons}/` | the project | `learn` only (ADR 0004) |
+| `KERNEL.md`, `CONTEXT.md`, `EVIDENCE.md`, `docs/{adr,protocols,runbooks,lessons}/` | the project | `learn` only, except that the first `START.md` scan may create `KERNEL.md` at `K1` from confirmed facts (ADR 0004) |
+| `STATUS.md` | the project | `learn`; `plan` may add one entry when the work will outlive the current context, and `learn` removes it (ADR 0004) |
 | everything else | the project | `do` — it is the project's `Code` (ADR 0004) |
 
 In the SPEC-AGENTS repository itself the doctrine files are the product, so
@@ -73,32 +74,30 @@ Route that conflict through `plan` and record the decision first.
 
 Six action-named skills. These names and contracts are ours; they are not
 aliases for another skill collection. Each action's read list, write boundary,
-and completion condition live in `skills/<action>/SKILL.md`, which is read when
-the action runs — this section is only for choosing one.
+and completion condition live in `skills/<action>/SKILL.md`.
 
 ```text
 plan → capture → arrange → do → check → learn
 ```
 
-- `plan` — any request that may change a concept, identity, relation,
-  lifecycle, invariant, Action Contract, architecture boundary, or work size.
-  Every route starts here.
-- `capture` — confirmed work that must survive more than one context.
-- `arrange` — a confirmed SPEC that needs independently verifiable slices.
-- `do` — one ready slice, or an `approve` route with no slice at all.
-- `check` — read-only verification after `do`, or a requested review.
-- `learn` — after verification, a failed assumption, a blocker, or a new fact
-  that changes later judgement. The only action that promotes knowledge.
-
-Routes out of `plan`:
+Ask the tool what may happen, then read the skill for how:
 
 ```text
-plan → (see skills/plan/SKILL.md for the six outcomes and where each one goes)
+spec-agents status                      active SPECs, slice states, drift
+spec-agents ready                       slices whose blocked_by are satisfied
+spec-agents gate <action> [target]      may this action begin? refuses with the reason
+spec-agents transition <slice> <state>  change state after checking its invariants
+spec-agents check-state                 every state invariant; exit 1 on violation
 ```
 
-Every route begins at `plan`. Which outcome applies, and what each one hands to
-the next action, is defined in `skills/plan/SKILL.md` and nowhere else — a
-second copy here is what let the two drift apart.
+`gate` answers whether an action may begin. `skills/<action>/SKILL.md` says what
+to do once it may. The tool never reproduces the skill — one rule, one place.
+
+`plan` is where every route starts, and its outcomes are defined in
+`skills/plan/SKILL.md`. `learn` is the only action that promotes knowledge.
+
+If `spec-agents` is not available, read the skills directly and check the gates
+by hand. The workflow degrades; it does not disappear.
 
 ## Static and dynamic model
 

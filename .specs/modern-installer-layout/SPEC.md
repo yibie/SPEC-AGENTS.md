@@ -1,6 +1,6 @@
 # Modern Installer Layout
 
-status: revised
+status: verified
 revision: 2
 context_refs: `CONTEXT.md`, `AGENTS.md`, `ROADMAP.md`, `STATUS.md`
 

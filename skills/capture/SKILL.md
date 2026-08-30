@@ -32,8 +32,14 @@ description: 将已经确认的多上下文设计记录成可交接、可受控�
 ```markdown
 # <feature>
 
-status: draft | confirmed | in-progress | revised | superseded
+status: draft | confirmed | in-progress | revised | verified | superseded
 revision: <number>
+# 或使用下面的列表形式（示例取自本 SPEC）：
+kernel_delta: none
+# kernel_delta:
+#   - revise: Model delta (SPEC section gains normative meaning)
+#   - revise: capture Action Contract (kernel_delta field, mandatory on new SPECs)
+#   - revise: learn Action Contract (promotion must match the declaration)
 context_refs:
 
 ## Problem and goal
@@ -47,6 +53,14 @@ context_refs:
 ## Issue map
 ## Revision notes
 ```
+
+`verified` 是完成工作的终态，由 `learn` 在收尾时写入；`capture` 不写它。
+`superseded` 是另一条出口——被另一份 SPEC 取代——两者不是同义词。
+
+每个由 `capture` 创建的 SPEC 都必须显式带有 `kernel_delta:`；`none` 是合法的明确答案。
+关于 `## Model delta` 的含义、缺失字段的读取方式以及 Kernel 条目的范围，见
+`docs/spec-agents/WORKFLOW.md` 的 `SPEC` 定义。列表的动词限于
+`add | revise | supersede | retire`，每个 `<entry>` 命名 Kernel 条目，不命名文件。
 
 记录“已经决定的 what/why/where”，不要把新的取舍藏进 SPEC。实现细节只写到能让后续切片保持一致的程度。
 
@@ -64,3 +78,4 @@ context_refs:
 ## 完成条件
 
 SPEC 状态、未改变的契约、边界、Action Contracts、验证入口和 out-of-scope 齐全，并能让一个新上下文不依赖本次对话继续工作。
+若已确认的 `plan` 结果记录了 `kernel_promotion` 且不为 `none`，而 `kernel_delta` 为空或为 `none`，`capture` 必须停下、报告并不得完成，以防止重现 E-20260821-006 的决定丢失。

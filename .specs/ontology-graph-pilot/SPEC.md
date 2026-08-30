@@ -1,6 +1,6 @@
 # Ontology Graph Projection Pilot
 
-status: confirmed
+status: verified
 revision: 1
 context_refs: AGENTS.md, CONTEXT.md, EVIDENCE.md
 

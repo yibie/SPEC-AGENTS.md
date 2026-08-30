@@ -1,6 +1,6 @@
 # Prompt-driven Project Upgrade
 
-status: confirmed
+status: verified
 revision: 1
 context_refs: `CONTEXT.md`, `AGENTS.md`, `ROADMAP.md`, `STATUS.md`
 

@@ -42,6 +42,13 @@ show_help() {
   echo "  spec-agents init [lang] [--link|-l]           Initialize current directory"
   echo "  spec-agents install <path> [lang] [--link|-l] Install modern layout"
   echo ""
+  echo "Workflow gates (these refuse; they do not explain — the skills do):"
+  echo "  spec-agents status                    active SPECs, slice states, drift"
+  echo "  spec-agents check-state               every state invariant; exit 1 on violation"
+  echo "  spec-agents ready                     slices whose blocked_by are satisfied"
+  echo "  spec-agents gate <action> [target]    may this action begin? refuses with the reason"
+  echo "  spec-agents transition <slice> <state> [reason]"
+  echo ""
   echo "Arguments:"
   echo "  lang: cn (default) | en"
   echo "  --link, -l: Use symbolic links instead of copying files"
@@ -53,6 +60,393 @@ show_help() {
   echo ""
   echo "After installation, read START.md to bootstrap the project's KERNEL.md and route the first plan."
 }
+
+# ---------------------------------------------------------------------------
+# Workflow state commands.
+#
+# These are gates, not documentation. `skills/<action>/SKILL.md` remains the
+# single authority for what an action means; nothing here reproduces it. What
+# this adds is refusal: preconditions checked before work starts, invariants
+# checked before state changes.
+# ---------------------------------------------------------------------------
+
+project_root() {
+  local d
+  d="$(pwd -P)"
+  while [ "$d" != "/" ]; do
+    if [ -d "$d/.specs" ] || [ -d "$d/.git" ]; then echo "$d"; return 0; fi
+    d="$(dirname "$d")"
+  done
+  echo "❌ Not inside a project (no .specs/ or .git/ above $(pwd))." >&2
+  return 1
+}
+
+# fm_get <file> <field> — read a frontmatter field. Frontmatter is the key: value
+# lines before the first "## " heading. Prints empty when absent.
+fm_get() {
+  awk -v k="$2" '
+    /^## /{exit}
+    {
+      i = index($0, ":")
+      if (i > 1 && substr($0,1,i-1) == k) {
+        v = substr($0, i+1)
+        gsub(/^[ \t]+|[ \t]+$/, "", v)
+        gsub(/`/, "", v)
+        print v
+        exit
+      }
+    }' "$1"
+}
+
+# kernel_delta_kind <file> — classify the SPEC's multi-line kernel_delta field.
+kernel_delta_kind() {
+  awk '
+    BEGIN { found=0; done=0 }
+    /^## / { exit }
+    /^kernel_delta:/ {
+      found=1
+      v=$0
+      sub(/^kernel_delta:/, "", v)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (v == "none") { print "none"; done=1; exit }
+      if (v != "") { print "entries"; done=1; exit }
+      next
+    }
+    found && /^ +-[ ][^:]+:[ \t]*[^ \t].*/ { print "entries"; done=1; exit }
+    found && /^[^ \t][^:]*:/ { exit }
+    END {
+      if (!done) print (found ? "empty" : "absent")
+    }' "$1"
+}
+
+# model_delta_nonempty <file> — succeeds when ## Model delta has non-blank content.
+model_delta_nonempty() {
+  awk '
+    /^## Model delta[ \t]*$/ { in_section=1; next }
+    in_section && /^## / { exit }
+    in_section && $0 !~ /^[[:space:]]*$/ { found=1; exit }
+    END { exit(found ? 0 : 1) }
+  ' "$1"
+}
+
+# resolve_spec_path <slice> <root> — accept root-relative and slice-relative refs,
+# then use the feature's conventional ../SPEC.md fallback.
+resolve_spec_path() {
+  local slice="$1" root="$2" sr candidate
+  sr="$(fm_get "$slice" spec_ref)"
+  if [ -n "$sr" ]; then
+    candidate="$root/$sr"
+    [ -f "$candidate" ] && { echo "$candidate"; return 0; }
+    candidate="$(dirname "$slice")/$sr"
+    [ -f "$candidate" ] && { echo "$candidate"; return 0; }
+  fi
+  candidate="$(dirname "$slice")/../SPEC.md"
+  [ -f "$candidate" ] && { echo "$candidate"; return 0; }
+  return 1
+}
+
+# kernel_source_cites <kernel> <spec> <spec-relative-path> <feature-relative-path> —
+# resolves every declared entry against an exact Kernel record and its source line.
+kernel_source_cites() {
+  awk -v specfile="$2" -v kernelfile="$1" -v spec="$3" \
+      -v feature="$4" -v name="$(basename "$4")" '
+    function trim(v) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      return v
+    }
+    function cites(line, token,    at, offset, before, after, after_at) {
+      if (token == "") return 0
+      offset=1
+      while ((at=index(substr(line, offset), token)) > 0) {
+        at += offset - 1
+        before = (at == 1 ? "" : substr(line, at - 1, 1))
+        after_at = at + length(token)
+        after = (after_at > length(line) ? "" : substr(line, after_at, 1))
+        if ((before == "" || before ~ /[ \t`(;,]/) &&
+            (after == "" || after ~ /[ \t`),:;]/ ||
+             (after == "." && (after_at == length(line) ||
+                                substr(line, after_at + 1, 1) == " "))))
+          return 1
+        offset=at + 1
+      }
+      return 0
+    }
+    FILENAME == specfile {
+      if (/^## /) { spec_body=1; next }
+      if (!spec_body && /^ +-[ ][^:]+:[ \t]*[^ \t].*/) {
+        line=$0
+        sub(/^ +-[ ]/, "", line)
+        colon=index(line, ":")
+        if (colon > 1) {
+          verb=trim(substr(line, 1, colon - 1))
+          entry=trim(substr(line, colon + 1))
+          sub(/[[:space:]]+\(.*/, "", entry)
+          entry=trim(entry)
+          if ((verb == "add" || verb == "revise" ||
+               verb == "supersede" || verb == "retire") && entry != "") {
+            count++
+            verbs[count]=verb
+            entries[count]=entry
+          }
+        }
+      }
+      next
+    }
+    FILENAME == kernelfile {
+      if (/^### / || /^## /) {
+        in_record=0
+        if (/^### /) {
+          heading=$0
+          sub(/^### /, "", heading)
+          heading=trim(heading)
+          for (i=1; i<=count; i++) {
+            if (heading == entries[i]) {
+              has_record[i]=1
+              in_record=1
+            }
+          }
+        }
+        next
+      }
+      if (in_record && /^[[:space:]]*source:/) {
+        if (cites($0, spec) || cites($0, feature) || cites($0, name)) {
+          for (i=1; i<=count; i++) {
+            if (heading == entries[i]) has_source[i]=1
+          }
+        }
+      }
+      next
+    }
+    END {
+      failed=0
+      for (i=1; i<=count; i++) {
+        if (verbs[i] == "retire") {
+          if (has_record[i]) {
+            printf "%s\t%s\tretired Kernel record still present\n", verbs[i], entries[i]
+            failed=1
+          }
+        } else if (!has_record[i]) {
+          printf "%s\t%s\tno Kernel record\n", verbs[i], entries[i]
+          failed=1
+        } else if (!has_source[i]) {
+          printf "%s\t%s\tKernel record has no source citing the SPEC\n", verbs[i], entries[i]
+          failed=1
+        }
+      }
+      if (failed) exit 1
+    }' "$2" "$1"
+}
+
+slice_files() { find "$1/.specs" -path '*/issues/*.md' -type f 2>/dev/null | sort; }
+spec_files()  { find "$1/.specs" -name SPEC.md -type f 2>/dev/null | sort; }
+
+# blocked_by names slice number prefixes inside the same feature.
+blocker_unfinished() {
+  local slice="$1" root="$2" dep dir st
+  dep="$(fm_get "$slice" blocked_by)"
+  [ -z "$dep" ] && return 1
+  dir="$(dirname "$slice")"
+  for d in $(echo "$dep" | tr ',' ' '); do
+    for f in "$dir/$d"-*.md; do
+      [ -e "$f" ] || continue
+      st="$(fm_get "$f" status)"
+      [ "$st" = "done" ] || { echo "$(basename "$f") is $st"; return 0; }
+    done
+  done
+  return 1
+}
+
+VIOLATIONS=0
+violation() { echo "  ✗ $1" >&2; VIOLATIONS=$((VIOLATIONS + 1)); }
+
+check_state() {
+  local root; root="$(project_root)" || return 1
+  [ -d "$root/.specs" ] || { echo "note: no .specs/ — a project with no SPECs is not in violation."; return 0; }
+  VIOLATIONS=0
+  local f st ev wr au sr kd rel feature
+
+  for f in $(slice_files "$root"); do
+    st="$(fm_get "$f" status)"; ev="$(fm_get "$f" evidence_ref)"
+    au="$(fm_get "$f" authority)"; sr="$(fm_get "$f" spec_ref)"
+    case "$st" in
+      done)
+        [ -n "$ev" ] || violation "${f#$root/}: status done without evidence_ref (learn; skills/learn/SKILL.md)" ;;
+      doing)
+        b="$(blocker_unfinished "$f" "$root")" && violation "${f#$root/}: doing while blocked_by unfinished ($b)" ;;
+      ready|blocked|stale) ;;
+      "") violation "${f#$root/}: no status field" ;;
+      *)  violation "${f#$root/}: unknown status '$st'" ;;
+    esac
+    # authority: arrived with ADR 0006, which states closed slices are not
+    # back-filled. Require it where work can still be affected, not in history.
+    if [ "$st" != "done" ] && [ -z "$au" ]; then
+      violation "${f#$root/}: no authority field (skills/arrange/SKILL.md; ADR 0006)"
+    fi
+    # spec_ref is written either repo-root-relative or relative to the slice.
+    # Both are in use here; resolve both rather than punish one convention.
+    if [ -n "$sr" ] && [ ! -e "$root/$sr" ] && [ ! -e "$(dirname "$f")/$sr" ]; then
+      violation "${f#$root/}: spec_ref resolves from neither the root nor the slice: $sr"
+    fi
+  done
+
+  for f in $(spec_files "$root"); do
+    st="$(fm_get "$f" status)"
+    local dir n d
+    dir="$(dirname "$f")"; n=0; d=0
+    for s in "$dir"/issues/*.md; do
+      [ -e "$s" ] || continue
+      n=$((n+1)); [ "$(fm_get "$s" status)" = "done" ] && d=$((d+1))
+    done
+    if [ "$n" -gt 0 ] && [ "$n" = "$d" ] && [ "$st" != "verified" ]; then
+      violation "${f#$root/}: every slice is done but SPEC status is '$st' (docs/spec-agents/WORKFLOW.md: Lifecycle/spec; skills/learn/SKILL.md)"
+    fi
+  done
+
+  if [ -f "$root/KERNEL.md" ]; then
+    for f in $(spec_files "$root"); do
+      st="$(fm_get "$f" status)"
+      kd="$(kernel_delta_kind "$f")"
+      if [ "$st" = "verified" ] && [ "$kd" = "entries" ]; then
+        rel="${f#$root/}"
+        feature="${rel%/SPEC.md}"
+        if problems="$(kernel_source_cites "$root/KERNEL.md" "$f" "$rel" "$feature")"; then
+          :
+        else
+          while IFS=$'\t' read -r verb entry missing; do
+            [ -n "$entry" ] || continue
+            violation "${f#$root/}: $verb '$entry': $missing (skills/learn/SKILL.md)"
+          done <<< "$problems"
+        fi
+      fi
+    done
+  fi
+
+  if [ "$VIOLATIONS" -eq 0 ]; then echo "ok: no state violations."; return 0; fi
+  echo "" >&2; echo "$VIOLATIONS violation(s)." >&2; return 1
+}
+
+cmd_status() {
+  local root; root="$(project_root)" || return 1
+  [ -d "$root/.specs" ] || { echo "No SPECs."; return 0; }
+  local f st n d
+  echo "SPECs:"
+  for f in $(spec_files "$root"); do
+    st="$(fm_get "$f" status)"; n=0; d=0
+    for s in "$(dirname "$f")"/issues/*.md; do
+      [ -e "$s" ] || continue
+      n=$((n+1)); [ "$(fm_get "$s" status)" = "done" ] && d=$((d+1))
+    done
+    printf "  %-34s %-10s %s/%s slices done\n" "$(basename "$(dirname "$f")")" "$st" "$d" "$n"
+  done
+  echo ""
+  check_state
+}
+
+cmd_ready() {
+  local root; root="$(project_root)" || return 1
+  local f st found=0
+  for f in $(slice_files "$root"); do
+    st="$(fm_get "$f" status)"
+    [ "$st" = "ready" ] || [ "$st" = "blocked" ] || continue
+    if blocker_unfinished "$f" "$root" >/dev/null; then continue; fi
+    echo "${f#$root/}"; found=1
+  done
+  [ "$found" -eq 0 ] && echo "note: no slice is ready."
+  return 0
+}
+
+cmd_gate() {
+  local action="$1" target="${2:-}" root b st wr au spec kd pointer=""
+  root="$(project_root)" || return 1
+  case "$action" in
+    do)
+      [ -n "$target" ] || { echo "❌ gate do needs a slice path." >&2; return 1; }
+      [ -f "$target" ] || { echo "❌ no such slice: $target" >&2; return 1; }
+      st="$(fm_get "$target" status)"; wr="$(fm_get "$target" writer)"; au="$(fm_get "$target" authority)"
+      case "$st" in
+        ready|doing) ;;
+        *) echo "❌ refused: slice is '$st'; do requires ready or an authorised doing (skills/do/SKILL.md, 开始前)." >&2; return 1 ;;
+      esac
+      if b="$(blocker_unfinished "$target" "$root")"; then
+        echo "❌ refused: blocked_by unfinished — $b (skills/do/SKILL.md, 开始前)." >&2; return 1
+      fi
+      if [ -n "$wr" ] && [ "$wr" != "do" ]; then
+        echo "❌ refused: writer is '$wr'; hand this slice to that action (skills/arrange/SKILL.md)." >&2; return 1
+      fi
+      [ -n "$au" ] || { echo "❌ refused: no authority field (skills/arrange/SKILL.md)." >&2; return 1; }
+      if spec="$(resolve_spec_path "$target" "$root")"; then
+        kd="$(kernel_delta_kind "$spec")"
+        case "$kd" in
+          entries)
+            if ! model_delta_nonempty "$spec"; then
+              echo "❌ refused: SPEC ${spec#$root/} declares kernel_delta entries but has no non-empty ## Model delta section (skills/capture/SKILL.md)." >&2
+              return 1
+            fi
+            pointer="${spec#$root/}: ## Model delta"
+            ;;
+          empty)
+            echo "❌ refused: SPEC ${spec#$root/} has a present-but-empty kernel_delta field (skills/capture/SKILL.md)." >&2
+            return 1
+            ;;
+        esac
+      fi
+      echo "ok: gate passed. Read skills/do/SKILL.md and perform the slice."
+      if [ -n "$pointer" ]; then echo "  pointer: $pointer"; fi
+      ;;
+    capture)
+      echo "ok: gate passed. Read skills/capture/SKILL.md."
+      echo "note: capture requires a confirmed plan outcome and multi-context work; this gate cannot verify either."
+      ;;
+    arrange)
+      [ -n "$target" ] || { echo "❌ gate arrange needs a SPEC path." >&2; return 1; }
+      [ -f "$target" ] || { echo "❌ no such SPEC: $target" >&2; return 1; }
+      st="$(fm_get "$target" status)"
+      case "$st" in
+        confirmed|revised) echo "ok: gate passed. Read skills/arrange/SKILL.md." ;;
+        *) echo "❌ refused: SPEC status is '$st'; arrange needs a confirmed SPEC (skills/arrange/SKILL.md)." >&2; return 1 ;;
+      esac
+      ;;
+    plan|check|learn)
+      echo "ok: no machine-checkable precondition. Read skills/$action/SKILL.md."
+      ;;
+    *)
+      echo "❌ unknown action: $action (plan capture arrange do check learn)" >&2; return 1 ;;
+  esac
+}
+
+cmd_transition() {
+  local slice="$1" want="$2" reason="${3:-}" root b ev
+  root="$(project_root)" || return 1
+  [ -f "$slice" ] || { echo "❌ no such slice: $slice" >&2; return 1; }
+  case "$want" in
+    ready|blocked|doing|done|stale) ;;
+    *) echo "❌ unknown state '$want' (ready blocked doing done stale)" >&2; return 1 ;;
+  esac
+  if [ "$want" = "done" ]; then
+    ev="$(fm_get "$slice" evidence_ref)"
+    [ -n "$ev" ] || { echo "❌ refused: done requires evidence_ref (learn; skills/learn/SKILL.md)." >&2; return 1; }
+    [ -n "$(fm_get "$slice" authority)" ] || { echo "❌ refused: done requires authority (ADR 0006)." >&2; return 1; }
+  fi
+  if [ "$want" = "doing" ] && b="$(blocker_unfinished "$slice" "$root")"; then
+    echo "❌ refused: blocked_by unfinished — $b." >&2; return 1
+  fi
+  if [ "$want" = "stale" ] && [ -z "$reason" ]; then
+    echo "❌ refused: stale requires a reason." >&2; return 1
+  fi
+  local tmp; tmp="$(mktemp)"
+  awk -v w="$want" 'BEGIN{done=0} /^## /{p=1} !p && /^status:/ && !done {print "status: " w; done=1; next} {print}' "$slice" > "$tmp"
+  mv "$tmp" "$slice"
+  [ -n "$reason" ] && echo "  reason: $reason"
+  echo "ok: $(basename "$slice") → $want"
+}
+
+case "$COMMAND" in
+  status)       cmd_status; exit $? ;;
+  check-state)  check_state; exit $? ;;
+  ready)        cmd_ready; exit $? ;;
+  gate)         cmd_gate "${2:-}" "${3:-}"; exit $? ;;
+  transition)   cmd_transition "${2:-}" "${3:-}" "${4:-}"; exit $? ;;
+esac
 
 if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
   show_help
@@ -234,7 +628,6 @@ echo ""
 echo "   Not installed. These belong to your project and are created when needed:"
 echo "   - KERNEL.md      by the first Start scan, from confirmed project facts"
 echo "   - STATUS.md      by 'learn', when there is real state to record"
-echo "   - ROADMAP.md     by 'learn', when a phase direction is agreed"
 echo "   - EVIDENCE.md    by 'learn', on the first verified observation"
 echo "   - docs/adr, docs/protocols, docs/runbooks, docs/lessons"
 echo ""

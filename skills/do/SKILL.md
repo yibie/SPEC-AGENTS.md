@@ -61,9 +61,10 @@ Runbook、Lesson。确认：
 2. 对有分支、循环、解析、金钱或安全影响的逻辑，留下一个可运行的检查。
 3. 保持 Action Contract、不变量和数据契约不变，除非 `plan` 已批准兼容修订。
 4. 运行任务要求的测试、类型检查、静态检查或最小手工验证。
-5. 只更新当前 Slice 的状态和验证摘要，供 `check`、`learn` 使用；短路径
-   上没有 Slice 可更新，跳过这一步；保持
-   `evidence_ref` 为空。
+5. 把当前 Slice 留在 `doing` 并写下验证摘要，供 `check`、`learn` 使用；
+   短路径上没有 Slice 可更新，跳过这一步；保持 `evidence_ref` 为空。
+   **`do` 不关闭 Slice** —— `done` 与 `evidence_ref` 由 `learn` 在 `check`
+   之后一起写入。
 6. 不写根目录 Evidence，也不回写 Evidence ID。
 
 如果仓库存在 `.jj/`，本地版本操作遵循 JJ：用 `jj new`/`jj edit` 开始上下文、
@@ -83,12 +84,14 @@ Git 工作流；不要在 `do` 中自动初始化或 push。
 
 ## 写入边界
 
-`do` 写 `Code`，以及当前 Slice 的状态和验证摘要。除此之外都不写：
+`do` 写 `Code`，以及当前 Slice 的验证摘要，并把它留在 `doing`。
+除此之外都不写：
 
 - `KERNEL.md`、`CONTEXT.md`、`STATUS.md`、`EVIDENCE.md` 和
   `docs/{adr,protocols,runbooks,lessons}/` 由 `learn` 写入；
 - `.specs/<feature>/SPEC.md` 由 `capture` 写入，Slice 由 `arrange` 创建；
-  `do` 在任何路径上都不创建 Slice；
+  `do` 在任何路径上都不创建 Slice；Slice 的 `done`/`evidence_ref` 和 SPEC 的
+  `verified` 由 `learn` 写入；
 - 被管项目中，安装进来的 doctrine（`AGENTS.md`、`START.md`、`UPGRADE.md`、
   `skills/`、`docs/spec-agents/`）任何动作都不写——本地修改会被下一次安装
   覆盖，要改就改上游。

@@ -1,6 +1,6 @@
 # Evidence Link Traceability
 
-status: revised
+status: verified
 revision: 1
 context_refs: `CONTEXT.md`, `AGENTS.md`, `docs/protocols/evidence-links.md`
 

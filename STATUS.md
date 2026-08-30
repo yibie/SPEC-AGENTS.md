@@ -1,11 +1,26 @@
 # STATUS
 
-No SPEC is active.
+One SPEC is active.
 
-The last completed work made the authority map checkable and shipped the first
-executable in the payload (`E-20260825-010`). Its contract is at
-`.specs/checkable-authority/SPEC.md` and its result is in `EVIDENCE.md`; neither
-is state, and neither belongs here.
+### authority-order
+
+spec: `.specs/authority-order/SPEC.md`
+scope: `AGENTS.md`, `AGENTS_en.md`, `docs/spec-agents/single-authority.md`, `docs/spec-agents/knowledge-promotion.md`, `docs/adr/`
+slices: not yet arranged
+blockers: none — `kernel-delta-declaration` closed (`E-20260829-020`)
+next: `arrange`
+
+Accepted when both `AGENTS` files list `skills/` in the Document authority
+order with byte-identical blocks, `single-authority.md`'s `do` bullet states
+both cases, and a superseding record names ADR 0006's Consequences paragraph.
+
+The last completed work made the Kernel delta a declaration that `capture`
+writes, `do` implements against, `learn` promotes verbatim, and the gates read
+(`E-20260829-020`). Its contract is at `.specs/kernel-delta-declaration/SPEC.md`
+and its result is in `EVIDENCE.md`; neither is state, and neither belongs here.
+
+Two more SPECs are `confirmed` and waiting, in this order:
+`reference-existence`, `evidence-reproducibility`.
 
 ## What this file is
 
@@ -51,6 +66,11 @@ SPECs under `.scratch/`, and locally modified doctrine — and none of them has
 been run against a real project. Record where each classification step is wrong
 before relying on it.
 
+`spec_ref` is written two ways across `.specs/` — relative to the repository
+root in recent slices, relative to the slice in older ones. The checker accepts
+both because `skills/arrange/SKILL.md` never said which to use. Choosing one
+changes the slice format and needs its own `plan`.
+
 `docs/runbooks/installer-smoke.md` is prose. The smoke test has been hand-written
 into a session scratch directory every time it ran, and cleared between sessions;
 one verification claim was made against a script that no longer existed. It needs
@@ -63,6 +83,20 @@ borrowed and has no home yet — Kernel section, Protocol, or neither.
 The reference-integrity axis added to `check` has no automated enforcement. If
 a sixth reference breakage appears, the next step is a check that fails on an
 unresolvable reference, not another rule.
+
+`spec-agents ready` reports the wrong slices. `blocker_unfinished` does not
+declare `f` or `d` as local, so its inner glob overwrites the loop variable of
+`cmd_ready`, which calls it directly; `ready` then prints each blocker's path
+instead of the slice it unblocked. Two further defects sit in the same command:
+it lists slices whose status is `blocked`, which `gate do` then refuses, and
+`blocked_by` names slice prefixes inside one feature, so a slice blocked by
+another SPEC is reported runnable. The leak is a plain bug; the other two carry
+choices and need their own `plan` (`E-20260828-012`).
+
+`gate arrange` accepts only `confirmed|revised`, while `capture`'s status set
+now has six values. Same defect class as the one `spec-lifecycle` repaired —
+a copy of the vocabulary inside the CLI — and not confirmed in that `plan`
+round. Needs its own `plan` (`E-20260829-015`).
 
 The `plan-only`, `reject`, and `unresolved` routes have not been walked against
 their own contracts. The `approve` route was documented for months and could
@@ -80,9 +114,12 @@ Nothing in `E-20260824-008` is confirmed to work in the field. When the result
 arrives, check whether `authority:` was answered honestly or filled with `n/a`
 under the same time pressure that produced the original defect.
 
-The mandatory read is now exactly 400 lines, at the ceiling. The next addition
-must remove something first. Nothing prevents it from growing past 400 again, and no check
-fails on it. If it does, the answer is a failing check on the line count.
+The mandatory read is under its 400-line ceiling;
+`tests/doctrine-check.sh` reports the live count and fails when it goes over,
+so the number is not repeated here. Nothing runs that check:
+there is no CI and no hook, so it depends on someone remembering to run it —
+the same failure class it was written to remove, moved one level up. Wiring it
+to an execution point needs its own `plan`.
 
 Three items from `mattpocock/skills` are unexamined, each needing its own
 `plan`: `implement`'s continuation loop, an external issue tracker for slices,

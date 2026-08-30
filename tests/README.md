@@ -45,3 +45,17 @@ tests/doctrine-check.sh
 
 The shipped counterpart is `docs/spec-agents/check-kernel.sh`, which checks a
 *managed project's* authority map and travels with the installer.
+
+## `kernel-delta-check.sh`
+
+Checks the `kernel_delta:` gate and `check-state` provenance seam with
+throwaway fixtures outside the repository. It covers absent, empty, and
+entry-list declarations, Model delta pointers, one-or-more-space indentation,
+exact per-entry Kernel headings and boundary-safe SPEC citations, including
+retirements and parenthetical entry names, in a project `KERNEL.md`.
+
+Run from the repository root:
+
+```bash
+tests/kernel-delta-check.sh
+```

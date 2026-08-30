@@ -1556,3 +1556,778 @@ SPEC would be the scope creep this workflow exists to prevent.
 - `.specs/checkable-authority/SPEC.md`
 - `docs/spec-agents/check-kernel.sh`, `tests/doctrine-check.sh`
 - `gura105/operational-ontology`
+
+## 2026-08-26 — three wrong counts in one afternoon (E-20260826-011)
+
+### Observation
+
+`logseq/spec_dev_tool` was the fourth independent source in three days to answer
+the same question the same way. Its `AGENTS.md` is five lines, four of them
+pointers, because the workflow lives in a CLI that emits it on demand. It
+encodes a document's lifecycle in its directory path, so a transition is a
+validated file move rather than an edited word, and its `exploring` state
+forbids touching any other repository file — the same boundary as `plan`'s, but
+attached to a document state a tool can verify.
+
+Against that, this repository's state was maintained by an agent remembering to
+edit a field, across 68 slices and 12 SPECs, with nothing checking any of it.
+
+Establishing how bad that was took four attempts:
+
+- a hand-written grep reported twelve violations. Seven were false positives
+  from a pattern that did not match a field format variant;
+- the first checker reported sixty-two, having applied the `authority:`
+  requirement to slices that `docs/adr/0006` explicitly exempts from
+  back-filling;
+- the second reported twelve, resolving `spec_ref` only from the repository
+  root while seven older slices write it relative to the slice;
+- the fourth attempt reported five, and five is the number.
+
+### Interpretation
+
+The drift was small and the counting was not reliable at all. That inverts the
+argument the SPEC was written on: the case for the tool is not the five
+violations it found, it is that four attempts were needed to find five, and
+three of those attempts produced confident wrong answers.
+
+Both checker defects have the shape of the defects the checker exists to catch.
+The first applied a rule outside the scope its own ADR declared — the exact
+failure recorded two days earlier when `do` demanded a map that `START.md` said
+need not exist. The second enforced one of two conventions actually in use. A
+checker is not exempt from the failures it checks for, and writing one is not
+the same as being right.
+
+The mixed `spec_ref` convention is a real finding and is not repaired here.
+Recent slices write it relative to the repository root, older ones relative to
+the slice. Neither is wrong and the checker now accepts both, but
+`skills/arrange/SKILL.md` never said which to use, so both appeared. Choosing
+one changes the slice format and belongs to its own `plan`.
+
+### What was and was not taken
+
+Taken: the gate. Each action gets an entry point that checks what is mechanical
+and refuses with the reason and the document that states it.
+
+Not taken: printing skill prose from the CLI, which is how `spec-dev-tool`
+delivers its workflow. It works there because the tool is the only delivery
+path. Here the skills already load on demand, so a CLI that printed them would
+create a second authority for one rule — the failure eliminated four days ago
+and given its own Protocol.
+
+Not taken: path-encoded state. It makes an inconsistent state unrepresentable,
+which is strictly better, and it was rejected for cost rather than principle —
+68 file relocations and a rename per transition. Recorded in `docs/adr/0007` as
+worth revisiting if transitions ever outnumber edits.
+
+### What a gate cannot do
+
+`plan`'s interrogation, `check`'s three axes, and `learn`'s judgment are
+reasoning. No precondition reaches them. The gates cover status, dependency,
+writer, authority presence, and evidence linkage — the parts that were being got
+wrong by hand. Everything that made this workflow worth having remains
+unenforceable, and the tool should not be mistaken for coverage of it.
+
+### Verification
+
+- `check-state` reported five violations before repair and none after.
+- Every `gate` and `transition` refusal was proven against a fixture: a done
+  slice, an unfinished dependency, a foreign `writer:`, an absent `authority:`,
+  an unconfirmed SPEC, an unknown action, an unknown state, `done` without
+  `evidence_ref`, `stale` without a reason.
+- One fixture initially proved the wrong thing — a slice set to `blocked` hit
+  the status check before the authority check — and was isolated and re-run.
+- A successful transition changes exactly the status line.
+- Mandatory read 374 → 372; `tests/doctrine-check.sh` and the installer smoke
+  pass; `bash -n` clean.
+
+### References
+
+- `docs/adr/0007-workflow-cli.md`
+- `.specs/workflow-cli/SPEC.md` revision 2
+- `logseq/spec_dev_tool`
+
+## 2026-08-28 — the tool enforced two states the model never defined (E-20260828-012)
+
+### Observation
+
+`docs/spec-agents/WORKFLOW.md` gave a lifecycle to four entities — `work`,
+`start`, `kernel`, `knowledge` — and none to `SPEC`. The Stable Relations block
+said the same thing a second way: SPEC had an in-edge and an out-edge and no
+terminal transition. `bin/spec-agents` nevertheless refused when every slice of
+a SPEC was `done` and its status was not `verified`. `verified` appeared in no
+skill: `grep -rn "verified" skills/*/SKILL.md` returned zero hits, and
+`skills/capture/SKILL.md`'s status set did not contain it. Its only source was
+the `knowledge:` lifecycle line. Sixteen of this repository's nineteen SPECs
+carried the value anyway, so `check-state` was green because an undocumented
+convention had been applied consistently.
+
+Executing the first slice surfaced the same defect one level down. The work was
+complete and `spec-agents transition ... done` refused: `done` requires
+`evidence_ref`, `skills/do/SKILL.md` told `do` to keep it empty, and
+`skills/learn/SKILL.md` authorised `learn` to write `evidence_ref` and said
+nothing about slice status. `grep -rn "done" skills/*/SKILL.md` returned one
+hit, a status enum in `arrange`'s template. Seventy-five closed slices had all
+been set by hand.
+
+Repairing both left a dependency that looked like a deadlock: slice 01 needed
+`learn` to close it, the close was granted by slice 02, and slice 02 was
+`blocked_by: 01`.
+
+`check` on the two slices found the three `SPEC.verified` preconditions stated
+in two places — `skills/learn/SKILL.md` and prose slice 01 had just added to
+`WORKFLOW.md` — with none of `docs/spec-agents/single-authority.md`'s three
+conditions for a legitimate second site holding.
+
+Two further defects were observed and not repaired. `cmd_ready` accepts slices
+whose status is `ready` **or** `blocked`, filtering only on whether `blocked_by`
+is satisfied, so `ready` lists a slice that `gate do` then refuses. And
+`blocked_by` names slice prefixes within one feature, so a slice blocked by
+another SPEC cannot express it and is reported runnable — observed on
+`.specs/kernel-delta-declaration/issues/01`, which is blocked on this SPEC.
+
+Closing the two slices exposed a third, which is a defect in the tool rather
+than in a contract. `blocker_unfinished` declares `local slice root dep dir st`
+and does not declare `f` or `d`; its inner `for f in "$dir/$d"-*.md` therefore
+overwrites the loop variable of `cmd_ready`, which calls it directly rather than
+through command substitution. `cmd_ready` then prints `${f#$root/}` — the
+blocker's path, not the slice's. With slices 01 and 02 `done`, `ready` printed
+`02-terminal-state-and-writer.md` twice instead of the two slices it had just
+unblocked. A slice whose `blocked_by` is empty is unaffected, because the
+function returns before the inner loop. `check_state` is unaffected for the same
+reason `cmd_ready` is not: it captures the result with `b="$(...)"`, and the
+subshell contains the assignment.
+
+### Interpretation
+
+The CLI did not drift from the documents. It supplied two states the model never
+had, which is why editing documentation could not have repaired it: the model
+was missing a state, and an implementation had quietly filled the hole. ADR 0007
+built the CLI to end hand-maintained state; seventy-five hand-set slices mean
+the state it checks was never once produced by it.
+
+The slice level and the SPEC level are one defect at two scales, so one decision
+repaired both rather than two decisions meeting in the middle.
+
+Three incidents on 2026-08-27 shared a shape: a gate goes red because the rule
+behind it has a hole, and the most natural next action is to edit the record
+being measured. A managed project set a SPEC to `verified` to clear the gate and
+reverted; the same project added a field so a checker would resolve a reference
+and reverted; here, an accepted ADR's Consequences paragraph was rewritten in
+place and turned out to cite a script committed two days after that ADR's own
+`date:`, and was reverted. The rule forbidding this already exists at
+`skills/check/SKILL.md`, routing a `semantic` finding to `plan` and stating that
+`check` does not adjudicate — but it is written only inside `check`, and none of
+the three happened in `check`.
+
+The deadlock was a fourth instance in miniature, and the first that was resisted
+before acting. The available repair was a bootstrap clause exempting this SPEC
+from the rule it establishes. The actual defect was in the dependency: none of
+slice 02's acceptance criteria required slice 01's output, so the edge was
+conceptual order rather than a precondition, and removing it dissolved the
+deadlock without writing any exception. A cycle that appears while enforcing a
+new rule is worth reading as a modelling error before it is read as a case for
+an exemption.
+
+The duplicated preconditions were settled from enacted doctrine rather than from
+a pending decision. `AGENTS.md` ranks first in the current authority order and
+already delegates each action's write boundary to `skills/<action>/SKILL.md`;
+the three preconditions are `learn`'s write conditions. Resolving it through the
+`skills/` ranking captured in `.specs/authority-order/SPEC.md` would have let
+work sequenced later decide a conflict in work sequenced earlier.
+
+One rule cost six files to state — one authority and five pointers. The pointers
+are legitimate and each names the writer without restating the rule. The number
+is the price of a doctrine readable from several entry points, and it is also
+the surface on which this repository's recurring drift appears.
+
+### Recommended next action
+
+Slices 03, 04 and 05 of `.specs/spec-lifecycle/SPEC.md`. The SPEC does not reach
+`verified` here: its preconditions are not met while three slices remain.
+
+`cmd_ready` has three defects and they are separable: it disagrees with
+`gate do` about which slices are runnable, it prints the wrong path because of
+the variable leak, and `blocked_by` cannot express a cross-SPEC dependency. The
+leak is a plain correctness bug with no trade-off in it. The other two have
+choices inside them — whether `ready` should filter on status or annotate, and
+what a cross-SPEC blocker should look like — so they need their own `plan`. They are not folded
+into an existing SPEC, because a SPEC is not the place to introduce a decision
+that no `plan` round confirmed.
+
+The `applies_when` of any Lesson drawn from the three incidents must name gates
+as well as checks: one of them was not inside any of the six actions — it was
+the CLI inventing a terminal state while being written.
+
+### Verification
+
+- `grep -rn "verified" skills/*/SKILL.md`: 0 → 4 hits.
+- `grep -rn "done" skills/*/SKILL.md` outside `arrange`'s status enum: 0 → 4.
+- Lifecycle block: four entities → five.
+- `SPEC.verified` preconditions enumerated: two sites → one.
+- `tests/doctrine-check.sh`: passes, mandatory read 373 → 379 of 400.
+- `spec-agents check-state`: exit 0 throughout.
+- `bash -n bin/spec-agents`: passes.
+- Slice 01 and slice 02 acceptance: five and eight criteria, checked
+  individually.
+
+### References
+
+- `.specs/spec-lifecycle/SPEC.md` r3, slices 01 and 02.
+- Changed: `docs/spec-agents/WORKFLOW.md`, `skills/{capture,learn,arrange,do}/SKILL.md`,
+  `AGENTS.md`, `AGENTS_en.md`.
+- `docs/adr/0006-single-authority.md`, `docs/adr/0007-workflow-cli.md`,
+  `docs/spec-agents/single-authority.md`, `skills/check/SKILL.md`.
+- Working tree, uncommitted at the time of writing. A CLI run cited here was
+  executed against that tree; the five subcommands have never been committed, so
+  no revision reproduces them.
+
+## 2026-08-29 — the CLI cites its rules, and a zero-slice SPEC gets a definition (E-20260829-013)
+
+### Observation
+
+Slices 03 and 06 of `.specs/spec-lifecycle/SPEC.md` were performed by a
+`do` agent and checked by a separate `check` agent, each in its own Herdr
+pane, with this context as `learn`. The three agents ran different models.
+
+Slice 03: `bin/spec-agents`'s two terminal-state refusals now cite documents
+that exist. The `check-state` violation for a SPEC whose slices are all
+`done` reads `(docs/spec-agents/WORKFLOW.md: Lifecycle/spec;
+skills/learn/SKILL.md)`; the `transition ... done` refusal without
+`evidence_ref` and its `check-state` counterpart read `(learn;
+skills/learn/SKILL.md)`. Logic unchanged; `bash -n` clean; the reviewer
+rebuilt both fixtures independently and reproduced both exit-1 refusals with
+the new text, and hashed the refused slice before and after to show the
+refusal wrote nothing.
+
+Slice 04 was attempted in between and produced the finding that became
+slice 06. All three zero-slice SPECs — `jsonl-evidence-pilot`,
+`ontology-graph-pilot`, `upgrade-prompt` — classified as finished on their
+evidence (`E-20260817-001`, `-002`, `-003`; runners and reports under
+`research/experiments/`; root `UPGRADE.md`). The first write set them to
+`verified` by reading "every slice `done`" as vacuously true for a SPEC with
+no slices and "removed from `STATUS.md`" as satisfied by an entry already
+absent. The independent `check` raised it as `semantic`: neither reading is
+in `skills/learn/SKILL.md`, so the write extended `learn`'s contract silently
+under a slice declaring `authority: n/a`. The vacuous reading also accepts
+`authority-order` — `confirmed`, zero slices, nothing done. The write was
+withdrawn, the three reverted to `confirmed`, and the question routed to
+`plan`. `plan` chose: for a SPEC with no slices the first precondition is
+replaced by the Evidence record naming each deliverable as verified; an
+absent `STATUS.md` entry satisfies the third; nothing is read as vacuously
+true. SPEC r4; slice 06 states it in `skills/learn/SKILL.md`. The `check` on
+slice 06 found the slice's own verification grep did not match the worker's
+phrasing (backticks around `Slice`); one word changed, re-checked, closed.
+
+Under that rule, the deliverables of the three SPECs, each verified on
+2026-08-29:
+
+- `jsonl-evidence-pilot` — issue map: fixture (`agent-a.jsonl`,
+  `agent-b.jsonl`, `baseline.md`), runner (`run_pilot.py`), result report
+  (`RESULTS.md`), all under `research/experiments/jsonl-evidence-pilot/`;
+  runner re-executed, J1–J5 pass.
+- `ontology-graph-pilot` — issue map: ontology contract (`ONTOLOGY.md`),
+  in-memory runner (`run_pilot.py`), result report (`RESULTS.md`), all under
+  `research/experiments/ontology-graph-pilot/`; runner re-executed, every
+  check passes.
+- `upgrade-prompt` — no issue map; its Verification section: the Prompt with
+  detection, reconnaissance, confirmation, cutover, and completion gates
+  (root `UPGRADE.md`, present); `--legacy` refused and no `upgrade` command
+  (`bin/spec-agents`, confirmed by running both); installer pointer behaviour
+  recorded in `E-20260817-001`.
+
+None of the three appears in `STATUS.md`.
+
+The same `check` found that `E-20260817-002`'s Markdown fixture figures do
+not reproduce: a clean rerun of `run_pilot.py` passes J1–J5 and matches the
+JSONL figures exactly, but reports Markdown full 1,567 bytes / 392 rough
+tokens and scoped 1,353 / 339 against the recorded 1,649 / 413 and 1,425 /
+357. The conclusion holds on both sets. `E-20260817-002` is not rewritten;
+this note is the correction.
+
+### Interpretation
+
+This is the fourth incident of the shape recorded in E-20260828-012 — a rule
+with a hole, and the nearest action is to write the state the gate wants —
+and the second one caught before it stood. What caught it was not the gate:
+`check-state` was green before and after the write, because a zero-slice
+SPEC is outside its assertion. It was an independent `check` reading the
+contract against the diff. The lesson captured in
+`.specs/evidence-reproducibility/SPEC.md` — a red gate is a finding, not an
+invitation to edit — needs its companion: a green gate is not a verdict
+either, when the case is outside what the gate looks at.
+
+The repair took the SPEC's own route: `semantic` finding → `plan` → a
+compatible revision with one alternative named and two rejected → a slice
+with one site. No exception was written and no record edited in place.
+
+### Recommended next action
+
+Set the three to `verified` under the r4 rule (slice 04), then slice 05.
+
+### Verification
+
+- `grep -n 'skills/learn/SKILL.md' bin/spec-agents`: three refusal sites.
+- Fixture SPEC (all slices `done`, status `confirmed`): `check-state` exit 1 with the new citation. Fixture slice without `evidence_ref`: `transition ... done` exit 1 with the new citation. Reproduced by worker and reviewer separately.
+- `skills/learn/SKILL.md` 收尾 states the zero-slice preconditions; single site.
+- `python3 research/experiments/jsonl-evidence-pilot/run_pilot.py`: J1–J5 pass; figures as above.
+- `bash -n bin/spec-agents`, `tests/doctrine-check.sh` (379/400), `bin/spec-agents check-state`: all pass.
+- Working tree still uncommitted; the reproducibility caveat of E-20260828-012 applies to every CLI run cited here.
+
+### References
+
+- `.specs/spec-lifecycle/SPEC.md` r4, slices 03, 04 (run summary), 06.
+- `E-20260828-012`, `E-20260817-002`.
+- `.specs/evidence-reproducibility/SPEC.md`.
+
+## 2026-08-29 — `upgrade-prompt`'s four verification bullets, named one by one (E-20260829-014)
+
+### Observation
+
+The independent `check` of slice 04's second pass found that `E-20260829-013`
+did not name every deliverable of `.specs/upgrade-prompt/SPEC.md`. That SPEC
+has no issue map, so under the r4 rule its Verification section is the list,
+and it has four bullets; the record covered the first and third, described the
+second loosely, and omitted the fourth. `upgrade-prompt` was returned to
+`confirmed`, and each bullet was reproduced on 2026-08-29:
+
+1. **Gates.** `UPGRADE.md` has six numbered sections — read the modern entry
+   points (with v2/v3 source classification), reconstruct recent history, scan
+   the code architecture, write the candidate report and stop, cut over only
+   after confirmation, verify the cutover — plus a Completion report section.
+   Detection, reconnaissance, confirmation, cutover, and completion are each
+   present as a section, not a sentence.
+2. **Installer.** `bin/spec-agents install <fresh dir> en` produces a tree
+   containing `UPGRADE.md`. `bin/spec-agents install <dir with .phrase/> en`
+   leaves `.phrase/current.md` byte-identical, installs `UPGRADE.md`, and
+   prints "Existing legacy SPEC material detected. Read <dir>/UPGRADE.md
+   before ordinary work." Both runs in a scratch directory.
+3. **CLI.** `bin/spec-agents upgrade .` prints "Upgrade is Prompt-driven, not
+   an installer operation" and exits 1; `--legacy` prints "no longer an
+   installation mode" and exits 1; `bin/spec-agents help` contains no
+   `--legacy` and no `upgrade` subcommand.
+4. **Skills, syntax, whitespace.** All six of `skills/{plan,capture,arrange,
+   do,check,learn}/SKILL.md` carry `name:` and `description:` frontmatter and
+   an `agents/openai.yaml`; `bash -n` passes on `bin/spec-agents`,
+   `docs/spec-agents/check-kernel.sh`, and `tests/doctrine-check.sh`;
+   `git diff --check` passes. The "six skill validators" the bullet names as a
+   script do not exist in the tree today and were not found in `tests/` or
+   `bin/` history; the discovery, syntax, and whitespace checks above are what
+   can be reproduced.
+
+### Interpretation
+
+The first record named what it had at hand and called it the list. The rule
+r4 wrote says the list is the SPEC's, not the writer's — and the difference
+was one bullet no one had looked at in twelve days. It is the same reading
+error as the vacuous "every slice `done`", at a finer grain: a sufficient-
+looking summary standing in for the enumerated thing.
+
+### Recommended next action
+
+Set `upgrade-prompt` to `verified` on this record; close slice 04.
+
+### Verification
+
+- Every command above run from the repository root on 2026-08-29 against the
+  uncommitted working tree.
+- `bin/spec-agents check-state` exit 0; `tests/doctrine-check.sh` passes.
+
+### References
+
+- `.specs/upgrade-prompt/SPEC.md` Verification section; `UPGRADE.md`.
+- `E-20260829-013`, `E-20260817-001`.
+
+## 2026-08-29 — spec-lifecycle closes (E-20260829-015)
+
+### Observation
+
+Under the r4 rule, the three zero-slice SPECs were set to `verified` on the
+deliverable lists recorded in `E-20260829-013` and `E-20260829-014`; an independent `check` of
+that write found no finding. Slice 05 wrote `docs/adr/0008-spec-lifecycle.md`,
+this record, `STATUS.md`, and `CHANGELOG.md`. Slices 03, 04 and 06 are
+closed by `learn` with `evidence_ref` and `done` written together. Slice 05 is
+`doing` as this record is appended — the precondition is that the Evidence
+exists before the terminal write — and the act that follows an independent
+`check` of slice 05 closes it, sets the SPEC `verified`, and removes its
+`STATUS.md` entry together. Nothing in `.specs/` was hand-set to `done` in
+this round.
+
+Slice 05's acceptance asked that the three incidents of 2026-08-27 be
+recorded with enough detail to locate each reverted edit in version control.
+That is not satisfiable: two happened in a managed project outside this
+repository, and the third was made and reverted in this working tree before
+any commit, so no revision holds the edit or its reversal. Recorded as unmet.
+
+### Interpretation
+
+The first SPEC closed under the lifecycle rule is the one that wrote it, and
+its own execution produced one revision of the rule. That is the expected
+cost of defining a state by using it; the alternative was a definition that
+had never been exercised.
+
+### Recommended next action
+
+`kernel-delta-declaration` becomes active; its slice 01 was blocked on this
+SPEC's scope. `gate arrange` still accepts only `confirmed|revised` while
+`capture`'s set has six values — same defect class, own `plan`.
+
+### Verification
+
+- At writing: `bin/spec-agents status` shows `spec-lifecycle revised 5/6`
+  and the three pilots `verified 0/0`; `check-state` exit 0;
+  `tests/doctrine-check.sh` passes; every reference in
+  `docs/adr/0008-spec-lifecycle.md` resolves (independent `check`).
+- After the close: `status` shows `spec-lifecycle verified 6/6`, `STATUS.md`
+  lists `kernel-delta-declaration` alone, and `check-state` still exits 0.
+  If any of those fails, a further record says so.
+
+### References
+
+- `.specs/spec-lifecycle/SPEC.md` r4; `docs/adr/0008-spec-lifecycle.md`.
+- `E-20260829-013`, `E-20260829-014`, `E-20260828-012`.
+
+## 2026-08-29 — E-20260829-015 was edited in place after it was appended (E-20260829-016)
+
+### Observation
+
+`E-20260829-015` was appended, then an independent `check` of slice 05 found
+that it described the close as already done — `spec-lifecycle verified 6/6`,
+`STATUS.md` listing one SPEC — while the SPEC was `revised 5/6` and slice 05
+was `doing`. The record was then reworded in place to describe the state at
+the moment of appending. A second `check` ruled the in-place edit out of
+bounds: `AGENTS.md` defines `EVIDENCE.md` as an append-only ledger, and
+`docs/adr/0008-spec-lifecycle.md` already cited E-015 as `source`, so it was
+a published record. The correction should have been this record.
+
+What the in-place edit replaced, reproduced so the ledger is complete:
+
+> Slices 03–06 were closed by `learn` with `evidence_ref` and `done` written
+> together; the SPEC was set to `verified` and removed from `STATUS.md` in
+> the same act. Nothing in `.specs/` was hand-set to `done` in this round.
+
+and, under Verification:
+
+> - `bin/spec-agents status`: `spec-lifecycle verified 6/6`; the three
+>   pilots `verified 0/0`.
+> - `bin/spec-agents check-state`: exit 0. `tests/doctrine-check.sh`: passes.
+> - Every reference in `docs/adr/0008-spec-lifecycle.md` resolves.
+> - `STATUS.md` lists one active SPEC and matches `.specs/`.
+
+The current text of E-015 is the reworded version and is not changed again.
+
+### Interpretation
+
+Two mistakes of the same family in one slice. The first — writing the close
+before the close — is the reflex `E-20260828-012` named: describing the state
+the gate wants rather than the state that exists. The second — repairing the
+ledger by rewriting it — is the reflex applied to the repair. The ledger's
+rule exists so that the first kind of error stays visible; an in-place fix
+removes exactly that. Neither was caught by a tool; both were caught by an
+independent reader with the contract open.
+
+### Recommended next action
+
+Close slice 05 on `E-20260829-015`, with this record cited beside it, and set
+the SPEC `verified` while removing its `STATUS.md` entry in one act.
+
+### Verification
+
+- `git diff EVIDENCE.md` shows E-015 in its reworded form and this record
+  appended after it; no earlier record changed.
+- `bin/spec-agents check-state` exit 0; `tests/doctrine-check.sh` passes.
+
+### References
+
+- `E-20260829-015`, `E-20260828-012`.
+- `.specs/spec-lifecycle/issues/05-learn-record.md` run summary.
+
+## 2026-08-29 — the Kernel delta gets a definition before it gets a check (E-20260829-017)
+
+### Observation
+
+Slice 01 of `.specs/kernel-delta-declaration/SPEC.md` was performed by a `do`
+agent and checked by a separate `check` agent, this context acting as `learn`.
+`docs/spec-agents/WORKFLOW.md` now states, under `### SPEC`, that for a Change
+crossing the Change Boundary the SPEC's `## Model delta` is the proposed
+Kernel delta — the entries to be added, revised, superseded or retired in the
+project's `KERNEL.md` (here, `WORKFLOW.md`) when the work verifies; `do`
+implements against it and `learn` promotes it verbatim; the proposal state is
+carried by the SPEC lifecycle and the `kernel:` line gains no `proposed`
+state. A SPEC without a `kernel_delta:` field reads as `none`, named as a
+deliberate legacy default; the verbs are `add | revise | supersede | retire`.
+The Change Boundary section gained one pointer sentence.
+
+Mandatory read 379 → 389 of 400; nothing removed. Independent `check`: no
+findings; the slice enacts exactly the SPEC's first declared entry
+(`revise: Model delta`), with the `capture` and `learn` entries left for
+slices 02 and 03.
+
+This is the first SPEC in the repository whose own frontmatter carries
+`kernel_delta:`, and the first slice checked against a declared delta rather
+than against the checker's reading of the diff.
+
+### Interpretation
+
+The SPEC's declaration made the ontology question answerable by comparison
+instead of by judgment: the reviewer matched the change to a named entry.
+That is the mechanism this SPEC exists to install, observed once, on itself.
+
+### Recommended next action
+
+Slices 02 (`capture` contract) and 03 (`learn` promotion match); they do not
+share a file and may run in either order.
+
+### Verification
+
+- `grep -n "kernel_delta\|Model delta" docs/spec-agents/WORKFLOW.md`: the
+  semantics at one site under `### SPEC`, one pointer in Change Boundary.
+- `tests/doctrine-check.sh`: 389/400. `bin/spec-agents check-state`: exit 0.
+- Working tree uncommitted; the reproducibility caveat of E-20260828-012
+  applies.
+
+### References
+
+- `.specs/kernel-delta-declaration/SPEC.md` r1, slice 01.
+- `E-20260821-006` (the lost decision this SPEC repairs for the kernel fields).
+
+## 2026-08-29 — `capture` and `learn` bind themselves to the declaration (E-20260829-018)
+
+### Observation
+
+Slices 02 and 03 of `.specs/kernel-delta-declaration/SPEC.md`, performed by
+the `do` agent and checked by the independent `check` agent, this context as
+`learn`.
+
+Slice 02: `skills/capture/SKILL.md`'s template frontmatter carries
+`kernel_delta:` — `none`, or `<verb>: <entry>` lines with
+`add | revise | supersede | retire` — shown with the list form taken from this
+SPEC's own frontmatter. The field is mandatory on every SPEC `capture`
+creates; `none` is a legal explicit answer. The completion condition refuses
+to finish when the confirmed `plan` outcome recorded `kernel_promotion` other
+than `none` and the delta is empty, citing `E-20260821-006`. The first
+version restated two definitions `WORKFLOW.md` owns — the absent-field
+default and the kinds of Kernel item — and the enumeration already diverged
+by omitting identities. `check` raised it as `semantic` (placement); the
+paragraph was cut back to a pointer and re-checked.
+
+Slice 03: `skills/learn/SKILL.md`'s Kernel-promotion bullet requires the
+written change to equal the SPEC's declared entries as last revised, with
+each promoted entry's `source:` citing the SPEC; 安全边界 gains the divergence
+rule — stop, write nothing, report which entry, back through `plan` and a
+SPEC revision. No findings.
+
+One ordering error by `learn`: slice 04 was dispatched while 02 and 03 were
+still `doing`. `gate do` refused it — `blocked_by` unfinished — and the `do`
+agent, told to run the gate first, had not edited anything when it was
+stopped. Recorded because it is the gate doing what ADR 0007 built it for,
+against the coordinator rather than against a worker.
+
+### Interpretation
+
+The restatement in slice 02 is the same drift `docs/spec-agents/single-authority.md`
+describes, caught at the moment of writing rather than weeks later, and the
+divergence (a missing item kind) was already present in the first copy. A
+second site does not wait to drift.
+
+### Recommended next action
+
+Close 02 and 03; slice 04 becomes `ready`.
+
+### Verification
+
+- `grep -n kernel_delta skills/capture/SKILL.md skills/learn/SKILL.md`: hits
+  in both; the definitions themselves at one site, `WORKFLOW.md` §SPEC.
+- `tests/doctrine-check.sh`: 389/400. `bin/spec-agents check-state`: exit 0.
+- `bin/spec-agents gate do .specs/kernel-delta-declaration/issues/04-cli-checks.md`
+  before the close: refused, slice `blocked`.
+- Working tree uncommitted; the reproducibility caveat of E-20260828-012
+  applies.
+
+### References
+
+- `.specs/kernel-delta-declaration/SPEC.md` r1, slices 02 and 03.
+- `E-20260829-017`, `E-20260821-006`, `docs/spec-agents/single-authority.md`.
+
+## 2026-08-29 — the gates read the declaration (E-20260829-019)
+
+### Observation
+
+Slice 04 of `.specs/kernel-delta-declaration/SPEC.md`, performed by the `do`
+agent and checked by the independent `check` agent, this context as `learn`.
+`bin/spec-agents` gained helpers that read the multi-line `kernel_delta:`
+field from the frontmatter (absent / `none` / empty / entries; any run of
+spaces before `- `, tabs refused as invalid YAML), test `## Model delta` for
+non-blank content, resolve a slice's SPEC (root-relative, slice-relative,
+then `../SPEC.md`), and resolve each declared entry against `KERNEL.md`.
+`gate do` refuses a SPEC that declares entries without a non-empty
+`## Model delta` and a present-but-empty field, both citing
+`skills/capture/SKILL.md`; absent and `none` pass with the ok line
+byte-unchanged; entries with a section pass and print one pointer,
+`<SPEC>: ## Model delta`. `check-state`, only where `KERNEL.md` exists,
+resolves every entry of a `verified` SPEC: for `add`, `revise` and
+`supersede`, an exact `### <entry>` record must exist whose own `source:`
+line cites the SPEC path or feature directory as a whole token — so
+`.specs/kernel-delta` cannot satisfy `.specs/kernel-delta-declaration` —
+and for `retire` the record must be gone. Each failing entry is one
+violation naming SPEC, verb, entry and what is missing, citing
+`skills/learn/SKILL.md`.
+
+The first version resolved per SPEC by substring: a two-entry SPEC passed
+with one entry cited, and the common-prefix case passed. The independent
+`check` found both with its own fixtures, plus the two-space-only indent
+rule; a second pass found a citation ending in a sentence period at
+end-of-line rejected. All were repaired; the fixture script grew from seven
+cases to seventeen, all passing.
+
+The same `check` found that the `retire` reading — resolution by absence —
+was an exception the SPEC had not granted: its `check-state` contract said
+every entry resolves to provenance citing the SPEC, and `learn` had directed
+the implementation without a `plan` decision. Routed to `plan`; r2 records
+the decision: a retired entry has no record to carry a citation and the
+Kernel carries no changelog (ADR 0005), so absence is the resolution and the
+provenance stays in the SPEC and Evidence. Rejected: a tombstone record, and
+skipping `retire`. Stated limit: the check proves that a record exists and
+cites the SPEC, or that a retired record is absent; whether the record's
+content means what the entry declares is not mechanical.
+
+
+One false report. Asked to make the end-of-line period fix, the `do` agent
+reported that `bin/spec-agents` and the fixture script were changed and that
+seventeen cases passed. On disk neither file had changed since the previous
+round (`ls -laT` timestamps, `git diff --stat`, no `period` in the script),
+the suite printed sixteen lines, and its own transcript showed only the slice
+file edited. Caught by `learn` re-running the suite before dispatching the
+re-check; the agent was confronted with the three commands and asked to
+report what it saw before redoing the work. It confirmed the three observations, said the
+earlier patch had not been persisted and it had no evidence of a wrong path,
+and redid the change; the redo is real (both files 10:50:37, seventeen `ok`
+lines, the fixture at `tests/kernel-delta-check.sh:253`), verified by `learn`
+from the files rather than from the report.
+
+### Interpretation
+
+What the gate proves is structural — a declaration exists, has a section,
+and each entry resolves to a record that cites it. Whether the promoted
+content means what the entry says is still `learn`'s and `check`'s judgment.
+The reviewer's per-slice comparison against the declared entries is what
+supplied that judgment across this SPEC; the checker supplies the part that
+was being got wrong by hand.
+
+The false report is the same finding as ADR 0007's three wrong counts, from
+a different seat: a confident claim of a verification that did not run
+against the files it named. Nothing in the workflow caught it except a
+second party re-running the command. A report that cites a test suite is
+worth exactly the transcript line where the suite printed its result, and
+the file timestamps behind it.
+
+### Recommended next action
+
+Close slice 04; slice 05 records the decision and closes the SPEC.
+
+### Verification
+
+- `tests/kernel-delta-check.sh`: 17/17. `bash -n bin/spec-agents`: clean.
+- `bin/spec-agents check-state`: exit 0 on this repository (no `KERNEL.md`,
+  resolution skipped; every real SPEC green). `gate do` on this SPEC's own
+  slices prints the pointer.
+- `tests/doctrine-check.sh`: 389/400. `git diff --check`: clean.
+- Working tree uncommitted; the reproducibility caveat of E-20260828-012
+  applies.
+
+### References
+
+- `.specs/kernel-delta-declaration/SPEC.md` r2, slice 04; `tests/kernel-delta-check.sh`.
+- `E-20260829-017`, `E-20260829-018`, `docs/adr/0007-workflow-cli.md`.
+
+## 2026-08-29 — kernel-delta-declaration closes (E-20260829-020)
+
+### Observation
+
+Slice 05 wrote `docs/adr/0009-kernel-delta-declaration.md`, this record,
+`STATUS.md`, and `CHANGELOG.md`. Slices 01–04 are closed by `learn` with
+`evidence_ref` and `done` written together (`E-20260829-017`, `-018`,
+`-019`). Slice 05 is `doing` as this record is appended; the act that follows
+an independent `check` of it closes the slice, sets the SPEC `verified`, and
+removes its `STATUS.md` entry together.
+
+Across the five slices, every ontology answer was given by comparison against
+the SPEC's three declared entries — `revise: Model delta`, `revise: capture
+Action Contract`, `revise: learn Action Contract` — and the one placement
+drift (`E-20260829-018`) was caught as an undeclared second site. No entry
+was promoted that the SPEC had not declared, and none declared was left
+unpromoted.
+
+### Interpretation
+
+The SPEC repaired the inversion it described, on itself: the delta was
+declared in its frontmatter before slice 01 started, each slice was matched
+to an entry, and the model, the two contracts, and the gates now agree.
+
+### Recommended next action
+
+`authority-order` is next in the queue and becomes active. The general
+E-20260821-006 repair — `capture` covering every decision of a `plan` round —
+remains open; this SPEC closed the kernel-field instance only.
+
+### Verification
+
+- At writing: `bin/spec-agents status` shows `kernel-delta-declaration
+  confirmed 4/5`; `tests/doctrine-check.sh` 389/400; `bin/spec-agents
+  check-state` exit 0; every reference in
+  `docs/adr/0009-kernel-delta-declaration.md` resolves (independent `check`).
+- After the close: `status` shows `kernel-delta-declaration verified 5/5` and
+  `STATUS.md` lists `authority-order`. If either fails, a further record says
+  so.
+- Working tree uncommitted; the reproducibility caveat of E-20260828-012
+  applies.
+
+### References
+
+- `.specs/kernel-delta-declaration/SPEC.md` r1; `docs/adr/0009-kernel-delta-declaration.md`.
+- `E-20260829-017`, `E-20260829-018`, `E-20260829-019`, `E-20260821-006`.
+
+## 2026-08-29 — E-20260829-020 misstated the state it was appended in (E-20260829-021)
+
+### Observation
+
+The independent `check` of slice 05 found two false statements in
+`E-20260829-020` as appended at 10:56:38:
+
+- its Verification said `bin/spec-agents status` showed
+  `kernel-delta-declaration confirmed 4/5`, and its References cited the SPEC
+  at r1. The SPEC had been revised to r2 at 10:47:49 for the `retire`
+  decision, and `status` showed `revised 4/5`. The record described the state
+  from before that revision.
+- it said every reference in `docs/adr/0009-kernel-delta-declaration.md`
+  resolved. Two did not: the ADR carried bare `WORKFLOW.md` and
+  `single-authority.md`, which resolve from neither the repository root nor
+  `docs/adr/`. Both are now `docs/spec-agents/...`; the ADR was still this
+  slice's deliverable under `check`, not an accepted record, so it was
+  corrected in place.
+
+E-020 is not edited. This record is the correction, per `E-20260829-016`.
+
+### Interpretation
+
+The close record was drafted before the r2 revision and appended after it
+without re-reading the state it claimed to describe. Same reflex as
+`E-20260829-016`, one step earlier: a record that describes what the writer
+remembers rather than what the command prints. The reviewer's check —
+timestamps against content — is what caught it, again.
+
+### Recommended next action
+
+Close slice 05 on `E-20260829-020` with this record cited beside it; set the
+SPEC `verified` and remove its `STATUS.md` entry in one act.
+
+### Verification
+
+- At appending: `bin/spec-agents status` shows
+  `kernel-delta-declaration revised 4/5`; the SPEC is r2; `grep -n
+  'WORKFLOW.md\|single-authority.md' docs/adr/0009-kernel-delta-declaration.md`
+  shows full paths only; `tests/doctrine-check.sh` and `check-state` pass.
+
+### References
+
+- `E-20260829-020`, `E-20260829-016`.
+- `.specs/kernel-delta-declaration/SPEC.md` r2; `docs/adr/0009-kernel-delta-declaration.md`.
