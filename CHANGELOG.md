@@ -1,6 +1,16 @@
 # Changelog
 
-## [4.5.0] — 2026-08-29
+## [4.2.0] — 2026-08-29
+
+**Breaking.** Everything since v4.1.0, released as one version. The intermediate
+numbers 4.2.0 through 4.5.0 appeared in this file during development and were
+never tagged or released; they are folded in below as sections.
+
+The six actions now have gates that refuse, a SPEC has a lifecycle with a
+terminal state that only `learn` writes, and a semantic change is declared in
+the SPEC before the code and checked against that declaration when it closes.
+
+### Kernel delta — declare the change before the code
 
 **Breaking.** The Kernel delta is declared before the code.
 
@@ -17,7 +27,7 @@
   the seams.
 - Recorded as `docs/adr/0009-kernel-delta-declaration.md`.
 
-## [4.4.0] — 2026-08-29
+### SPEC lifecycle — a finished SPEC is a defined state
 
 **Breaking.** SPEC gets a lifecycle, and `learn` closes both levels.
 
@@ -36,7 +46,7 @@
   for eleven days; all three are now `verified` on named evidence.
 - Recorded as `docs/adr/0008-spec-lifecycle.md`.
 
-## [4.3.0] — 2026-08-26
+### Gates — the six actions can refuse
 
 **Breaking.** The six actions get gates.
 
@@ -56,7 +66,7 @@
   confident wrong answers — recorded as the actual case for the tool.
 - Recorded as `docs/adr/0007-workflow-cli.md`.
 
-## [4.2.0] — 2026-08-25
+### Checkable authority — the map is verified, and the payload gains an executable
 
 The authority map becomes checkable, and the payload gains its first executable.
 
