@@ -9,11 +9,12 @@
 set -u
 fail=0
 bad() { echo "FAIL: $*" >&2; fail=1; }
+DOCTRINE_ROOT=".spec-agents/doctrine"
 
 # 1. The mandatory read has a ceiling. It grew from 299 to 586 lines in two days
 #    without any single addition looking unreasonable.
 LIMIT=400
-n=$(( $(wc -l < AGENTS.md) + $(wc -l < docs/spec-agents/WORKFLOW.md) ))
+n=$(( $(wc -l < "$DOCTRINE_ROOT/AGENTS.md") + $(wc -l < "$DOCTRINE_ROOT/docs/WORKFLOW.md") ))
 if [ "$n" -gt "$LIMIT" ]; then
   bad "mandatory read is $n lines, over the $LIMIT ceiling. Remove something before adding."
 else
@@ -23,7 +24,9 @@ fi
 # 2. Rationale was moved into ADRs and the rules left pointers. A pointer to a
 #    missing ADR loses the reasoning entirely.
 missing=0
-for adr in $(grep -oh "ADR 0[0-9][0-9][0-9]" AGENTS.md AGENTS_en.md docs/spec-agents/*.md 2>/dev/null | sort -u | awk '{print $2}'); do
+for adr in $(grep -oh "ADR 0[0-9][0-9][0-9]" \
+             "$DOCTRINE_ROOT/AGENTS.md" "$DOCTRINE_ROOT/AGENTS_en.md" \
+             "$DOCTRINE_ROOT/docs"/*.md 2>/dev/null | sort -u | awk '{print $2}'); do
   ls docs/adr/"$adr"-*.md >/dev/null 2>&1 || { bad "ADR $adr is referenced but has no file."; missing=1; }
 done
 [ "$missing" -eq 0 ] && echo "ok: every ADR pointer resolves."

@@ -43,8 +43,23 @@ Run from the repository root:
 tests/doctrine-check.sh
 ```
 
-The shipped counterpart is `docs/spec-agents/check-kernel.sh`, which checks a
+The shipped counterpart is `.spec-agents/doctrine/docs/check-kernel.sh`, which checks a
 *managed project's* authority map and travels with the installer.
+
+## `source-doctrine-cutover-check.sh`
+
+Checks the source Doctrine's exact namespaced manifest, the selected-language
+installed manifest, root adapter cleanliness, source-root and nested status
+probes, source Markdown links, source refusal,
+and Git's rename recognition using only a throwaway tree.
+
+## `source-spec-cutover-check.sh`
+
+Checks the source repository's canonical SPEC manifest and record counts,
+machine-readable `spec_ref` and `blocked_by` resolution, current frontmatter
+retired-path cleanliness, source-root and nested status/ready probes, all six
+gates and transitions from both roots, check-state, and Git's recognition of
+the complete SPEC tree move using throwaway fixtures outside the repository.
 
 ## `kernel-delta-check.sh`
 

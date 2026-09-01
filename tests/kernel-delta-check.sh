@@ -6,15 +6,26 @@ fail=0
 bad() { echo "FAIL: $*" >&2; fail=1; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLI="$ROOT/bin/spec-agents"
+CLI="$ROOT/.spec-agents/doctrine/bin/spec-agents"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-OK_LINE="ok: gate passed. Read skills/do/SKILL.md and perform the slice."
+OK_LINE="ok: gate passed. Read .spec-agents/doctrine/skills/do/SKILL.md and perform the slice."
+
+install_fixture() {
+  local dir="$1"
+  "$CLI" install "$dir" cn </dev/null >/dev/null
+  mkdir -p "$dir/.spec-agents/specs" "$dir/.spec-agents/state"
+}
+
+fixture_cli() {
+  echo "$1/.spec-agents/doctrine/bin/spec-agents"
+}
 
 make_gate_project() {
   local dir="$1" field="$2" model="$3" indent="${4:-  }"
-  mkdir -p "$dir/.specs/feature/issues"
+  install_fixture "$dir"
+  mkdir -p "$dir/.spec-agents/specs/feature/issues"
   {
     printf '%s\n\n' '# fixture'
     printf '%s\n' 'status: confirmed' 'revision: 1'
@@ -30,17 +41,18 @@ make_gate_project() {
     printf '%s\n' 'context_refs:' '' '## Model delta'
     [ "$model" = nonempty ] && printf '%s\n' 'fixture delta'
     printf '%s\n' '' '## Action Contracts' 'fixture'
-  } > "$dir/.specs/feature/SPEC.md"
+  } > "$dir/.spec-agents/specs/feature/SPEC.md"
   {
     printf '%s\n\n' '# fixture slice'
     printf '%s\n' 'status: ready' 'writer: do' 'authority: fixture' \
-      'spec_ref: .specs/feature/SPEC.md' 'evidence_ref:'
-  } > "$dir/.specs/feature/issues/01-slice.md"
+      'spec_ref: .spec-agents/specs/feature/SPEC.md' 'evidence_ref:'
+  } > "$dir/.spec-agents/specs/feature/issues/01-slice.md"
 }
 
 run_gate() {
   local dir="$1" out="$2" err="$3"
-  (cd "$dir" && "$CLI" gate do .specs/feature/issues/01-slice.md >"$out" 2>"$err")
+  (cd "$dir" && "$(fixture_cli "$dir")" gate do \
+    .spec-agents/specs/feature/issues/01-slice.md >"$out" 2>"$err")
 }
 
 case_entries_empty="$TMP/entries-empty"
@@ -78,7 +90,7 @@ fi
 case_entries_ok="$TMP/entries-ok"
 make_gate_project "$case_entries_ok" entries nonempty
 if run_gate "$case_entries_ok" "$TMP/entries-ok.out" "$TMP/entries-ok.err"; then
-  if grep -Fq '.specs/feature/SPEC.md: ## Model delta' "$TMP/entries-ok.out"; then
+    if grep -Fq '.spec-agents/specs/feature/SPEC.md: ## Model delta' "$TMP/entries-ok.out"; then
     echo "ok: entries with Model delta pass with pointer"
   else
     bad "entries with Model delta output lacks pointer"
@@ -102,7 +114,7 @@ fi
 case_indent_one="$TMP/indent-one"
 make_gate_project "$case_indent_one" entries nonempty ' '
 if run_gate "$case_indent_one" "$TMP/indent-one.out" "$TMP/indent-one.err"; then
-  grep -Fq '.specs/feature/SPEC.md: ## Model delta' "$TMP/indent-one.out" \
+  grep -Fq '.spec-agents/specs/feature/SPEC.md: ## Model delta' "$TMP/indent-one.out" \
     && echo "ok: one-space entry indentation passes with pointer" \
     || bad "one-space entry indentation lacks pointer"
 else
@@ -112,7 +124,7 @@ fi
 case_indent_four="$TMP/indent-four"
 make_gate_project "$case_indent_four" entries nonempty '    '
 if run_gate "$case_indent_four" "$TMP/indent-four.out" "$TMP/indent-four.err"; then
-  grep -Fq '.specs/feature/SPEC.md: ## Model delta' "$TMP/indent-four.out" \
+  grep -Fq '.spec-agents/specs/feature/SPEC.md: ## Model delta' "$TMP/indent-four.out" \
     && echo "ok: four-space entry indentation passes with pointer" \
     || bad "four-space entry indentation lacks pointer"
 else
@@ -131,64 +143,66 @@ fi
 
 make_check_state_project() {
   local dir="$1" source="$2"
-  mkdir -p "$dir/.specs/feature/issues"
+  install_fixture "$dir"
+  mkdir -p "$dir/.spec-agents/specs/feature/issues"
   {
     printf '%s\n\n' '# verified fixture'
     printf '%s\n' 'status: verified' 'revision: 1' 'kernel_delta:' \
       '  - revise: fixture Kernel item' 'context_refs:' '' '## Model delta' \
       'fixture delta' '' '## Action Contracts' 'fixture'
-  } > "$dir/.specs/feature/SPEC.md"
+  } > "$dir/.spec-agents/specs/feature/SPEC.md"
   {
     printf '%s\n\n' '# verified fixture slice'
     printf '%s\n' 'status: ready' 'authority: fixture' \
-      'spec_ref: .specs/feature/SPEC.md' 'evidence_ref: E-fixture'
-  } > "$dir/.specs/feature/issues/01-slice.md"
-  printf '%s\n' '# fixture kernel' '### fixture Kernel item' 'since: K1' "source: $source" > "$dir/KERNEL.md"
+      'spec_ref: .spec-agents/specs/feature/SPEC.md' 'evidence_ref: E-fixture'
+  } > "$dir/.spec-agents/specs/feature/issues/01-slice.md"
+  printf '%s\n' '# fixture kernel' '### fixture Kernel item' 'since: K1' "source: $source" > "$dir/.spec-agents/state/KERNEL.md"
 }
 
 case_source_ok="$TMP/source-ok"
-make_check_state_project "$case_source_ok" '.specs/feature/SPEC.md'
-if (cd "$case_source_ok" && "$CLI" check-state >"$TMP/source-ok.out" 2>"$TMP/source-ok.err"); then
+make_check_state_project "$case_source_ok" '.spec-agents/specs/feature/SPEC.md'
+  if (cd "$case_source_ok" && "$(fixture_cli "$case_source_ok")" check-state >"$TMP/source-ok.out" 2>"$TMP/source-ok.err"); then
   echo "ok: cited SPEC provenance passes check-state"
 else
   bad "cited SPEC provenance was refused"
 fi
 
 case_source_bad="$TMP/source-bad"
-make_check_state_project "$case_source_bad" '.specs/other/SPEC.md'
-if (cd "$case_source_bad" && "$CLI" check-state >"$TMP/source-bad.out" 2>"$TMP/source-bad.err"); then
+make_check_state_project "$case_source_bad" '.spec-agents/specs/other/SPEC.md'
+  if (cd "$case_source_bad" && "$(fixture_cli "$case_source_bad")" check-state >"$TMP/source-bad.out" 2>"$TMP/source-bad.err"); then
   bad "uncited SPEC provenance was accepted"
 else
-  grep -Fq '.specs/feature/SPEC.md' "$TMP/source-bad.err" \
+    grep -Fq '.spec-agents/specs/feature/SPEC.md' "$TMP/source-bad.err" \
     && echo "ok: uncited SPEC provenance refused and names the SPEC" \
     || bad "uncited SPEC provenance refusal lacks the SPEC path"
 fi
 
 make_resolution_project() {
   local dir="$1" feature="$2" declarations="$3" kernel="$4"
-  mkdir -p "$dir/.specs/$feature/issues"
+  install_fixture "$dir"
+  mkdir -p "$dir/.spec-agents/specs/$feature/issues"
   {
     printf '%s\n\n' '# resolution fixture'
     printf '%s\n' 'status: verified' 'revision: 1' 'kernel_delta:'
     printf '%s\n' "$declarations"
     printf '%s\n' 'context_refs:' '' '## Model delta' 'fixture delta' '' '## Action Contracts' 'fixture'
-  } > "$dir/.specs/$feature/SPEC.md"
+  } > "$dir/.spec-agents/specs/$feature/SPEC.md"
   {
     printf '%s\n\n' '# resolution fixture slice'
     printf '%s\n' 'status: ready' 'authority: fixture' \
-      "spec_ref: .specs/$feature/SPEC.md" 'evidence_ref:'
-  } > "$dir/.specs/$feature/issues/01-slice.md"
+      "spec_ref: .spec-agents/specs/$feature/SPEC.md" 'evidence_ref:'
+  } > "$dir/.spec-agents/specs/$feature/issues/01-slice.md"
   {
     printf '%s\n' '# fixture kernel'
     printf '%s\n' "$kernel"
-  } > "$dir/KERNEL.md"
+  } > "$dir/.spec-agents/state/KERNEL.md"
 }
 
 case_one_uncited="$TMP/one-uncited"
 make_resolution_project "$case_one_uncited" feature \
   $'  - revise: first entry\n  - add: second entry' \
-  $'### first entry\nsince: K1\nsource: .specs/feature/SPEC.md\n\n### second entry\nsince: K1\nsource: .specs/other/SPEC.md'
-if (cd "$case_one_uncited" && "$CLI" check-state >"$TMP/one-uncited.out" 2>"$TMP/one-uncited.err"); then
+  $'### first entry\nsince: K1\nsource: .spec-agents/specs/feature/SPEC.md\n\n### second entry\nsince: K1\nsource: .spec-agents/specs/other/SPEC.md'
+  if (cd "$case_one_uncited" && "$(fixture_cli "$case_one_uncited")" check-state >"$TMP/one-uncited.out" 2>"$TMP/one-uncited.err"); then
   bad "one uncited entry was accepted"
 else
   grep -Fq "second entry" "$TMP/one-uncited.err" \
@@ -199,8 +213,8 @@ fi
 case_both_cited="$TMP/both-cited"
 make_resolution_project "$case_both_cited" feature \
   $'  - revise: first entry\n  - add: second entry' \
-  $'### first entry\nsince: K1\nsource: .specs/feature/SPEC.md\n\n### second entry\nsince: K1\nsource: .specs/feature/SPEC.md'
-if (cd "$case_both_cited" && "$CLI" check-state >"$TMP/both-cited.out" 2>"$TMP/both-cited.err"); then
+  $'### first entry\nsince: K1\nsource: .spec-agents/specs/feature/SPEC.md\n\n### second entry\nsince: K1\nsource: .spec-agents/specs/feature/SPEC.md'
+  if (cd "$case_both_cited" && "$(fixture_cli "$case_both_cited")" check-state >"$TMP/both-cited.out" 2>"$TMP/both-cited.err"); then
   echo "ok: both cited entries pass check-state"
 else
   bad "both cited entries were refused"
@@ -208,11 +222,11 @@ fi
 
 case_common_prefix="$TMP/common-prefix"
 make_resolution_project "$case_common_prefix" kernel-delta '  - revise: Model delta' \
-  $'### Model delta\nsince: K1\nsource: .specs/kernel-delta-declaration/SPEC.md'
-if (cd "$case_common_prefix" && "$CLI" check-state >"$TMP/common-prefix.out" 2>"$TMP/common-prefix.err"); then
+  $'### Model delta\nsince: K1\nsource: .spec-agents/specs/kernel-delta-declaration/SPEC.md'
+  if (cd "$case_common_prefix" && "$(fixture_cli "$case_common_prefix")" check-state >"$TMP/common-prefix.out" 2>"$TMP/common-prefix.err"); then
   bad "common-prefix provenance trap was accepted"
 else
-  if grep -Fq '.specs/kernel-delta/SPEC.md' "$TMP/common-prefix.err" &&
+  if grep -Fq '.spec-agents/specs/kernel-delta/SPEC.md' "$TMP/common-prefix.err" &&
      grep -Fq "Model delta" "$TMP/common-prefix.err"; then
     echo "ok: common-prefix provenance trap is refused"
   else
@@ -222,8 +236,8 @@ fi
 
 case_retire_absent="$TMP/retire-absent"
 make_resolution_project "$case_retire_absent" retire-feature '  - retire: old rule' \
-  $'## Other\nsource: .specs/retire-feature/SPEC.md'
-if (cd "$case_retire_absent" && "$CLI" check-state >"$TMP/retire-absent.out" 2>"$TMP/retire-absent.err"); then
+  $'## Other\nsource: .spec-agents/specs/retire-feature/SPEC.md'
+  if (cd "$case_retire_absent" && "$(fixture_cli "$case_retire_absent")" check-state >"$TMP/retire-absent.out" 2>"$TMP/retire-absent.err"); then
   echo "ok: retired entry with no record passes check-state"
 else
   bad "retired entry with no record was refused"
@@ -231,8 +245,8 @@ fi
 
 case_retire_present="$TMP/retire-present"
 make_resolution_project "$case_retire_present" retire-feature '  - retire: old rule' \
-  $'### old rule\nsince: K1\nsource: .specs/retire-feature/SPEC.md'
-if (cd "$case_retire_present" && "$CLI" check-state >"$TMP/retire-present.out" 2>"$TMP/retire-present.err"); then
+  $'### old rule\nsince: K1\nsource: .spec-agents/specs/retire-feature/SPEC.md'
+  if (cd "$case_retire_present" && "$(fixture_cli "$case_retire_present")" check-state >"$TMP/retire-present.out" 2>"$TMP/retire-present.err"); then
   bad "retired entry with a remaining record was accepted"
 else
   grep -Fq "retire 'old rule'" "$TMP/retire-present.err" \
@@ -243,8 +257,8 @@ fi
 case_parenthetical="$TMP/parenthetical"
 make_resolution_project "$case_parenthetical" parenthetical \
   '  - revise: plain name (context note)' \
-  $'### plain name\nsince: K1\nsource: .specs/parenthetical/SPEC.md'
-if (cd "$case_parenthetical" && "$CLI" check-state >"$TMP/parenthetical.out" 2>"$TMP/parenthetical.err"); then
+  $'### plain name\nsince: K1\nsource: .spec-agents/specs/parenthetical/SPEC.md'
+  if (cd "$case_parenthetical" && "$(fixture_cli "$case_parenthetical")" check-state >"$TMP/parenthetical.out" 2>"$TMP/parenthetical.err"); then
   echo "ok: parenthetical entry resolves to the plain heading"
 else
   bad "parenthetical entry did not resolve to the plain heading"
@@ -252,8 +266,8 @@ fi
 
 case_period="$TMP/period"
 make_resolution_project "$case_period" period '  - revise: period entry' \
-  $'### period entry\nsince: K1\nsource: .specs/period/SPEC.md.'
-if (cd "$case_period" && "$CLI" check-state >"$TMP/period.out" 2>"$TMP/period.err"); then
+  $'### period entry\nsince: K1\nsource: .spec-agents/specs/period/SPEC.md.'
+  if (cd "$case_period" && "$(fixture_cli "$case_period")" check-state >"$TMP/period.out" 2>"$TMP/period.err"); then
   echo "ok: period-at-EOL provenance passes check-state"
 else
   bad "period-at-EOL provenance was refused"

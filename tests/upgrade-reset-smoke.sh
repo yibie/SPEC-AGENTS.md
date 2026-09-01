@@ -2,6 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd -P "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+DOCTRINE_SOURCE="$REPO_ROOT/.spec-agents/doctrine"
 TRIAL_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/spec-agents-upgrade-reset.XXXXXX")"
 PASS_COUNT=0
 
@@ -9,6 +10,7 @@ cleanup() {
   if [ "${SPEC_AGENTS_KEEP_FIXTURES:-0}" = "1" ]; then
     echo "fixture retained: $TRIAL_ROOT"
   else
+    chmod -R u+w -- "$TRIAL_ROOT" 2>/dev/null || true
     rm -rf -- "$TRIAL_ROOT"
   fi
 }
@@ -99,13 +101,13 @@ assert_no_success() {
 
 prepare_valid_cutover() {
   local project="$1" backup="$2" project_abs backup_abs report report_hash
-  mkdir -p "$project/.scratch/upgrade-review" "$(dirname "$backup")"
-  report="$project/.scratch/upgrade-review/REPORT.md"
+  mkdir -p "$project/.spec-agents/scratch/upgrade-review" "$(dirname "$backup")"
+  report="$project/.spec-agents/scratch/upgrade-review/REPORT.md"
   printf '%s\n' '# Upgrade Review' '## User decision' '- confirmed' > "$report"
   project_abs="$(cd -P "$project" && pwd -P)"
   backup_abs="$(canonical_absent "$backup")"
   report_hash="$(hash_file "$report")"
-  write_cutover "$project/.scratch/upgrade-review/CUTOVER.tsv" \
+  write_cutover "$project/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" \
     "$project_abs" "$backup_abs" "$report_hash" 0 confirmed
 }
 
@@ -118,7 +120,7 @@ awk '
   want && /^```text$/ { capture=1; next }
   capture && /^```$/ { exit }
   capture { print }
-' UPGRADE.md > "$receipt_doc"
+' "$DOCTRINE_SOURCE/UPGRADE.md" > "$receipt_doc"
 awk -F '\t' '
   BEGIN {
     expected["format"]="spec-agents-cutover-v1"
@@ -131,23 +133,23 @@ awk -F '\t' '
   NF != 2 || !($1 in expected) || $2 != expected[$1] || seen[$1]++ { bad=1 }
   END { if (NR != 6) bad=1; for (key in expected) if (seen[key] != 1) bad=1; exit bad }
 ' "$receipt_doc" || fail "UPGRADE CUTOVER shape is not exact"
-section4="$(awk '/^## 4\. Bind the confirmed cutover$/ { print NR }' UPGRADE.md)"
-section5="$(awk '/^## 5\. Perform the recoverable reset$/ { print NR }' UPGRADE.md)"
-replace_line="$(awk '/spec-agents replace-doctrine <project>/ { print NR; exit }' UPGRADE.md)"
-section6="$(awk '/^## 6\. Run a fresh START$/ { print NR }' UPGRADE.md)"
-section7="$(awk '/^## 7\. Complete the review$/ { print NR }' UPGRADE.md)"
+section4="$(awk '/^## 4\. Bind the confirmed cutover$/ { print NR }' "$DOCTRINE_SOURCE/UPGRADE.md")"
+section5="$(awk '/^## 5\. Perform the recoverable reset$/ { print NR }' "$DOCTRINE_SOURCE/UPGRADE.md")"
+replace_line="$(awk '/spec-agents replace-doctrine <project>/ { print NR; exit }' "$DOCTRINE_SOURCE/UPGRADE.md")"
+section6="$(awk '/^## 6\. Run a fresh START$/ { print NR }' "$DOCTRINE_SOURCE/UPGRADE.md")"
+section7="$(awk '/^## 7\. Complete the review$/ { print NR }' "$DOCTRINE_SOURCE/UPGRADE.md")"
 [ "$section4" -lt "$section5" ] && [ "$section5" -lt "$replace_line" ] &&
   [ "$replace_line" -lt "$section6" ] && [ "$section6" -lt "$section7" ] ||
   fail "UPGRADE numbered order differs from the confirmed flow"
-grep -q '^inspect → preservation manifest → user confirmation → cutover receipt$' UPGRADE.md ||
+grep -q '^inspect → preservation manifest → user confirmation → cutover receipt$' "$DOCTRINE_SOURCE/UPGRADE.md" ||
   fail "UPGRADE diagram omits confirmation receipt"
-grep -q '^        → doctrine replacement → retired-state reset → fresh START$' UPGRADE.md ||
+grep -q '^        → doctrine replacement → retired-state reset → fresh START$' "$DOCTRINE_SOURCE/UPGRADE.md" ||
   fail "UPGRADE diagram order differs from its numbered procedure"
-grep -q '^        → completion result$' UPGRADE.md || fail "UPGRADE diagram omits completion"
+grep -q '^        → completion result$' "$DOCTRINE_SOURCE/UPGRADE.md" || fail "UPGRADE diagram omits completion"
 for disposition in candidate archive-only keep-active unresolved; do
-  grep -q "\`$disposition\`" UPGRADE.md || fail "UPGRADE omits $disposition"
+  grep -q "\`$disposition\`" "$DOCTRINE_SOURCE/UPGRADE.md" || fail "UPGRADE omits $disposition"
 done
-grep -q 'no old status, completion claim, dependency, Evidence ID' UPGRADE.md ||
+grep -q 'no old status, completion claim, dependency, Evidence ID' "$DOCTRINE_SOURCE/UPGRADE.md" ||
   fail "UPGRADE permits inherited work state"
 pass "prompt order, preservation dispositions, and exact CUTOVER shape"
 
@@ -155,8 +157,9 @@ pass "prompt order, preservation dispositions, and exact CUTOVER shape"
 PROJECT="$TRIAL_ROOT/project"
 mkdir -p "$PROJECT/skills/old" "$PROJECT/docs/spec-agents" \
   "$PROJECT/.phrase" "$PROJECT/.specs/old/issues" \
-  "$PROJECT/.scratch/legacy-checkout" "$PROJECT/tests"
-printf 'old agents\n' > "$PROJECT/AGENTS.md"
+  "$PROJECT/.scratch/legacy-checkout" "$PROJECT/archive/legacy-workflow" \
+  "$PROJECT/.spec-agents/doctrine" "$PROJECT/tests"
+cp "$DOCTRINE_SOURCE/AGENTS_en.md" "$PROJECT/AGENTS.md"
 printf 'old start\n' > "$PROJECT/START.md"
 printf 'old upgrade\n' > "$PROJECT/UPGRADE.md"
 printf 'old skill\n' > "$PROJECT/skills/old/SKILL.md"
@@ -169,6 +172,8 @@ printf 'ship current request\n' > "$PROJECT/ROADMAP.md"
 printf 'status: confirmed\n' > "$PROJECT/.specs/old/SPEC.md"
 printf 'status: doing\n' > "$PROJECT/.specs/old/issues/01-old.md"
 printf 'tracked old spec\n' > "$PROJECT/.scratch/legacy-checkout/SPEC.md"
+printf 'old archive record\n' > "$PROJECT/archive/legacy-workflow/record.md"
+printf 'stale installed doctrine\n' > "$PROJECT/.spec-agents/doctrine/stale.md"
 printf 'project vocabulary\n' > "$PROJECT/CONTEXT.md"
 printf 'print("application")\n' > "$PROJECT/app.py"
 printf 'mode=test\n' > "$PROJECT/config.ini"
@@ -177,17 +182,19 @@ printf 'application test\n' > "$PROJECT/tests/test_app.txt"
 INITIAL_PATHS=(
   AGENTS.md START.md UPGRADE.md skills docs/spec-agents .phrase KERNEL.md
   STATUS.md EVIDENCE.md ROADMAP.md .specs .scratch/legacy-checkout
+  archive/legacy-workflow .spec-agents/doctrine
   CONTEXT.md app.py config.ini tests
 )
 MANIFEST_PATHS=(
   AGENTS.md START.md UPGRADE.md skills/ docs/spec-agents/ .phrase/ KERNEL.md
   STATUS.md EVIDENCE.md ROADMAP.md .specs/ .scratch/legacy-checkout/
+  archive/legacy-workflow/
   CONTEXT.md app.py config.ini tests/
 )
 tree_manifest "$PROJECT" "$TRIAL_ROOT/before-report.tsv" "${INITIAL_PATHS[@]}"
 
-mkdir -p "$PROJECT/.scratch/upgrade-review"
-cat > "$PROJECT/.scratch/upgrade-review/REPORT.md" <<'REPORT'
+mkdir -p "$PROJECT/.spec-agents/scratch/upgrade-review"
+cat > "$PROJECT/.spec-agents/scratch/upgrade-review/REPORT.md" <<'REPORT'
 # Upgrade Review
 
 ## Current project facts
@@ -197,11 +204,11 @@ cat > "$PROJECT/.scratch/upgrade-review/REPORT.md" <<'REPORT'
 ## Preservation manifest
 | Source path | Path type | Disposition | Evidence | Archive destination | Count/hash check |
 | --- | --- | --- | --- | --- | --- |
-| AGENTS.md | file | candidate | installed old doctrine | doctrine backup/AGENTS.md | SHA-256 |
+| AGENTS.md | file | candidate | installed old doctrine | doctrine backup/old/AGENTS.md | SHA-256 |
 | START.md | file | archive-only | installed old doctrine | doctrine backup/START.md | SHA-256 |
 | UPGRADE.md | file | archive-only | installed old doctrine | doctrine backup/UPGRADE.md | SHA-256 |
-| skills/ | directory | archive-only | installed old doctrine | doctrine backup/skills/ | path count and SHA-256 |
-| docs/spec-agents/ | directory | archive-only | installed old doctrine | doctrine backup/docs/spec-agents/ | path count and SHA-256 |
+| skills/ | directory | archive-only | installed old doctrine | doctrine backup/old/skills/ | path count and SHA-256 |
+| docs/spec-agents/ | directory | archive-only | installed old doctrine | doctrine backup/old/docs/spec-agents/ | path count and SHA-256 |
 | .phrase/ | directory | archive-only | retired marker | retired-state/.phrase/ | path count and SHA-256 |
 | KERNEL.md | file | candidate | old lifecycle model | retired-state/KERNEL.md | SHA-256 |
 | STATUS.md | file | archive-only | phase and task state | retired-state/STATUS.md | SHA-256 |
@@ -209,6 +216,7 @@ cat > "$PROJECT/.scratch/upgrade-review/REPORT.md" <<'REPORT'
 | ROADMAP.md | file | candidate | future intent | retired-state/ROADMAP.md | SHA-256 |
 | .specs/ | directory | archive-only | old execution state | retired-state/.specs/ | path count and SHA-256 |
 | .scratch/legacy-checkout/ | directory | archive-only | tracked old SPEC | retired-state/.scratch/legacy-checkout/ | path count and SHA-256 |
+| archive/legacy-workflow/ | directory | archive-only | retired workflow archive | retired-state/archive/legacy-workflow/ | path count and SHA-256 |
 | CONTEXT.md | file | keep-active | project vocabulary | unchanged | SHA-256 before/after |
 | app.py | file | keep-active | application entry | unchanged | SHA-256 before/after |
 | config.ini | file | keep-active | application config | unchanged | SHA-256 before/after |
@@ -221,8 +229,8 @@ cat > "$PROJECT/.scratch/upgrade-review/REPORT.md" <<'REPORT'
 ## Conflicts and unknowns
 - none in this fixture
 ## Proposed archive and doctrine backup
-- archive root: `archive/spec-agents-upgrade/trial/`
-- doctrine backup: `archive/spec-agents-upgrade/trial/doctrine/`
+- archive root: `.spec-agents/archive/spec-agents-upgrade/trial/`
+- doctrine backup: `.spec-agents/archive/spec-agents-upgrade/trial/doctrine/`
 ## Verification plan
 - path/type/hash manifests; keep-active hashes; receipt refusals; fresh START and completion
 ## Questions for the user
@@ -233,7 +241,7 @@ cat > "$PROJECT/.scratch/upgrade-review/REPORT.md" <<'REPORT'
 - pending
 REPORT
 
-REPORT="$PROJECT/.scratch/upgrade-review/REPORT.md"
+REPORT="$PROJECT/.spec-agents/scratch/upgrade-review/REPORT.md"
 for heading in 'Current project facts' 'Retired workflow markers' 'Preservation manifest' \
                'Candidate knowledge' 'Current user intent' 'Conflicts and unknowns' \
                'Proposed archive and doctrine backup' 'Verification plan' \
@@ -260,14 +268,14 @@ awk -F '|' '
     if (evidence == "" || destination == "" || check == "") bad=1
     rows++
   }
-  END { if (rows != 16) bad=1; exit bad }
+  END { if (rows != 17) bad=1; exit bad }
 ' "$REPORT" || fail "manifest rows do not have one valid disposition and complete evidence fields"
 if grep -q '| unresolved |' "$REPORT"; then fail "fixture report retains an unresolved path"; fi
 tree_manifest "$PROJECT" "$TRIAL_ROOT/after-report.tsv" "${INITIAL_PATHS[@]}"
 cmp "$TRIAL_ROOT/before-report.tsv" "$TRIAL_ROOT/after-report.tsv" ||
   fail "reconnaissance changed a project path other than the report"
-[ ! -e "$PROJECT/.scratch/upgrade-review/CUTOVER.tsv" ] || fail "CUTOVER exists before confirmation"
-[ ! -e "$PROJECT/archive" ] || fail "archive exists before confirmation"
+[ ! -e "$PROJECT/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" ] || fail "CUTOVER exists before confirmation"
+[ -f "$PROJECT/archive/legacy-workflow/record.md" ] || fail "legacy archive input disappeared before confirmation"
 pass "report-only reconnaissance and complete preservation manifest"
 
 # Confirm the report, then bind its immutable snapshot before any replacement.
@@ -284,24 +292,24 @@ mv "$decision_tmp" "$REPORT"
 user_decision="$(awk '/^## User decision$/ { getline; print }' "$REPORT")"
 case "$user_decision" in *confirmed*) ;; *) fail "User decision was not filled before cutover" ;; esac
 
-ARCHIVE="$PROJECT/archive/spec-agents-upgrade/trial"
+ARCHIVE="$PROJECT/.spec-agents/archive/spec-agents-upgrade/trial"
 mkdir -p "$ARCHIVE"
 CONFIRMED_REPORT="$ARCHIVE/CONFIRMED-REPORT.md"
 cp "$REPORT" "$CONFIRMED_REPORT"
 CONFIRMED_HASH="$(hash_file "$REPORT")"
 [ "$(hash_file "$CONFIRMED_REPORT")" = "$CONFIRMED_HASH" ] || fail "confirmed report snapshot differs"
 PROJECT_ABS="$(cd -P "$PROJECT" && pwd -P)"
-CUTOVER="$PROJECT/.scratch/upgrade-review/CUTOVER.tsv"
+CUTOVER="$PROJECT/.spec-agents/scratch/upgrade-review/CUTOVER.tsv"
 
 # 3. Every receipt defect refuses before backup and leaves protected paths unchanged.
 REFUSED_BACKUP="$ARCHIVE/refused-doctrine"
 REFUSED_BACKUP_ABS="$(canonical_absent "$REFUSED_BACKUP")"
-PROTECTED_PATHS=("${INITIAL_PATHS[@]}" .scratch/upgrade-review/REPORT.md archive)
+PROTECTED_PATHS=("${INITIAL_PATHS[@]}" .spec-agents/scratch/upgrade-review/REPORT.md)
 expect_refusal() {
   local label="$1"
   shift
   tree_manifest "$PROJECT" "$TRIAL_ROOT/$label-before.tsv" "${PROTECTED_PATHS[@]}"
-  if "$REPO_ROOT/bin/spec-agents" replace-doctrine "$PROJECT" "$REFUSED_BACKUP" "$@" \
+  if "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$PROJECT" "$REFUSED_BACKUP" "$@" \
        </dev/null > "$TRIAL_ROOT/$label.out" 2>&1; then
     fail "$label receipt was accepted"
   fi
@@ -347,11 +355,12 @@ pass "cutover receipt refusal matrix is pre-write"
 
 # 4. The valid receipt reaches the existing recoverable replacement path.
 KEEP_ACTIVE=(CONTEXT.md app.py config.ini tests)
-RETIRED_PATHS=(.phrase KERNEL.md STATUS.md EVIDENCE.md ROADMAP.md .specs .scratch/legacy-checkout)
+RETIRED_PATHS=(.phrase KERNEL.md STATUS.md EVIDENCE.md ROADMAP.md .specs
+  .scratch/legacy-checkout archive/legacy-workflow)
 INSTANCE_PATHS=(
-  "${RETIRED_PATHS[@]}" "${KEEP_ACTIVE[@]}" .scratch/upgrade-review
-  archive/spec-agents-upgrade/trial/CONFIRMED-REPORT.md
-  archive/spec-agents-upgrade/trial/WRONG-CUTOVER.tsv
+  "${RETIRED_PATHS[@]}" "${KEEP_ACTIVE[@]}" .spec-agents/scratch/upgrade-review
+  .spec-agents/archive/spec-agents-upgrade/trial/CONFIRMED-REPORT.md
+  .spec-agents/archive/spec-agents-upgrade/trial/WRONG-CUTOVER.tsv
 )
 DOCTRINE_BACKUP="$ARCHIVE/doctrine"
 DOCTRINE_BACKUP_ABS="$(canonical_absent "$DOCTRINE_BACKUP")"
@@ -359,11 +368,17 @@ write_cutover "$CUTOVER" "$PROJECT_ABS" "$DOCTRINE_BACKUP_ABS" "$CONFIRMED_HASH"
 [ "$(hash_file "$REPORT")" = "$CONFIRMED_HASH" ] || fail "active report changed before replacement"
 tree_manifest "$PROJECT" "$TRIAL_ROOT/keep-before.tsv" "${KEEP_ACTIVE[@]}"
 tree_manifest "$PROJECT" "$TRIAL_ROOT/instance-before-replace.tsv" "${INSTANCE_PATHS[@]}"
-"$REPO_ROOT/bin/spec-agents" replace-doctrine "$PROJECT" "$DOCTRINE_BACKUP" \
+"$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$PROJECT" "$DOCTRINE_BACKUP" \
   --cutover "$CUTOVER" en </dev/null > "$TRIAL_ROOT/replace.out"
 grep -q 'Doctrine replacement complete' "$TRIAL_ROOT/replace.out" || fail "replacement omitted doctrine completion"
 if grep -q 'Spec-AGENTS is ready' "$TRIAL_ROOT/replace.out"; then fail "replacement claimed project readiness"; fi
 replay_doctrine_manifest "$DOCTRINE_BACKUP"
+[ -f "$DOCTRINE_BACKUP/OLD-DOCTRINE-MANIFEST.tsv" ] || fail "old doctrine manifest missing"
+[ -f "$DOCTRINE_BACKUP/NEW-DOCTRINE-MANIFEST.tsv" ] || fail "new doctrine manifest missing"
+grep -q $'AGENTS.md' "$DOCTRINE_BACKUP/OLD-DOCTRINE-MANIFEST.tsv" ||
+  fail "old doctrine manifest omitted AGENTS.md"
+grep -q $'stale.md' "$DOCTRINE_BACKUP/NEW-DOCTRINE-MANIFEST.tsv" ||
+  fail "new doctrine manifest omitted existing namespaced Doctrine"
 tree_manifest "$PROJECT" "$TRIAL_ROOT/instance-after-replace.tsv" "${INSTANCE_PATHS[@]}"
 cmp "$TRIAL_ROOT/instance-before-replace.tsv" "$TRIAL_ROOT/instance-after-replace.tsv" ||
   fail "doctrine replacement changed an Instance path"
@@ -377,6 +392,8 @@ for item_path in .phrase KERNEL.md STATUS.md EVIDENCE.md ROADMAP.md .specs; do
   mv "$PROJECT/$item_path" "$RETIRED_ROOT/$item_path"
 done
 mv "$PROJECT/.scratch/legacy-checkout" "$RETIRED_ROOT/.scratch/legacy-checkout"
+mkdir -p "$RETIRED_ROOT/archive"
+mv "$PROJECT/archive/legacy-workflow" "$RETIRED_ROOT/archive/legacy-workflow"
 tree_manifest "$RETIRED_ROOT" "$TRIAL_ROOT/retired-after.tsv" "${RETIRED_PATHS[@]}"
 cmp "$TRIAL_ROOT/retired-before.tsv" "$TRIAL_ROOT/retired-after.tsv" ||
   fail "retired-state archive does not reproduce source paths"
@@ -390,25 +407,28 @@ pass "exact retired-state archive and clean active path"
 tree_manifest "$PROJECT" "$TRIAL_ROOT/keep-after.tsv" "${KEEP_ACTIVE[@]}"
 cmp "$TRIAL_ROOT/keep-before.tsv" "$TRIAL_ROOT/keep-after.tsv" ||
   fail "keep-active or application content changed"
-cmp AGENTS_en.md "$PROJECT/AGENTS.md"
-cmp START.md "$PROJECT/START.md"
-cmp UPGRADE.md "$PROJECT/UPGRADE.md"
-diff -qr skills "$PROJECT/skills" >/dev/null
-diff -qr docs/spec-agents "$PROJECT/docs/spec-agents" >/dev/null
+cmp "$DOCTRINE_SOURCE/AGENTS_en.md" "$PROJECT/.spec-agents/doctrine/AGENTS.md"
+cmp templates/AGENTS-adapter.md "$PROJECT/AGENTS.md"
+cmp "$DOCTRINE_SOURCE/START.md" "$PROJECT/.spec-agents/doctrine/START.md"
+cmp "$DOCTRINE_SOURCE/UPGRADE.md" "$PROJECT/.spec-agents/doctrine/UPGRADE.md"
+diff -qr "$DOCTRINE_SOURCE/skills" "$PROJECT/.spec-agents/doctrine/skills" >/dev/null
+diff -qr "$DOCTRINE_SOURCE/docs" "$PROJECT/.spec-agents/doctrine/docs" >/dev/null
 [ -f "$REPORT" ] && [ -f "$CUTOVER" ] || fail "upgrade report or receipt disappeared"
 pass "current doctrine and unchanged project-owned paths"
 
 # 7. Simulate the fresh START result, user acceptance, and final report handoff.
-grep -q 'marker under `archive/`.*does not' START.md || fail "START does not exclude archive"
-[ -f "$PROJECT/AGENTS.md" ] && [ -f "$PROJECT/START.md" ] &&
-  [ -f "$PROJECT/docs/spec-agents/WORKFLOW.md" ] &&
-  [ -f "$PROJECT/skills/plan/SKILL.md" ] || fail "current entry is incomplete"
+grep -q 'marker under `\.spec-agents/archive/`.*does not' \
+  "$PROJECT/.spec-agents/doctrine/START.md" || fail "START does not exclude archive"
+[ -f "$PROJECT/AGENTS.md" ] && [ -f "$PROJECT/.spec-agents/doctrine/START.md" ] &&
+  [ -f "$PROJECT/.spec-agents/doctrine/docs/WORKFLOW.md" ] &&
+  [ -f "$PROJECT/.spec-agents/doctrine/skills/plan/SKILL.md" ] || fail "current entry is incomplete"
 mkdir -p "$PROJECT/nested/check"
-(cd "$PROJECT/nested/check" && "$REPO_ROOT/bin/spec-agents" gate plan > "$TRIAL_ROOT/project-plan.out")
+(cd "$PROJECT/nested/check" && "$DOCTRINE_SOURCE/bin/spec-agents" gate plan > "$TRIAL_ROOT/project-plan.out")
 grep -q 'no machine-checkable precondition' "$TRIAL_ROOT/project-plan.out" ||
   fail "fresh no-VCS project cannot enter plan"
 
-cat > "$PROJECT/KERNEL.md" <<'KERNEL'
+mkdir -p "$PROJECT/.spec-agents/state"
+cat > "$PROJECT/.spec-agents/state/KERNEL.md" <<'KERNEL'
 # Kernel
 
 version: K1
@@ -419,8 +439,8 @@ version: K1
 - Configuration: `config.ini`.
 - Tests: `tests/`.
 KERNEL
-mkdir -p "$PROJECT/.scratch/start"
-cat > "$PROJECT/.scratch/start/REPORT.md" <<'START_REPORT'
+mkdir -p "$PROJECT/.spec-agents/scratch/start"
+cat > "$PROJECT/.spec-agents/scratch/start/REPORT.md" <<'START_REPORT'
 # Start Report
 
 ProjectState: modern
@@ -430,9 +450,12 @@ Candidate rejected: legacy-only invariant
 User decision: accepted fresh START
 Next permitted action: plan the current request
 START_REPORT
-START_REPORT="$PROJECT/.scratch/start/REPORT.md"
-grep -q 'Application entry: `app.py`' "$PROJECT/KERNEL.md" || fail "supported candidate was not accepted"
-if grep -q 'legacy-only invariant' "$PROJECT/KERNEL.md"; then fail "rejected legacy candidate entered K1"; fi
+START_REPORT="$PROJECT/.spec-agents/scratch/start/REPORT.md"
+grep -q 'Application entry: `app.py`' "$PROJECT/.spec-agents/state/KERNEL.md" ||
+  fail "supported candidate was not accepted"
+if grep -q 'legacy-only invariant' "$PROJECT/.spec-agents/state/KERNEL.md"; then
+  fail "rejected legacy candidate entered K1"
+fi
 grep -q '^ProjectState: modern$' "$START_REPORT" || fail "fresh START is not modern"
 grep -q '^User decision: accepted fresh START$' "$START_REPORT" || fail "fresh START was not accepted"
 
@@ -465,7 +488,9 @@ grep -q 'current intent: ship current request handed to plan' "$REPORT" || fail 
 receipt_hash="$(awk -F '\t' '$1 == "report_sha256" { print $2 }' "$CUTOVER")"
 [ "$receipt_hash" = "$CONFIRMED_HASH" ] || fail "receipt no longer names the confirmed snapshot"
 [ "$(hash_file "$REPORT")" != "$CONFIRMED_HASH" ] || fail "active report did not record completion"
-if (cd "$PROJECT" && rg -q 'old evidence|task001|status: doing' . -g '!archive/**' -g '!.scratch/**'); then
+if (cd "$PROJECT" && rg -q 'old evidence|task001|status: doing' . \
+    -g '!.spec-agents/archive/**' -g '!.spec-agents/scratch/**' \
+    -g '!.spec-agents/doctrine/**'); then
   fail "old lifecycle state re-entered the active project"
 fi
 pass "fresh START acceptance, candidate decisions, and Completion result"
@@ -473,8 +498,8 @@ pass "fresh START acceptance, candidate decisions, and Completion result"
 # 8. Every retired marker family reaches the same receipt-gated link replacement.
 for marker_kind in phrase root-bundle scratch-spec phase-status presplit-context; do
   marker_project="$TRIAL_ROOT/marker-$marker_kind"
-  marker_backup="$marker_project/archive/doctrine"
-  mkdir -p "$marker_project/archive"
+  marker_backup="$marker_project/.spec-agents/archive/doctrine"
+  mkdir -p "$marker_project/.spec-agents/archive"
   printf 'marker application\n' > "$marker_project/app.txt"
   case "$marker_kind" in
     phrase)
@@ -493,10 +518,12 @@ for marker_kind in phrase root-bundle scratch-spec phase-status presplit-context
   esac
   marker_app_hash="$(hash_file "$marker_project/app.txt")"
   prepare_valid_cutover "$marker_project" "$marker_backup"
-  "$REPO_ROOT/bin/spec-agents" replace-doctrine "$marker_project" "$marker_backup" \
-    --cutover "$marker_project/.scratch/upgrade-review/CUTOVER.tsv" en --link </dev/null \
+  "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$marker_project" "$marker_backup" \
+    --cutover "$marker_project/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" en --link </dev/null \
     > "$TRIAL_ROOT/marker-$marker_kind.out"
-  [ -L "$marker_project/AGENTS.md" ] || fail "$marker_kind did not install linked doctrine"
+  [ -f "$marker_project/AGENTS.md" ] &&
+    cmp "$REPO_ROOT/templates/AGENTS-adapter.md" "$marker_project/AGENTS.md" ||
+    fail "$marker_kind did not install the copied root adapter"
   [ "$(hash_file "$marker_project/app.txt")" = "$marker_app_hash" ] ||
     fail "$marker_kind changed application content"
   grep -q 'Doctrine replacement complete' "$TRIAL_ROOT/marker-$marker_kind.out" ||
@@ -505,34 +532,50 @@ for marker_kind in phrase root-bundle scratch-spec phase-status presplit-context
     fail "$marker_kind claimed project readiness"
   fi
 done
+OWNED_AGENT_PROJECT="$TRIAL_ROOT/project-owned-agent"
+OWNED_AGENT_BACKUP="$OWNED_AGENT_PROJECT/.spec-agents/archive/doctrine"
+mkdir -p "$OWNED_AGENT_PROJECT/.phrase" "$OWNED_AGENT_PROJECT/.spec-agents/archive"
+printf '%s\n' '# project-owned instructions' > "$OWNED_AGENT_PROJECT/AGENTS.md"
+printf '%s\n' 'old doctrine marker' > "$OWNED_AGENT_PROJECT/START.md"
+OWNED_AGENT_HASH="$(hash_file "$OWNED_AGENT_PROJECT/AGENTS.md")"
+prepare_valid_cutover "$OWNED_AGENT_PROJECT" "$OWNED_AGENT_BACKUP"
+"$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$OWNED_AGENT_PROJECT" "$OWNED_AGENT_BACKUP" \
+  --cutover "$OWNED_AGENT_PROJECT/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" en --link \
+  </dev/null > "$TRIAL_ROOT/project-owned-agent.out"
+[ "$(hash_file "$OWNED_AGENT_PROJECT/AGENTS.md")" = "$OWNED_AGENT_HASH" ] ||
+  fail "project-owned AGENTS.md changed during replacement"
+[ -f "$OWNED_AGENT_PROJECT/.spec-agents/doctrine/AGENTS.md" ] ||
+  fail "project-owned AGENTS replacement omitted Doctrine"
+grep -q 'Integration required:' "$TRIAL_ROOT/project-owned-agent.out" ||
+  fail "project-owned AGENTS replacement omitted integration guidance"
 pass "receipt-gated retired-marker recognition matrix"
 
 # 9. Existing guards, failure recovery, and ordinary-install readiness remain distinct.
 PLAIN="$TRIAL_ROOT/plain"
 mkdir "$PLAIN"
-if "$REPO_ROOT/bin/spec-agents" replace-doctrine "$PLAIN" "$TRIAL_ROOT/plain-backup" \
-     --cutover "$PLAIN/.scratch/upgrade-review/CUTOVER.tsv" en </dev/null \
+if "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$PLAIN" "$TRIAL_ROOT/plain-backup" \
+     --cutover "$PLAIN/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" en </dev/null \
      > "$TRIAL_ROOT/plain.out" 2>&1; then
   fail "zero-marker target accepted"
 fi
-if "$REPO_ROOT/bin/spec-agents" replace-doctrine "$PROJECT" "$DOCTRINE_BACKUP" \
+if "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$PROJECT" "$DOCTRINE_BACKUP" \
      --cutover "$CUTOVER" en </dev/null > "$TRIAL_ROOT/existing-backup.out" 2>&1; then
   fail "existing backup accepted"
 fi
-if "$REPO_ROOT/bin/spec-agents" replace-doctrine "$REPO_ROOT" "$TRIAL_ROOT/source-backup" \
+if "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$REPO_ROOT" "$TRIAL_ROOT/source-backup" \
      --cutover "$TRIAL_ROOT/no-receipt" en </dev/null > "$TRIAL_ROOT/source-target.out" 2>&1; then
   fail "source repository accepted as a replacement target"
 fi
 
 BROKEN="$TRIAL_ROOT/broken"
 BROKEN_BACKUP="$TRIAL_ROOT/broken-backups/doctrine"
-mkdir -p "$BROKEN/skills" "$(dirname "$BROKEN_BACKUP")"
+mkdir -p "$BROKEN/skills" "$(dirname "$BROKEN_BACKUP")" "$BROKEN/.spec-agents"
 printf 'old start\n' > "$BROKEN/START.md"
 printf 'old upgrade\n' > "$BROKEN/UPGRADE.md"
-printf 'blocks docs directory\n' > "$BROKEN/docs"
 prepare_valid_cutover "$BROKEN" "$BROKEN_BACKUP"
-if "$REPO_ROOT/bin/spec-agents" replace-doctrine "$BROKEN" "$BROKEN_BACKUP" \
-     --cutover "$BROKEN/.scratch/upgrade-review/CUTOVER.tsv" en </dev/null \
+chmod a-w "$BROKEN/.spec-agents"
+if "$DOCTRINE_SOURCE/bin/spec-agents" replace-doctrine "$BROKEN" "$BROKEN_BACKUP" \
+     --cutover "$BROKEN/.spec-agents/scratch/upgrade-review/CUTOVER.tsv" en </dev/null \
      > "$TRIAL_ROOT/broken.out" 2>&1; then
   fail "post-backup install failure reported success"
 fi
@@ -544,7 +587,7 @@ for refusal_output in plain.out existing-backup.out source-target.out broken.out
 done
 
 FRESH_INSTALL="$TRIAL_ROOT/fresh-install"
-"$REPO_ROOT/bin/spec-agents" install "$FRESH_INSTALL" en </dev/null > "$TRIAL_ROOT/fresh-install.out"
+"$DOCTRINE_SOURCE/bin/spec-agents" install "$FRESH_INSTALL" en </dev/null > "$TRIAL_ROOT/fresh-install.out"
 grep -q 'Spec-AGENTS is ready' "$TRIAL_ROOT/fresh-install.out" || fail "ordinary install lost readiness output"
 if grep -q 'Doctrine replacement complete' "$TRIAL_ROOT/fresh-install.out"; then
   fail "ordinary install printed replacement completion"
@@ -554,30 +597,27 @@ pass "guard refusals, post-backup recovery, and distinct install readiness"
 # 10. Workflow commands accept all strong roots and refuse partial/retired roots.
 make_modern_root() {
   local root="$1"
-  mkdir -p "$root/docs/spec-agents" "$root/skills/plan" "$root/nested/deep"
-  printf '%s\n' '# project' > "$root/AGENTS.md"
-  printf '%s\n' '# start' > "$root/START.md"
-  printf '%s\n' '# workflow' > "$root/docs/spec-agents/WORKFLOW.md"
-  printf '%s\n' '# plan' > "$root/skills/plan/SKILL.md"
+  "$DOCTRINE_SOURCE/bin/spec-agents" install "$root" en </dev/null >/dev/null
+  mkdir -p "$root/nested/deep"
 }
 exercise_root() {
   local root="$1" label="$2"
-  (cd "$root" && "$REPO_ROOT/bin/spec-agents" status > "$TRIAL_ROOT/$label-root-status.out")
-  (cd "$root/nested/deep" && "$REPO_ROOT/bin/spec-agents" status > "$TRIAL_ROOT/$label-nested-status.out")
-  (cd "$root/nested/deep" && "$REPO_ROOT/bin/spec-agents" check-state > "$TRIAL_ROOT/$label-check.out")
-  (cd "$root/nested/deep" && "$REPO_ROOT/bin/spec-agents" gate plan > "$TRIAL_ROOT/$label-plan.out")
+  (cd "$root" && "$DOCTRINE_SOURCE/bin/spec-agents" status > "$TRIAL_ROOT/$label-root-status.out")
+  (cd "$root/nested/deep" && "$DOCTRINE_SOURCE/bin/spec-agents" status > "$TRIAL_ROOT/$label-nested-status.out")
+  (cd "$root/nested/deep" && "$DOCTRINE_SOURCE/bin/spec-agents" check-state > "$TRIAL_ROOT/$label-check.out")
+  (cd "$root/nested/deep" && "$DOCTRINE_SOURCE/bin/spec-agents" gate plan > "$TRIAL_ROOT/$label-plan.out")
   grep -Eq 'No SPECs\.|SPECs:' "$TRIAL_ROOT/$label-root-status.out"
   grep -Eq 'No SPECs\.|SPECs:' "$TRIAL_ROOT/$label-nested-status.out"
-  grep -Eq 'no \.specs/|no state violations' "$TRIAL_ROOT/$label-check.out"
+  grep -Eq 'no .*\.spec-agents/specs/|no state violations' "$TRIAL_ROOT/$label-check.out"
   grep -q 'no machine-checkable precondition' "$TRIAL_ROOT/$label-plan.out"
 }
 refuse_root() {
   local root="$1" label="$2"
   mkdir -p "$root/nested"
-  if (cd "$root/nested" && "$REPO_ROOT/bin/spec-agents" status > "$TRIAL_ROOT/$label.out" 2>&1); then
+  if (cd "$root/nested" && "$DOCTRINE_SOURCE/bin/spec-agents" status > "$TRIAL_ROOT/$label.out" 2>&1); then
     fail "$label unexpectedly became a workflow root"
   fi
-  grep -q 'no \.specs/, \.git/, \.jj/, or complete modern entry' "$TRIAL_ROOT/$label.out" ||
+  grep -q 'no complete \.spec-agents/doctrine/ entry' "$TRIAL_ROOT/$label.out" ||
     fail "$label refusal omitted the accepted root markers"
 }
 
@@ -587,23 +627,25 @@ exercise_root "$MODERN_ROOT" root-modern
 [ ! -e "$MODERN_ROOT/.git" ] && [ ! -e "$MODERN_ROOT/.jj" ] && [ ! -e "$MODERN_ROOT/.specs" ] ||
   fail "modern no-VCS root was mutated"
 JJ_ROOT="$TRIAL_ROOT/root-jj"
-mkdir -p "$JJ_ROOT/.jj" "$JJ_ROOT/nested/deep"
+mkdir -p "$JJ_ROOT/.jj"
+make_modern_root "$JJ_ROOT"
 exercise_root "$JJ_ROOT" root-jj
 [ -d "$JJ_ROOT/.jj" ] && [ ! -e "$JJ_ROOT/.git" ] && [ ! -e "$JJ_ROOT/.specs" ] ||
   fail "native JJ root was mutated"
 GIT_ROOT="$TRIAL_ROOT/root-git"
-mkdir -p "$GIT_ROOT/.git" "$GIT_ROOT/nested/deep"
+mkdir -p "$GIT_ROOT/.git"
+make_modern_root "$GIT_ROOT"
 exercise_root "$GIT_ROOT" root-git
 SPECS_ROOT="$TRIAL_ROOT/root-specs"
 mkdir -p "$SPECS_ROOT/.specs" "$SPECS_ROOT/nested/deep"
-exercise_root "$SPECS_ROOT" root-specs
+refuse_root "$SPECS_ROOT" root-specs
 
 NEAREST_PARENT="$TRIAL_ROOT/root-nearest"
 mkdir -p "$NEAREST_PARENT/.git" "$NEAREST_PARENT/.specs/broken" "$NEAREST_PARENT/project"
 printf '%s\n' 'status: broken' > "$NEAREST_PARENT/.specs/broken/SPEC.md"
 make_modern_root "$NEAREST_PARENT/project"
 (cd "$NEAREST_PARENT/project/nested/deep" &&
-  "$REPO_ROOT/bin/spec-agents" status > "$TRIAL_ROOT/root-nearest.out")
+  "$DOCTRINE_SOURCE/bin/spec-agents" status > "$TRIAL_ROOT/root-nearest.out")
 grep -q '^No SPECs\.$' "$TRIAL_ROOT/root-nearest.out" || fail "nearest modern child did not win"
 
 ARBITRARY_ROOT="$TRIAL_ROOT/root-arbitrary"
@@ -624,7 +666,7 @@ printf '%s\n' 'old' > "$RETIRED_ONLY_ROOT/.phrase/current.md"
 refuse_root "$RETIRED_ONLY_ROOT" root-retired
 pass "workflow project-root matrix"
 
-bash -n "$REPO_ROOT/bin/spec-agents"
+bash -n "$DOCTRINE_SOURCE/bin/spec-agents"
 bash -n "$REPO_ROOT/tests/upgrade-reset-smoke.sh"
 [ "$PASS_COUNT" -eq 10 ] || fail "expected 10 assertion groups, ran $PASS_COUNT"
 echo "ok: upgrade reset smoke: 10/10"

@@ -5,7 +5,7 @@ set -e
 # Requires sudo
 
 BIN_NAME="spec-agents"
-SOURCE_BIN="$(pwd)/bin/$BIN_NAME"
+SOURCE_BIN="$(pwd)/.spec-agents/doctrine/bin/$BIN_NAME"
 TARGET_LINK="/usr/local/bin/$BIN_NAME"
 
 echo "🔗 Linking '$SOURCE_BIN' to '$TARGET_LINK'..."
