@@ -32,12 +32,12 @@ for the current decision.
 
 ## Features
 
-- **Stable semantic model**: `KERNEL.md` records the managed project's
+- **Stable semantic model**: `.spec-agents/state/KERNEL.md` records the managed project's
   concepts, relations, lifecycles, invariants, and Action Contracts;
-  `docs/spec-agents/WORKFLOW.md` records SPEC-AGENTS' own workflow semantics.
-- **Evidence-driven decisions**: `EVIDENCE.md` records only facts that change
+  `.spec-agents/doctrine/docs/WORKFLOW.md` records SPEC-AGENTS' own workflow semantics.
+- **Evidence-driven decisions**: `.spec-agents/state/EVIDENCE.md` records only facts that change
   future decisions.
-- **SPEC-local slices**: `STATUS.md` coordinates the active slice instead of
+- **SPEC-local slices**: `.spec-agents/state/STATUS.md` coordinates the active slice instead of
   pre-splitting distant roadmap work.
 - **Six action skills**: `plan`, `capture`, `arrange`, `do`, `check`, and
   `learn` are the project's own contracts.
@@ -57,8 +57,9 @@ chmod +x link_to_system.sh
 ```
 
 The script creates `/usr/local/bin/spec-agents` and may ask for `sudo`. If a
-global command is unnecessary, run `./bin/spec-agents ...` directly from this
-checkout instead.
+global command is unnecessary, run
+`./.spec-agents/doctrine/bin/spec-agents ...` directly from this checkout
+instead.
 
 Initialize a project:
 
@@ -71,80 +72,70 @@ spec-agents init en     # English AGENTS.md
 The installer emits framework doctrine only:
 
 ```text
-AGENTS.md
-START.md
-UPGRADE.md
-CONTEXT.md          empty skeleton; the file belongs to your project
-docs/
-  spec-agents/
-    README.md
-    WORKFLOW.md
-    parallel-work.md
-    evidence-links.md
-    knowledge-promotion.md
-    jj-change-management.md
-    jj-project-setup.md
-skills/
-  plan/ capture/ arrange/ do/ check/ learn/
+AGENTS.md                         thin project integration adapter
+.spec-agents/
+  doctrine/
+    AGENTS.md START.md UPGRADE.md bin/spec-agents
+    docs/README.md docs/WORKFLOW.md docs/*.md
+    skills/{plan,capture,arrange,do,check,learn}/
 ```
 
 Everything else belongs to your project and is created only when there is
-something real to record: `KERNEL.md` by the first `START.md` scan from that
-project's confirmed facts, `STATUS.md` and `EVIDENCE.md` by
-`learn`, `.specs/<feature>/` by `capture` and `arrange`, and `docs/adr/`,
+something real to record: `.spec-agents/state/KERNEL.md` by the first
+`.spec-agents/doctrine/START.md` scan from confirmed facts, state files by
+`learn`, `.spec-agents/specs/<feature>/` by `capture` and `arrange`, and `docs/adr/`,
 `docs/protocols/`, `docs/runbooks/`, `docs/lessons/` when knowledge is promoted
 into them.
 
-Two directories are easy to confuse. `.specs/` holds your confirmed work
+Two directories are easy to confuse. `.spec-agents/specs/` holds your confirmed work
 contracts — a SPEC and its slices — and is durable, so keep it in version
-control. `.scratch/` holds only one-shot reports awaiting your confirmation,
-such as `.scratch/start/REPORT.md`; consider ignoring it. The installer writes
-neither.
+control. `.spec-agents/scratch/` holds only one-shot reports awaiting your
+confirmation, such as `.spec-agents/scratch/start/REPORT.md`; consider ignoring
+it. `.spec-agents/archive/` holds retired workflow material. The installer writes
+none of these Instance paths.
 
 The installer never writes this repository's own state, Evidence, or runbooks
 into your project. If your project already has a context entry point
 such as `docs/HANDOFF.md`, keep it and delete or redirect the `CONTEXT.md`
 skeleton rather than maintaining two.
 
-For an existing v2 or v3 project, install the modern entry points first:
-
-```bash
-spec-agents install ../old-project cn
-```
-
-Then run the upgrade Prompt:
+For an existing project with retired SPEC-AGENTS state, do not install over it
+first. Run the current upstream upgrade Prompt from this checkout:
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream .spec-agents/doctrine/UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-The Prompt reconstructs recent history, scans the code architecture, asks the
-user to confirm the candidate project cognition, and only then archives the old
-`.phrase/` tree. The installer itself does not move, delete, or summarize old
-project material.
+The Prompt produces an exact preservation manifest and stops for confirmation.
+Only then does it bind the confirmed report, canonical target, absent backup,
+and zero unresolved rows in `CUTOVER.tsv`. The recoverable
+`replace-doctrine --cutover ...` operation validates that receipt before any
+write, after which Upgrade archives approved retired state and runs a fresh
+START. Candidate knowledge is reviewed against the new scan; old work status
+is never inherited.
 
 ## Start a project
 
 After installing the modern entry points, start with:
 
 ```text
-Read START.md and execute the start review.
+Read .spec-agents/doctrine/START.md and execute the start review.
 ```
 
-`START.md` reconstructs a bounded project picture and, on the first run, writes
-an absent `KERNEL.md` version `K1` from directly confirmed project facts before
-writing the review report. It waits for user confirmation about candidate
-extensions, then routes a modern project to `plan`, a legacy or mixed project
-to `UPGRADE.md`, and a project missing modern entry points to installation
-guidance. It never overwrites an existing Kernel, modifies application code, or
-initializes JJ automatically.
+`.spec-agents/doctrine/START.md` reconstructs a bounded project picture and, for a modern project on
+the first run, writes an absent `.spec-agents/state/KERNEL.md` version `K1` from confirmed
+project facts before writing the review report. It waits for user confirmation about candidate
+extensions, then routes a modern project to `plan`, an `upgrade-needed` project
+to the current upstream `.spec-agents/doctrine/UPGRADE.md`, and a project missing modern entry points
+to installation guidance. It never overwrites an existing Kernel, modifies
+application code, or initializes JJ automatically.
 
 ## Quick Start
 
 After installation, start a new or unfamiliar project with:
 
 ```text
-Read START.md and execute the start review.
+Read .spec-agents/doctrine/START.md and execute the start review.
 ```
 
 For an already bootstrapped project or an ordinary follow-up session, tell the
@@ -187,8 +178,8 @@ publication is explicit and uses a bookmark with `jj git push`. Ordinary
 
 Projects without `.jj/` keep their existing Git workflow. SPEC-AGENTS never
 initializes JJ automatically. If the user chooses colocated JJ, follow the
-[JJ project setup Runbook](docs/spec-agents/jj-project-setup.md) and then read the
-[JJ Change Management Protocol](docs/spec-agents/jj-change-management.md).
+[JJ project setup Runbook](.spec-agents/doctrine/docs/jj-project-setup.md) and then read the
+[JJ Change Management Protocol](.spec-agents/doctrine/docs/jj-change-management.md).
 
 ## v2, v3, and v4
 
@@ -196,7 +187,7 @@ initializes JJ automatically. If the user chooses colocated JJ, follow the
 | --- | --- | --- | --- |
 | v2 | Static SPEC document chain | `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*` | Static abstractions are explicit, but context and maintenance costs are high, and old plans become noise. |
 | v3 | EDPP, evidence-driven phases | `.phrase/decision.md`, `roadmap.md`, `current.md`, and `evidence.md` | Dynamic evolution is lighter, but phase knowledge is not reliably promoted into a durable semantic model. |
-| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and verified Evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; legacy projects use `UPGRADE.md` to reconstruct cognition instead of a mechanical compatibility mode. |
+| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and verified Evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; existing projects salvage candidate knowledge, reset retired state, and run a fresh START. |
 
 v4 is therefore not a file rename or a compatibility wrapper around v2/v3. It
 adds an explicit bridge from stable abstraction to dynamic state, evidence, and
@@ -243,13 +234,13 @@ living SPEC → State → Slice → Code
 
 | Layer | What it records | Normal home | Change rule |
 | --- | --- | --- | --- |
-| Kernel | Managed-project concepts, identities, relations, lifecycles, invariants, and Action Contracts | project `KERNEL.md`; workflow `docs/spec-agents/WORKFLOW.md` | The first Start may create confirmed-only K1; later semantic changes pass `plan` and require verified evidence. |
-| SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.specs/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
-| State | Active SPECs, slices, blockers, verification status, and next permitted action | `STATUS.md` and local slice state | Changes with execution; it does not redefine the Kernel. |
-| Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
+| Kernel | Managed-project concepts, identities, relations, lifecycles, invariants, and Action Contracts | `.spec-agents/state/KERNEL.md`; workflow `.spec-agents/doctrine/docs/WORKFLOW.md` | The first Start may create confirmed-only K1; later semantic changes pass `plan` and require verified evidence. |
+| SPEC | Confirmed goal, unchanged baseline, scope, decisions, contracts, and verification entry | `.spec-agents/specs/<feature>/SPEC.md` | It may evolve, but changing its goal, boundary, identity, relation, invariant, interface, or acceptance rule starts a new `plan`. |
+| State | Active SPECs, slices, blockers, verification status, and next permitted action | `.spec-agents/state/STATUS.md` and local slice state | Changes with execution; it does not redefine the Kernel. |
+| Evidence | Observation, interpretation, verification, failed assumption, and recommended next action | `.spec-agents/state/EVIDENCE.md` and local evidence | Written after `check`; only reusable knowledge is promoted. |
 | Code | The artifact constrained by the contracts — whatever the product is made of | Source, tests, and runtime artifacts; in SPEC-AGENTS itself, the doctrine documents and `bin/` | `do` writes it; `check` proves or rejects the result. Knowledge *about* the product is not Code and belongs to `learn`. |
 
-The first `START.md` run creates the project's `KERNEL.md` when the bounded scan
+The first `.spec-agents/doctrine/START.md` run creates the project's `.spec-agents/state/KERNEL.md` when the bounded scan
 finds stable facts. It has eight sections — Concepts, Identities, Relations,
 Lifecycles, Action Contracts, Invariants, Architecture boundaries, and Source
 evidence — one per element the Kernel records. Identity and lifecycle get their
@@ -264,13 +255,13 @@ admitted it. There is no per-entry version number and no changelog inside the
 file: git already gives per-line history, while `source:` carries what git
 cannot, namely which decision let the entry in.
 
-`start` can be run again as a re-scan. It writes nothing to `KERNEL.md` and
+`start` can be run again as a re-scan. It writes nothing to `.spec-agents/state/KERNEL.md` and
 reports a `KernelStatus` plus the differences, because nothing else compares
 the Kernel against reality — `check` uses the Kernel as the ruler, never as the
 measured thing.
 
 The file is deliberately small and human-readable; it is not a formal ontology
-schema, graph database, generator, or second requirements document. `docs/spec-agents/WORKFLOW.md` remains the workflow model for
+schema, graph database, generator, or second requirements document. `.spec-agents/doctrine/docs/WORKFLOW.md` remains the workflow model for
 SPEC-AGENTS itself, and root `CONTEXT.md` belongs to the project.
 
 ## Knowledge evolution
@@ -288,12 +279,12 @@ change → plan → SPEC / State → code → check → Evidence
 
 - A local implementation fact stays in the feature record.
 - A verified project concept, identity, relation, lifecycle, or invariant may
-  be promoted to the project's `KERNEL.md`; the project's own vocabulary and
+  be promoted to the project's `.spec-agents/state/KERNEL.md`; the project's own vocabulary and
   authority boundaries belong in `CONTEXT.md`; workflow semantics belong in
-  `docs/spec-agents/WORKFLOW.md`.
+  `.spec-agents/doctrine/docs/WORKFLOW.md`.
 - A reusable interface or workflow boundary belongs in `docs/protocols/`.
 - A hard-to-reverse trade-off belongs in `docs/adr/`.
-- Current work state belongs in `STATUS.md`; it is not silently promoted into
+- Current work state belongs in `.spec-agents/state/STATUS.md`; it is not silently promoted into
   the stable model.
 - A rejected proposal remains visible in Evidence so the same path is not
   rediscovered as if it were new.
@@ -327,7 +318,7 @@ The workflow is intentionally a constraint system for an Agent, not just a
 filing convention:
 
 1. Start from the authority order: `AGENTS.md`, the stable semantic model and
-   protocols, fresh `EVIDENCE.md`, the confirmed SPEC, then current state.
+   protocols, fresh `.spec-agents/state/EVIDENCE.md`, the confirmed SPEC, then current state.
 2. Keep the goal, unchanged baseline, out-of-scope boundary, and acceptance
    gate visible in the current SPEC.
 3. Require every behavior change to map to an Action Contract, including its
@@ -387,23 +378,28 @@ general superiority. Full records remain in [`research/`](research/README.md).
 ```text
 spec-agents init [cn|en] [--link]       # install into the current directory
 spec-agents install <path> [cn|en] [--link]
+spec-agents replace-doctrine <path> <backup-dir> --cutover <CUTOVER.tsv> [cn|en] [--link]
 spec-agents --help
 ```
 
 Copy mode is the default. `--link` keeps symbolic links to this SPEC-AGENTS
 checkout, so source updates affect linked projects. Existing files are kept;
-the installer does not overwrite a project's local decisions.
+ordinary install does not overwrite a project's local decisions.
 
-For a v2/v3 project, do not look for a migration subcommand. Install the modern
-layout, then explicitly ask the Agent to run the review:
+For an existing project, run the current upstream review before replacing
+anything:
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream .spec-agents/doctrine/UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-The review reports its reconstruction and architecture scan first, then waits
-for the user's confirmation before changing root documents or archiving legacy
-material.
+The review extracts candidate knowledge, classifies every relevant path, and
+waits for confirmation. Only then does it write a six-row CUTOVER receipt.
+`replace-doctrine` requires that receipt and validates the confirmed report,
+canonical target and backup, and zero unresolved rows before it backs up and
+replaces the installer-owned allowlist. Doctrine replacement is not project
+readiness: Upgrade must still retire the confirmed old state and complete a
+fresh, user-accepted START instead of translating old state.
 
 ## Default Read Rule
 
@@ -411,22 +407,22 @@ At the start of ordinary work, the agent reads:
 
 ```text
 AGENTS.md
-docs/spec-agents/WORKFLOW.md
-STATUS.md
+.spec-agents/doctrine/docs/WORKFLOW.md
+.spec-agents/state/STATUS.md
 ```
 
-`STATUS.md` is the project's own state. A fresh install does not have one:
+`.spec-agents/state/STATUS.md` is the project's own state. A fresh install does not have one:
 `learn` creates it once there is real state to record. Its absence means no work
 is recorded yet — it is not a missing file to reconstruct or invent.
 
 It reads `CONTEXT.md` when the project has one; that file is the project's own
-context, not a framework document. It reads `EVIDENCE.md` when choosing what to
+context, not a framework document. It reads `.spec-agents/state/EVIDENCE.md` when choosing what to
 work on next, checking a failed assumption, classifying a blocker, or deciding
 whether a SPEC can close. It reads the
 relevant records in `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, and
-`docs/lessons/` only when the affected intent points to them, and `archive/`
+`docs/lessons/` only when the affected intent points to them, and `.spec-agents/archive/`
 only for explicit historical or regression questions. When present, the
-project's `KERNEL.md` is read with the default context because it is the
+project's `.spec-agents/state/KERNEL.md` is read with the default context because it is the
 project's stable semantic boundary.
 
 The old `.phrase/` tree is legacy context, not a second default source of
@@ -437,15 +433,15 @@ truth.
 When documents disagree:
 
 1. `AGENTS.md` defines workflow and safety rules.
-2. `docs/spec-agents/` defines workflow semantics and framework practice.
-3. `KERNEL.md`, `CONTEXT.md`, `docs/adr/`, `docs/protocols/`,
+2. `.spec-agents/doctrine/docs/` defines workflow semantics and framework practice.
+3. `.spec-agents/state/KERNEL.md`, `CONTEXT.md`, `docs/adr/`, `docs/protocols/`,
    `docs/runbooks/`, and `docs/lessons/` define the project's own durable
    semantics, context, practices, operations, and lessons.
-4. Fresh, verified entries in `EVIDENCE.md` define current facts.
-5. A confirmed `.specs/<feature>/SPEC.md` defines the living feature
+4. Fresh, verified entries in `.spec-agents/state/EVIDENCE.md` define current facts.
+5. A confirmed `.spec-agents/specs/<feature>/SPEC.md` defines the living feature
    contract.
-6. `STATUS.md` defines current execution state.
-7. `archive/` and `.phrase/` are historical context only.
+6. `.spec-agents/state/STATUS.md` defines current execution state.
+7. `.spec-agents/archive/` and `.phrase/` are historical context only.
 
 Fresh evidence can challenge a durable rule, but the conflict must be routed
 through `plan` and recorded before implementation silently changes the model.
@@ -471,28 +467,27 @@ that cannot finish in one context uses all six actions.
 ## Slices and parallel work
 
 `Slice` is the only execution unit. A slice lives at
-`.specs/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
+`.spec-agents/specs/<feature>/issues/NN-<slug>.md` with a goal, scope, dependency,
 acceptance, verification, status, and an optional `evidence_ref`. There is no
 second task list, and the repository records no future intent.
 
-`STATUS.md` lists only the active SPECs, their blockers, and the next permitted
+`.spec-agents/state/STATUS.md` lists only the active SPECs, their blockers, and the next permitted
 action. A finished SPEC is removed from it.
 
 Several SPECs may be active at once. Their scopes must not overlap — that is a
 `plan` responsibility, and isolating working copies does not fix it. Work that
 must run at the same time gets its own working copy: `jj workspace add` in a
 project with `.jj/`, `git worktree add` otherwise. See
-[`docs/spec-agents/parallel-work.md`](docs/spec-agents/parallel-work.md).
+[`parallel-work.md`](.spec-agents/doctrine/docs/parallel-work.md).
 
-## Migration From v2/v3
+## Existing-project reset
 
-For an existing project, install the modern entry points and read `UPGRADE.md`.
-Use a `plan` pass to decide what should be promoted. Keep project ontology in
-`KERNEL.md`, project context in `CONTEXT.md`, workflow semantics in
-`docs/spec-agents/WORKFLOW.md` or `docs/adr/`, stable
-interfaces in `docs/protocols/`, current state in `STATUS.md`, and
-decision-relevant facts in `EVIDENCE.md`. Archive obsolete material instead of
-mechanically copying it into the default context.
+Use the current upstream `.spec-agents/doctrine/UPGRADE.md`, not a possibly stale installed copy.
+Preserve decision-relevant content as candidates, archive the approved old
+records, recoverably replace doctrine, and run START again. Review candidates
+against current code after START; recapture still-current intent as new work.
+Do not copy an old KERNEL, STATUS, Evidence ID, SPEC revision, or Slice status
+into the new workflow.
 
 The old `.phrase/commands/` instructions are archived history, not a second
 default workflow.
@@ -558,8 +553,8 @@ plan / SPEC / Slice → JJ Change → bookmark → Git remote
 不会隐式 push 或创建远端 bookmark。
 
 没有 `.jj/` 的项目继续使用原有 Git 工作流。SPEC-AGENTS 不会自动初始化 JJ；
-用户明确选择 colocated JJ 后，再按照 [JJ 项目设置 Runbook](docs/spec-agents/jj-project-setup.md)
-和 [JJ Change 管理 Protocol](docs/spec-agents/jj-change-management.md) 执行。
+用户明确选择 colocated JJ 后，再按照 [JJ 项目设置 Runbook](.spec-agents/doctrine/docs/jj-project-setup.md)
+和 [JJ Change 管理 Protocol](.spec-agents/doctrine/docs/jj-change-management.md) 执行。
 
 ### v2、v3、v4 的区别
 
@@ -567,7 +562,7 @@ plan / SPEC / Slice → JJ Change → bookmark → Git remote
 | --- | --- | --- | --- |
 | v2 | 静态 SPEC 文档链 | `spec_*`、`plan_*`、`task_*`、`change_*`、`issue_*` | 静态抽象较完整，但读取和维护成本高，旧计划容易变成噪音。 |
 | v3 | EDPP 证据驱动阶段 | `.phrase/decision.md`、`roadmap.md`、`current.md`、`evidence.md` | 动态演进更轻，但阶段知识没有稳定沉淀到对应的长期语义抽象。 |
-| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与已验证 Evidence | 用 `plan` 控制语义变化，用 `learn` 将经过验证的知识提升到长期边界；旧项目通过 `UPGRADE.md` 重建认知，不做机械兼容。 |
+| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与已验证 Evidence | 用 `plan` 控制语义变化，用 `learn` 提升已验证知识；已有项目先抢救候选知识、清理旧状态，再重新 START。 |
 
 因此，v4 不是简单把 v2 或 v3 换一套文件名，而是补上“静态抽象—动态状态—
 证据—代码”的演进桥接：大原则保持稳定，当前工作可以在明确边界内修改。
@@ -606,13 +601,13 @@ v4 围绕三个结果设计：
 
 | 层 | 记录什么 | 通常存放位置 | 变更规则 |
 | --- | --- | --- | --- |
-| Kernel | 被管理项目的概念、身份、关系、生命周期、不变量和 Action Contract | 项目 `KERNEL.md`；框架 `docs/spec-agents/WORKFLOW.md` | 首次 `start` 可从 confirmed facts 建立 K1；后续语义变化必须先经过 `plan` 并有验证证据。 |
-| SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.specs/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
-| State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `STATUS.md` 与本地 Slice 状态 | 随执行变化，但不能重新定义 Kernel。 |
-| Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
+| Kernel | 被管理项目的概念、身份、关系、生命周期、不变量和 Action Contract | 项目 `.spec-agents/state/KERNEL.md`；框架 `.spec-agents/doctrine/docs/WORKFLOW.md` | 首次 `start` 可从 confirmed facts 建立 K1；后续语义变化必须先经过 `plan` 并有验证证据。 |
+| SPEC | 已确认的目标、未改变基线、范围、决定、契约和验证入口 | `.spec-agents/specs/<feature>/SPEC.md` | 可以修订，但改变目标、边界、身份、关系、不变量、接口或验收标准时必须重新 `plan`。 |
+| State | 活跃的 SPEC、切片、阻塞项、验证状态和下一步许可动作 | `.spec-agents/state/STATUS.md` 与本地 Slice 状态 | 随执行变化，但不能重新定义 Kernel。 |
+| Evidence | observation、interpretation、验证结果、失败假设和下一步建议 | `.spec-agents/state/EVIDENCE.md` 与 feature evidence | 在 `check` 后写入；只有可复用知识才能提升。 |
 | Code | 受契约约束的实现和可观察行为 | 源码、测试和运行产物 | `do` 修改代码，`check` 证明或否定结果。 |
 
-第一次 `start` 扫描在项目缺少 `KERNEL.md` 时建立只含 confirmed facts 的 K1。
+第一次 `.spec-agents/doctrine/START.md` 扫描在项目缺少 `.spec-agents/state/KERNEL.md` 时建立只含 confirmed facts 的 K1。
 候选、冲突和 unknown 留在 Start Report，不能混入 enacted Kernel。
 
 它有八个小节 —— Concepts、Identities、Relations、Lifecycles、Action
@@ -626,7 +621,7 @@ Contract 带全五个字段：前置条件、输入、允许效果、不变量�
 维护 changelog —— git 已经给了逐行历史，而 `source:` 携带 git 给不了的东西：
 是哪个决定让它进来的。
 
-`start` 可以作为 re-scan 重跑。它不写 `KERNEL.md`，只产出 `KernelStatus` 和
+`start` 可以作为 re-scan 重跑。它不写 `.spec-agents/state/KERNEL.md`，只产出 `KernelStatus` 和
 差异报告 —— 因为没有别的动作会拿 Kernel 与现实反向比对，`check` 只把 Kernel
 当尺子，从不当被测物。
 
@@ -646,11 +641,11 @@ Contract 带全五个字段：前置条件、输入、允许效果、不变量�
 
 - 局部实现事实留在 feature 记录中。
 - 已验证的项目概念、身份、关系、生命周期或不变量，才可以提升到项目的
-  `KERNEL.md`；项目自己的词汇和权威边界提升到 `CONTEXT.md`；只有 SPEC-AGENTS
-  自身的工作流语义才提升到 `docs/spec-agents/WORKFLOW.md`。
+  `.spec-agents/state/KERNEL.md`；项目自己的词汇和权威边界提升到 `CONTEXT.md`；只有 SPEC-AGENTS
+  自身的工作流语义才提升到 `.spec-agents/doctrine/docs/WORKFLOW.md`。
 - 可复用的接口或工作流边界放入 `docs/protocols/`。
 - 难以逆转的取舍放入 `docs/adr/`。
-- 当前工作状态放入 `STATUS.md`，不能偷偷提升为稳定模型。
+- 当前工作状态放入 `.spec-agents/state/STATUS.md`，不能偷偷提升为稳定模型。
 - 被拒绝的方案保留在 Evidence 中，避免未来被当作新想法重复探索。
 
 因此，稳定陈述都应能沿着下面的路径回到它的来源和证明：
@@ -678,7 +673,7 @@ Contract 带全五个字段：前置条件、输入、允许效果、不变量�
 
 这套流程不是文件归档习惯，而是给 Agent 设置的约束系统：
 
-1. 按权威顺序开始：`AGENTS.md`、稳定语义模型和协议、最新 `EVIDENCE.md`、
+1. 按权威顺序开始：`AGENTS.md`、稳定语义模型和协议、最新 `.spec-agents/state/EVIDENCE.md`、
    已确认的 SPEC，最后才是当前 State。
 2. 在当前 SPEC 中持续保留目标、未改变基线、范围外内容和验收门槛。
 3. 每个行为变化都必须对应 Action Contract，写清前置条件、允许效果、不变量和
@@ -719,29 +714,29 @@ v4.0.0 的原始设计记录包含 9 个 v3/v4 与 Kernel 阶段、2 个专项 p
 
 ```text
 AGENTS.md
-docs/spec-agents/WORKFLOW.md
-STATUS.md
+.spec-agents/doctrine/docs/WORKFLOW.md
+.spec-agents/state/STATUS.md
 ```
 
-`STATUS.md` 属于项目自己。新装的项目没有它：`learn` 在有真实状态要记时创建。
+`.spec-agents/state/STATUS.md` 属于项目自己。新装的项目没有它：`learn` 在有真实状态要记时创建。
 它缺失说明这个项目还没有记录过工作，不是需要补齐或凭空重建的文件。
 
-`STATUS.md` 只列活跃的 SPEC、阻塞项和下一步；SPEC 完成即移除，结果留在
-`EVIDENCE.md`。仓库不记录未来意图。可以同时有多个活跃 SPEC，但它们的 scope
+`.spec-agents/state/STATUS.md` 只列活跃的 SPEC、阻塞项和下一步；SPEC 完成即移除，结果留在
+`.spec-agents/state/EVIDENCE.md`。仓库不记录未来意图。可以同时有多个活跃 SPEC，但它们的 scope
 必须不相交；需要同时执行时用 `jj workspace add` 或 `git worktree add` 隔离，
-见 [`docs/spec-agents/parallel-work.md`](docs/spec-agents/parallel-work.md)。
+见 [`parallel-work.md`](.spec-agents/doctrine/docs/parallel-work.md)。
 
-`docs/spec-agents/` 是框架 doctrine，在每个被管项目里内容相同，只由安装器写入。
+`.spec-agents/doctrine/` 是框架 doctrine，在每个被管项目里内容相同，只由安装器写入。
 其余文件都属于项目自己。
 
-如果项目已有 `KERNEL.md`，它也属于默认上下文；它记录项目本体，不替代
-`docs/spec-agents/WORKFLOW.md`。根 `CONTEXT.md` 归项目所有——安装器只发一份空
-骨架，之后不再写入；项目如果已有别的上下文入口（例如 `docs/HANDOFF.md`），
+如果项目已有 `.spec-agents/state/KERNEL.md`，它也属于默认上下文；它记录项目本体，不替代
+`.spec-agents/doctrine/docs/WORKFLOW.md`。根 `CONTEXT.md` 归项目所有——安装器不创建
+骨架；项目如果已有别的上下文入口（例如 `docs/HANDOFF.md`），
 就用那个，不要维护两套。
 
 只有在选择下一步做什么、检查失败假设、分类 blocker 或判断某个 SPEC 是否
-可以关闭时，才读取 `EVIDENCE.md`。长期决策、稳定实践、运行手册和经验教训分别按需读取
-`docs/adr/`、`docs/protocols/`、`docs/runbooks/` 和 `docs/lessons/`；`archive/`
+可以关闭时，才读取 `.spec-agents/state/EVIDENCE.md`。长期决策、稳定实践、运行手册和经验教训分别按需读取
+`docs/adr/`、`docs/protocols/`、`docs/runbooks/` 和 `docs/lessons/`；`.spec-agents/archive/`
 只用于明确的历史或回归问题。
 
 ### 研究归档与安装边界
@@ -754,36 +749,40 @@ STATUS.md
 - `research/history/`：旧版系统模型与 v3 EDPP 资料。
 
 这些内容是仓库研究档案，不是用户项目的默认上下文，也不会被
-`bin/spec-agents` 安装到用户项目。安装器只发出 doctrine：`AGENTS.md`、
-`START.md`、`UPGRADE.md`、一份空的 `CONTEXT.md` 骨架、`docs/spec-agents/`
-和六个 action skills。项目自己的工作契约在 `.specs/<feature>/`（长期，纳入版本
-控制），一次性报告在 `.scratch/`（建议忽略），安装器两者都不写。本仓库自己的
-`STATUS.md`、`EVIDENCE.md`、
-`archive/`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、`docs/lessons/`
+`.spec-agents/doctrine/bin/spec-agents` 安装到用户项目。安装器只发出 doctrine：根 `AGENTS.md` 适配器和
+`.spec-agents/doctrine/` 下的 `AGENTS.md`、`START.md`、`UPGRADE.md`、CLI、文档与六个 action skills。
+项目自己的工作契约在 `.spec-agents/specs/<feature>/`（长期，纳入版本控制），一次性报告在
+`.spec-agents/scratch/`（建议忽略），状态在 `.spec-agents/state/`，归档在 `.spec-agents/archive/`。
+安装器不写这些 Instance 路径，也不创建 `CONTEXT.md`。本仓库自己的
+`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、`docs/lessons/`
 属于 Instance，永远不会安装到别的项目。
 
-### v2/v3 项目升级
+### 已有项目重启
 
-旧项目先安装新版入口，再让 Agent 读取 `UPGRADE.md` 并执行升级审查：
+不要先把新版覆盖安装到旧项目。让 Agent 从当前 SPEC-AGENTS 源码读取最新
+`.spec-agents/doctrine/UPGRADE.md`，以旧项目为目标执行审查：
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream .spec-agents/doctrine/UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-升级由 Agent 重建近期历史、扫描代码架构并请求用户确认；安装器不会自动
-移动、删除或总结旧项目材料。
+升级先列出值得保留的候选知识和每条旧记录的去向；得到确认后写入绑定报告哈希、
+规范化项目路径、备份路径和零 unresolved 项的 `CUTOVER.tsv`。只有回执校验通过，
+`replace-doctrine` 才会备份并替换 doctrine；这时项目还不能说 ready，仍需归档旧
+状态并重新执行一次经用户确认的干净 START。旧的 doing/done、Phase、STATUS、
+SPEC 和 Slice 状态都不继承；仍然有效的需求重新进入 `plan`/`capture`。
 
 ### start 启动入口
 
 安装新版入口后，项目可以先执行：
 
 ```text
-Read START.md and execute the start review.
+Read .spec-agents/doctrine/START.md and execute the start review.
 ```
 
-`START.md` 会检查项目状态、版本管理标记、近期历史和代码架构，生成
-`.scratch/start/REPORT.md`，并等待用户确认。现代项目确认后进入 `plan`；
-v2/v3 或混合项目转交 `UPGRADE.md`；缺少现代入口的项目只得到安装指引。
+`.spec-agents/doctrine/START.md` 会检查项目状态、版本管理标记、近期历史和代码架构，生成
+`.spec-agents/scratch/start/REPORT.md`，并等待用户确认。现代项目确认后进入 `plan`；
+`upgrade-needed` 项目转交当前上游 `.spec-agents/doctrine/UPGRADE.md`；缺少现代入口的项目只得到安装指引。
 它不会自动修改应用代码、覆盖项目认知或初始化 JJ。
 
 ## 中文说明（历史 v3 参考）
@@ -902,9 +901,10 @@ taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方
 
 ## 从 v2 迁移（历史 v3 记录）
 
-以下步骤只记录旧版 v3 的做法，不是当前迁移指引。现在的 v2/v3 项目应先
-安装新版入口，再执行 `Read UPGRADE.md and execute the upgrade review.`；
-不要手动把遗留内容移动到 `.phrase/archive/`。
+以下步骤只记录旧版 v3 的做法，不是当前迁移指引。现在的已有项目应执行
+`Read the current upstream .spec-agents/doctrine/UPGRADE.md and execute the upgrade review against
+<project>.`；不要先覆盖安装，也不要手动把遗留内容移动到
+`.phrase/archive/`。
 
 已有项目迁移时：
 

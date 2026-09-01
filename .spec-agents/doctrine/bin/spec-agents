@@ -1,0 +1,1160 @@
+#!/bin/bash
+set -eE
+
+# Spec-AGENTS CLI
+# 自动定位仓库根目录（即命名空间 Doctrine 目录的三级上级）
+# 兼容 macOS/Linux 的 readlink 问题
+
+VERSION="4.2.0"
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+REPO_ROOT="$( cd -P "$SCRIPT_DIR/../../.." && pwd )"
+DOCTRINE_ROOT="$REPO_ROOT/.spec-agents/doctrine"
+# A source checkout carries both language sources. A managed installation
+# carries only its selected language, so this distinguishes a linked managed
+# CLI after symlink resolution without relying on an environment flag.
+SOURCE_CHECKOUT=false
+[ -f "$DOCTRINE_ROOT/AGENTS_en.md" ] && SOURCE_CHECKOUT=true
+
+# CLI argument parsing
+COMMAND="${1:-}"
+TARGET_DIR="${2:-.}"
+LANG="${3:-cn}"
+USE_LINK=false
+HAS_LEGACY=false
+REPLACE_DOCTRINE=false
+BACKUP_DIR=""
+CUTOVER_FILE=""
+REPLACEMENT_PHASE=""
+INTEGRATION_REQUIRED=false
+ADAPTER_CREATED=false
+REPLACEMENT_OLD_PATHS=(START.md UPGRADE.md skills docs/spec-agents)
+NAMESPACED_DOCTRINE_DOCS=(README.md WORKFLOW.md check-kernel.sh evidence-links.md
+  jj-change-management.md jj-project-setup.md knowledge-promotion.md
+  parallel-work.md single-authority.md)
+NAMESPACED_DOCTRINE_ACTIONS=(arrange capture check do learn plan)
+
+for arg in "$@"; do
+  case "$arg" in
+    --link|-l)
+      USE_LINK=true
+      ;;
+    --cutover)
+      if [ "$COMMAND" != "replace-doctrine" ]; then
+        echo "❌ Error: --cutover is valid only with replace-doctrine."
+        exit 1
+      fi
+      ;;
+    --legacy)
+      echo "❌ Error: --legacy is no longer an installation mode."
+      echo "   Run the current upstream .spec-agents/doctrine/UPGRADE.md review against the existing project."
+      exit 1
+      ;;
+  esac
+done
+
+show_help() {
+  echo "🤖 Spec-AGENTS CLI v$VERSION"
+  echo ""
+  echo "Usage:"
+  echo "  spec-agents init [lang] [--link|-l]           Initialize current directory"
+  echo "  spec-agents install <path> [lang] [--link|-l] Install modern layout"
+  echo "  spec-agents replace-doctrine <path> <backup-dir> --cutover <CUTOVER.tsv> [lang] [--link|-l]"
+  echo "                                                Recoverably replace doctrine"
+  echo ""
+  echo "Workflow gates (these refuse; they do not explain — the skills do):"
+  echo "  spec-agents status                    active SPECs, slice states, drift"
+  echo "  spec-agents check-state               every state invariant; exit 1 on violation"
+  echo "  spec-agents ready                     slices whose blocked_by are satisfied"
+  echo "  spec-agents gate <action> [target]    may this action begin? refuses with the reason"
+  echo "  spec-agents transition <slice> <state> [reason]"
+  echo ""
+  echo "Arguments:"
+  echo "  lang: cn (default) | en"
+  echo "  --link, -l: Use symbolic links instead of copying files"
+  echo ""
+  echo "For an existing project with retired SPEC-AGENTS state, run the current"
+  echo "upstream .spec-agents/doctrine/UPGRADE.md review before replacing doctrine."
+  echo "replace-doctrine is destructive only to the doctrine allowlist and requires"
+  echo "an explicit confirmed CUTOVER receipt plus an absent backup directory."
+  echo "It never replaces project Instance data."
+  echo "The installer emits framework doctrine only. It never writes your project's"
+  echo ".spec-agents/state/, .spec-agents/specs/, scratch, archive, or docs/ knowledge classes."
+  echo ""
+  echo "After installation, read .spec-agents/doctrine/START.md to bootstrap the project's .spec-agents/state/KERNEL.md and route the first plan."
+}
+
+# ---------------------------------------------------------------------------
+# Workflow state commands.
+#
+# These are gates, not documentation. The installed `.spec-agents/doctrine/skills/<action>/SKILL.md` remains the
+# single authority for what an action means; nothing here reproduces it. What
+# this adds is refusal: preconditions checked before work starts, invariants
+# checked before state changes.
+# ---------------------------------------------------------------------------
+
+has_complete_modern_entry() {
+  local d="$1" doc action
+  [ -f "$d/AGENTS.md" ] &&
+    grep -Fxq 'Read `.spec-agents/doctrine/AGENTS.md`.' "$d/AGENTS.md" &&
+    [ -f "$d/.spec-agents/doctrine/AGENTS.md" ] &&
+    [ -f "$d/.spec-agents/doctrine/START.md" ] &&
+    [ -f "$d/.spec-agents/doctrine/UPGRADE.md" ] &&
+    [ -f "$d/.spec-agents/doctrine/docs/WORKFLOW.md" ] &&
+    [ -f "$d/.spec-agents/doctrine/docs/check-kernel.sh" ] &&
+    [ -x "$d/.spec-agents/doctrine/bin/spec-agents" ] || return 1
+  for doc in "${NAMESPACED_DOCTRINE_DOCS[@]}"; do
+    [ -f "$d/.spec-agents/doctrine/docs/$doc" ] || return 1
+  done
+  for action in "${NAMESPACED_DOCTRINE_ACTIONS[@]}"; do
+    [ -f "$d/.spec-agents/doctrine/skills/$action/SKILL.md" ] &&
+      [ -f "$d/.spec-agents/doctrine/skills/$action/agents/openai.yaml" ] || return 1
+  done
+}
+
+is_old_doctrine_agent() {
+  local path="$1"
+  [ -f "$path" ] || return 1
+  if cmp -s "$DOCTRINE_ROOT/AGENTS.md" "$path" ||
+     cmp -s "$DOCTRINE_ROOT/AGENTS_en.md" "$path"; then
+    return 0
+  fi
+  grep -Eq '^# SPEC-AGENTS(:|$)' "$path" &&
+    grep -Fxq '## Default context' "$path"
+}
+
+project_root() {
+  local d here
+  here="$(pwd -P)"
+  d="$here"
+  while [ "$d" != "/" ]; do
+    if has_complete_modern_entry "$d"; then
+      echo "$d"
+      return 0
+    fi
+    d="$(dirname "$d")"
+  done
+  if [ "$SOURCE_CHECKOUT" = true ]; then
+    case "$here" in
+      "$REPO_ROOT"|"$REPO_ROOT"/*)
+        echo "$REPO_ROOT"
+        return 0
+        ;;
+    esac
+  fi
+  echo "❌ Not inside an integrated namespaced project (no complete .spec-agents/doctrine/ entry above $(pwd))." >&2
+  return 1
+}
+
+specs_root() {
+  echo "$1/.spec-agents/specs"
+}
+
+state_root() {
+  echo "$1/.spec-agents/state"
+}
+
+kernel_path() { echo "$(state_root "$1")/KERNEL.md"; }
+
+skill_ref() {
+  echo ".spec-agents/doctrine/skills/$1/SKILL.md"
+}
+
+doctrine_ref() {
+  echo ".spec-agents/doctrine/$1"
+}
+
+# fm_get <file> <field> — read a frontmatter field. Frontmatter is the key: value
+# lines before the first "## " heading. Prints empty when absent.
+fm_get() {
+  awk -v k="$2" '
+    /^## /{exit}
+    {
+      i = index($0, ":")
+      if (i > 1 && substr($0,1,i-1) == k) {
+        v = substr($0, i+1)
+        gsub(/^[ \t]+|[ \t]+$/, "", v)
+        gsub(/`/, "", v)
+        print v
+        exit
+      }
+    }' "$1"
+}
+
+# kernel_delta_kind <file> — classify the SPEC's multi-line kernel_delta field.
+kernel_delta_kind() {
+  awk '
+    BEGIN { found=0; done=0 }
+    /^## / { exit }
+    /^kernel_delta:/ {
+      found=1
+      v=$0
+      sub(/^kernel_delta:/, "", v)
+      gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (v == "none") { print "none"; done=1; exit }
+      if (v != "") { print "entries"; done=1; exit }
+      next
+    }
+    found && /^ +-[ ][^:]+:[ \t]*[^ \t].*/ { print "entries"; done=1; exit }
+    found && /^[^ \t][^:]*:/ { exit }
+    END {
+      if (!done) print (found ? "empty" : "absent")
+    }' "$1"
+}
+
+# model_delta_nonempty <file> — succeeds when ## Model delta has non-blank content.
+model_delta_nonempty() {
+  awk '
+    /^## Model delta[ \t]*$/ { in_section=1; next }
+    in_section && /^## / { exit }
+    in_section && $0 !~ /^[[:space:]]*$/ { found=1; exit }
+    END { exit(found ? 0 : 1) }
+  ' "$1"
+}
+
+# resolve_spec_path <slice> <root> — accept root-relative and slice-relative refs,
+# then use the feature's conventional ../SPEC.md fallback.
+resolve_spec_path() {
+  local slice="$1" root="$2" sr candidate canonical
+  canonical="$(specs_root "$root")"
+  sr="$(fm_get "$slice" spec_ref)"
+  if [ -n "$sr" ]; then
+    candidate="$root/$sr"
+    case "$candidate" in
+      "$canonical"/*) [ -f "$candidate" ] && { echo "$candidate"; return 0; } ;;
+    esac
+    candidate="$(dirname "$slice")/$sr"
+    case "$candidate" in
+      "$canonical"/*) [ -f "$candidate" ] && { echo "$candidate"; return 0; } ;;
+    esac
+  fi
+  candidate="$(dirname "$slice")/../SPEC.md"
+  case "$candidate" in
+    "$canonical"/*) [ -f "$candidate" ] && { echo "$candidate"; return 0; } ;;
+  esac
+  return 1
+}
+
+# kernel_source_cites <kernel> <spec> <spec-relative-path> <feature-relative-path> —
+# resolves every declared entry against an exact Kernel record and its source line.
+kernel_source_cites() {
+  awk -v specfile="$2" -v kernelfile="$1" -v spec="$3" \
+      -v feature="$4" -v name="$(basename "$4")" '
+    function trim(v) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      return v
+    }
+    function cites(line, token,    at, offset, before, after, after_at) {
+      if (token == "") return 0
+      offset=1
+      while ((at=index(substr(line, offset), token)) > 0) {
+        at += offset - 1
+        before = (at == 1 ? "" : substr(line, at - 1, 1))
+        after_at = at + length(token)
+        after = (after_at > length(line) ? "" : substr(line, after_at, 1))
+        if ((before == "" || before ~ /[ \t`(;,]/) &&
+            (after == "" || after ~ /[ \t`),:;]/ ||
+             (after == "." && (after_at == length(line) ||
+                                substr(line, after_at + 1, 1) == " "))))
+          return 1
+        offset=at + 1
+      }
+      return 0
+    }
+    FILENAME == specfile {
+      if (/^## /) { spec_body=1; next }
+      if (!spec_body && /^ +-[ ][^:]+:[ \t]*[^ \t].*/) {
+        line=$0
+        sub(/^ +-[ ]/, "", line)
+        colon=index(line, ":")
+        if (colon > 1) {
+          verb=trim(substr(line, 1, colon - 1))
+          entry=trim(substr(line, colon + 1))
+          sub(/[[:space:]]+\(.*/, "", entry)
+          entry=trim(entry)
+          if ((verb == "add" || verb == "revise" ||
+               verb == "supersede" || verb == "retire") && entry != "") {
+            count++
+            verbs[count]=verb
+            entries[count]=entry
+          }
+        }
+      }
+      next
+    }
+    FILENAME == kernelfile {
+      if (/^### / || /^## /) {
+        in_record=0
+        if (/^### /) {
+          heading=$0
+          sub(/^### /, "", heading)
+          heading=trim(heading)
+          for (i=1; i<=count; i++) {
+            if (heading == entries[i]) {
+              has_record[i]=1
+              in_record=1
+            }
+          }
+        }
+        next
+      }
+      if (in_record && /^[[:space:]]*source:/) {
+        if (cites($0, spec) || cites($0, feature) || cites($0, name)) {
+          for (i=1; i<=count; i++) {
+            if (heading == entries[i]) has_source[i]=1
+          }
+        }
+      }
+      next
+    }
+    END {
+      failed=0
+      for (i=1; i<=count; i++) {
+        if (verbs[i] == "retire") {
+          if (has_record[i]) {
+            printf "%s\t%s\tretired Kernel record still present\n", verbs[i], entries[i]
+            failed=1
+          }
+        } else if (!has_record[i]) {
+          printf "%s\t%s\tno Kernel record\n", verbs[i], entries[i]
+          failed=1
+        } else if (!has_source[i]) {
+          printf "%s\t%s\tKernel record has no source citing the SPEC\n", verbs[i], entries[i]
+          failed=1
+        }
+      }
+      if (failed) exit 1
+    }' "$2" "$1"
+}
+
+slice_files() { find "$(specs_root "$1")" -path '*/issues/*.md' -type f 2>/dev/null | sort; }
+spec_files()  { find "$(specs_root "$1")" -name SPEC.md -type f 2>/dev/null | sort; }
+
+# blocked_by names slice number prefixes inside the same feature.
+blocker_unfinished() {
+  local slice="$1" root="$2" dep dir st
+  dep="$(fm_get "$slice" blocked_by)"
+  [ -z "$dep" ] && return 1
+  dir="$(dirname "$slice")"
+  for d in $(echo "$dep" | tr ',' ' '); do
+    for f in "$dir/$d"-*.md; do
+      [ -e "$f" ] || continue
+      st="$(fm_get "$f" status)"
+      [ "$st" = "done" ] || { echo "$(basename "$f") is $st"; return 0; }
+    done
+  done
+  return 1
+}
+
+VIOLATIONS=0
+violation() { echo "  ✗ $1" >&2; VIOLATIONS=$((VIOLATIONS + 1)); }
+
+check_state() {
+  local root; root="$(project_root)" || return 1
+  local specs; specs="$(specs_root "$root")"
+  [ -d "$specs" ] || { echo "note: no $specs/ — a project with no SPECs is not in violation."; return 0; }
+  VIOLATIONS=0
+  local f st ev wr au sr kd rel feature candidate
+
+  for f in $(slice_files "$root"); do
+    st="$(fm_get "$f" status)"; ev="$(fm_get "$f" evidence_ref)"
+    au="$(fm_get "$f" authority)"; sr="$(fm_get "$f" spec_ref)"
+    case "$st" in
+      done)
+        [ -n "$ev" ] || violation "${f#$root/}: status done without evidence_ref (learn; $(skill_ref learn))" ;;
+      doing)
+        b="$(blocker_unfinished "$f" "$root")" && violation "${f#$root/}: doing while blocked_by unfinished ($b)" ;;
+      ready|blocked|stale) ;;
+      "") violation "${f#$root/}: no status field" ;;
+      *)  violation "${f#$root/}: unknown status '$st'" ;;
+    esac
+    # authority: arrived with ADR 0006, which states closed slices are not
+    # back-filled. Require it where work can still be affected, not in history.
+    if [ "$st" != "done" ] && [ -z "$au" ]; then
+      violation "${f#$root/}: no authority field ($(skill_ref arrange); ADR 0006)"
+    fi
+    # spec_ref is written either repo-root-relative or relative to the slice.
+    # Both are in use here; resolve both rather than punish one convention.
+    if [ -n "$sr" ]; then
+      candidate="$root/$sr"
+      if ! case "$candidate" in
+        "$specs"/*) [ -e "$candidate" ] ;;
+        *) false ;;
+      esac; then
+        candidate="$(dirname "$f")/$sr"
+        if ! case "$candidate" in
+          "$specs"/*) [ -e "$candidate" ] ;;
+          *) false ;;
+        esac; then
+          violation "${f#$root/}: spec_ref resolves from neither the canonical root nor the slice: $sr"
+        fi
+      fi
+    fi
+  done
+
+  for f in $(spec_files "$root"); do
+    st="$(fm_get "$f" status)"
+    local dir n d
+    dir="$(dirname "$f")"; n=0; d=0
+    for s in "$dir"/issues/*.md; do
+      [ -e "$s" ] || continue
+      n=$((n+1)); [ "$(fm_get "$s" status)" = "done" ] && d=$((d+1))
+    done
+    if [ "$n" -gt 0 ] && [ "$n" = "$d" ] && [ "$st" != "verified" ]; then
+      violation "${f#$root/}: every slice is done but SPEC status is '$st' ($(doctrine_ref docs/WORKFLOW.md): Lifecycle/spec; $(skill_ref learn))"
+    fi
+  done
+
+  local kernel; kernel="$(kernel_path "$root")"
+  if [ -f "$kernel" ]; then
+    for f in $(spec_files "$root"); do
+      st="$(fm_get "$f" status)"
+      kd="$(kernel_delta_kind "$f")"
+      if [ "$st" = "verified" ] && [ "$kd" = "entries" ]; then
+        rel="${f#$root/}"
+        feature="${rel%/SPEC.md}"
+        if problems="$(kernel_source_cites "$kernel" "$f" "$rel" "$feature")"; then
+          :
+        else
+          while IFS=$'\t' read -r verb entry missing; do
+            [ -n "$entry" ] || continue
+            violation "${f#$root/}: $verb '$entry': $missing ($(skill_ref learn))"
+          done <<< "$problems"
+        fi
+      fi
+    done
+  fi
+
+  if [ "$VIOLATIONS" -eq 0 ]; then echo "ok: no state violations."; return 0; fi
+  echo "" >&2; echo "$VIOLATIONS violation(s)." >&2; return 1
+}
+
+cmd_status() {
+  local root; root="$(project_root)" || return 1
+  [ -d "$(specs_root "$root")" ] || { echo "No SPECs."; return 0; }
+  local f st n d
+  echo "SPECs:"
+  for f in $(spec_files "$root"); do
+    st="$(fm_get "$f" status)"; n=0; d=0
+    for s in "$(dirname "$f")"/issues/*.md; do
+      [ -e "$s" ] || continue
+      n=$((n+1)); [ "$(fm_get "$s" status)" = "done" ] && d=$((d+1))
+    done
+    printf "  %-34s %-10s %s/%s slices done\n" "$(basename "$(dirname "$f")")" "$st" "$d" "$n"
+  done
+  echo ""
+  check_state
+}
+
+cmd_ready() {
+  local root; root="$(project_root)" || return 1
+  local f st found=0
+  for f in $(slice_files "$root"); do
+    st="$(fm_get "$f" status)"
+    [ "$st" = "ready" ] || [ "$st" = "blocked" ] || continue
+    if blocker_unfinished "$f" "$root" >/dev/null; then continue; fi
+    echo "${f#$root/}"; found=1
+  done
+  [ "$found" -eq 0 ] && echo "note: no slice is ready."
+  return 0
+}
+
+cmd_gate() {
+  local action="$1" target="${2:-}" root b st wr au spec kd pointer=""
+  root="$(project_root)" || return 1
+  case "$action" in
+    do)
+      [ -n "$target" ] || { echo "❌ gate do needs a slice path." >&2; return 1; }
+      [ -f "$target" ] || { echo "❌ no such slice: $target" >&2; return 1; }
+      st="$(fm_get "$target" status)"; wr="$(fm_get "$target" writer)"; au="$(fm_get "$target" authority)"
+      case "$st" in
+        ready|doing) ;;
+        *) echo "❌ refused: slice is '$st'; do requires ready or an authorised doing ($(skill_ref do), 开始前)." >&2; return 1 ;;
+      esac
+      if b="$(blocker_unfinished "$target" "$root")"; then
+        echo "❌ refused: blocked_by unfinished — $b ($(skill_ref do), 开始前)." >&2; return 1
+      fi
+      if [ -n "$wr" ] && [ "$wr" != "do" ]; then
+        echo "❌ refused: writer is '$wr'; hand this slice to that action ($(skill_ref arrange))." >&2; return 1
+      fi
+      [ -n "$au" ] || { echo "❌ refused: no authority field ($(skill_ref arrange))." >&2; return 1; }
+      if spec="$(resolve_spec_path "$target" "$root")"; then
+        kd="$(kernel_delta_kind "$spec")"
+        case "$kd" in
+          entries)
+            if ! model_delta_nonempty "$spec"; then
+              echo "❌ refused: SPEC ${spec#$root/} declares kernel_delta entries but has no non-empty ## Model delta section ($(skill_ref capture))." >&2
+              return 1
+            fi
+            pointer="${spec#$root/}: ## Model delta"
+            ;;
+          empty)
+            echo "❌ refused: SPEC ${spec#$root/} has a present-but-empty kernel_delta field ($(skill_ref capture))." >&2
+            return 1
+            ;;
+        esac
+      fi
+      echo "ok: gate passed. Read $(skill_ref do) and perform the slice."
+      if [ -n "$pointer" ]; then echo "  pointer: $pointer"; fi
+      ;;
+    capture)
+      echo "ok: gate passed. Read $(skill_ref capture)."
+      echo "note: capture requires a confirmed plan outcome and multi-context work; this gate cannot verify either."
+      ;;
+    arrange)
+      [ -n "$target" ] || { echo "❌ gate arrange needs a SPEC path." >&2; return 1; }
+      [ -f "$target" ] || { echo "❌ no such SPEC: $target" >&2; return 1; }
+      st="$(fm_get "$target" status)"
+      case "$st" in
+        confirmed|revised) echo "ok: gate passed. Read $(skill_ref arrange)." ;;
+        *) echo "❌ refused: SPEC status is '$st'; arrange needs a confirmed SPEC ($(skill_ref arrange))." >&2; return 1 ;;
+      esac
+      ;;
+    plan|check|learn)
+      echo "ok: no machine-checkable precondition. Read $(skill_ref "$action")."
+      ;;
+    *)
+      echo "❌ unknown action: $action (plan capture arrange do check learn)" >&2; return 1 ;;
+  esac
+}
+
+cmd_transition() {
+  local slice="$1" want="$2" reason="${3:-}" root b ev
+  root="$(project_root)" || return 1
+  [ -f "$slice" ] || { echo "❌ no such slice: $slice" >&2; return 1; }
+  case "$want" in
+    ready|blocked|doing|done|stale) ;;
+    *) echo "❌ unknown state '$want' (ready blocked doing done stale)" >&2; return 1 ;;
+  esac
+  if [ "$want" = "done" ]; then
+    ev="$(fm_get "$slice" evidence_ref)"
+    [ -n "$ev" ] || { echo "❌ refused: done requires evidence_ref (learn; $(skill_ref learn))." >&2; return 1; }
+    [ -n "$(fm_get "$slice" authority)" ] || { echo "❌ refused: done requires authority (ADR 0006)." >&2; return 1; }
+  fi
+  if [ "$want" = "doing" ] && b="$(blocker_unfinished "$slice" "$root")"; then
+    echo "❌ refused: blocked_by unfinished — $b." >&2; return 1
+  fi
+  if [ "$want" = "stale" ] && [ -z "$reason" ]; then
+    echo "❌ refused: stale requires a reason." >&2; return 1
+  fi
+  local tmp; tmp="$(mktemp)"
+  awk -v w="$want" 'BEGIN{done=0} /^## /{p=1} !p && /^status:/ && !done {print "status: " w; done=1; next} {print}' "$slice" > "$tmp"
+  mv "$tmp" "$slice"
+  [ -n "$reason" ] && echo "  reason: $reason"
+  echo "ok: $(basename "$slice") → $want"
+}
+
+case "$COMMAND" in
+  status)       cmd_status; exit $? ;;
+  check-state)  check_state; exit $? ;;
+  ready)        cmd_ready; exit $? ;;
+  gate)         cmd_gate "${2:-}" "${3:-}"; exit $? ;;
+  transition)   cmd_transition "${2:-}" "${3:-}" "${4:-}"; exit $? ;;
+esac
+
+if [ -z "$COMMAND" ] || [ "$COMMAND" == "help" ] || [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-h" ]; then
+  show_help
+  exit 0
+fi
+
+if [ "$COMMAND" == "init" ]; then
+  TARGET_DIR="."
+  if [[ "${2:-}" == --* ]] || [[ "${2:-}" == -* ]]; then
+    LANG="cn"
+  else
+    LANG="${2:-cn}"
+  fi
+elif [ "$COMMAND" == "install" ]; then
+  if [ -z "${2:-}" ]; then
+    echo "❌ Error: Please specify target path for 'install' command."
+    exit 1
+  fi
+  TARGET_DIR="$2"
+  if [[ "${3:-}" == --* ]] || [[ "${3:-}" == -* ]]; then
+    LANG="cn"
+  else
+    LANG="${3:-cn}"
+  fi
+elif [ "$COMMAND" == "replace-doctrine" ]; then
+  if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+    echo "❌ Error: replace-doctrine needs a target path and an absent backup directory."
+    exit 1
+  fi
+  TARGET_DIR="$2"
+  BACKUP_DIR="$3"
+  REPLACE_DOCTRINE=true
+  LANG="cn"
+  CUTOVER_SEEN=false
+  LANG_SEEN=false
+  shift 3
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --cutover)
+        if [ "$CUTOVER_SEEN" == true ] || [ "$#" -lt 2 ]; then
+          echo "❌ Error: replace-doctrine requires exactly one --cutover <CUTOVER.tsv>."
+          exit 1
+        fi
+        CUTOVER_FILE="$2"
+        CUTOVER_SEEN=true
+        shift 2
+        ;;
+      --link|-l)
+        shift
+        ;;
+      cn|en)
+        if [ "$LANG_SEEN" == true ]; then
+          echo "❌ Error: replace-doctrine accepts at most one language: cn or en."
+          exit 1
+        fi
+        LANG="$1"
+        LANG_SEEN=true
+        shift
+        ;;
+      *)
+        echo "❌ Error: unknown replace-doctrine argument: $1"
+        exit 1
+        ;;
+    esac
+  done
+  if [ "$CUTOVER_SEEN" != true ] || [ -z "$CUTOVER_FILE" ]; then
+    echo "❌ Error: replace-doctrine requires --cutover <CUTOVER.tsv>."
+    echo "   Run the current upstream .spec-agents/doctrine/UPGRADE.md review and confirm its report first."
+    exit 1
+  fi
+elif [ "$COMMAND" == "upgrade" ]; then
+  echo "❌ Error: Upgrade is Prompt-driven, not an installer operation."
+  echo "   Run the current upstream .spec-agents/doctrine/UPGRADE.md review against the existing project."
+  exit 1
+else
+  echo "❌ Unknown command: $COMMAND"
+  show_help
+  exit 1
+fi
+
+echo "🚀 Initializing Spec-AGENTS v4..."
+echo "   📂 Source: $REPO_ROOT"
+echo "   🎯 Target: $TARGET_DIR"
+
+if [ "$REPLACE_DOCTRINE" == true ] && [ ! -d "$TARGET_DIR" ]; then
+  echo "❌ Error: replace-doctrine requires an existing target directory: $TARGET_DIR"
+  exit 1
+elif [ ! -d "$TARGET_DIR" ]; then
+  echo "   ⚠️  Target directory does not exist. Creating..."
+  mkdir -p "$TARGET_DIR"
+fi
+
+TARGET_DIR_ABS="$(cd -P "$TARGET_DIR" && pwd -P)"
+if [ "$TARGET_DIR_ABS" = "$REPO_ROOT" ]; then
+  echo "❌ Error: Refusing to install into the Spec-AGENTS source repository itself."
+  echo "   Please provide a separate project directory, not $REPO_ROOT"
+  exit 1
+fi
+
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  if [ "$TARGET_DIR_ABS" = "/" ]; then
+    echo "❌ Error: refusing to replace doctrine at the filesystem root."
+    exit 1
+  fi
+  if [ -n "${HOME:-}" ] && [ -d "$HOME" ]; then
+    USER_HOME_ABS="$(cd -P "$HOME" && pwd -P)"
+    if [ "$TARGET_DIR_ABS" = "$USER_HOME_ABS" ]; then
+      echo "❌ Error: refusing to replace doctrine at the user home directory."
+      exit 1
+    fi
+  fi
+
+  REPLACEMENT_MARKERS=0
+  for marker in START.md UPGRADE.md .phrase skills/plan/SKILL.md docs/spec-agents/WORKFLOW.md \
+                KERNEL.md STATUS.md EVIDENCE.md .specs .scratch archive .spec-agents/doctrine; do
+    if [ -e "$TARGET_DIR_ABS/$marker" ] || [ -L "$TARGET_DIR_ABS/$marker" ]; then
+      REPLACEMENT_MARKERS=$((REPLACEMENT_MARKERS + 1))
+    fi
+  done
+  if is_old_doctrine_agent "$TARGET_DIR_ABS/AGENTS.md"; then
+    REPLACEMENT_MARKERS=$((REPLACEMENT_MARKERS + 1))
+    REPLACEMENT_OLD_PATHS=(AGENTS.md "${REPLACEMENT_OLD_PATHS[@]}")
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ]; then
+    for retired_path in "$TARGET_DIR_ABS"/spec_* "$TARGET_DIR_ABS"/plan_* \
+                        "$TARGET_DIR_ABS"/task_* "$TARGET_DIR_ABS"/change_* \
+                        "$TARGET_DIR_ABS"/issue_*; do
+      if [ -e "$retired_path" ] || [ -L "$retired_path" ]; then
+        REPLACEMENT_MARKERS=1
+        break
+      fi
+    done
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -d "$TARGET_DIR_ABS/.scratch" ] &&
+     [ -n "$(find "$TARGET_DIR_ABS/.scratch" -mindepth 2 -name SPEC.md -print -quit)" ]; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -f "$TARGET_DIR_ABS/STATUS.md" ] &&
+     grep -qE '^\*\*Phase\*\*:|task[0-9]+' "$TARGET_DIR_ABS/STATUS.md"; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -f "$TARGET_DIR_ABS/CONTEXT.md" ] &&
+     grep -q '^### Change$' "$TARGET_DIR_ABS/CONTEXT.md" &&
+     grep -q '^### Plan$' "$TARGET_DIR_ABS/CONTEXT.md"; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -lt 1 ]; then
+    echo "❌ Error: target is not recognizably a SPEC-AGENTS project."
+    echo "   Need at least one active doctrine or retired-workflow marker."
+    exit 1
+  fi
+
+  if [ -e "$BACKUP_DIR" ] || [ -L "$BACKUP_DIR" ]; then
+    echo "❌ Error: backup path already exists: $BACKUP_DIR"
+    exit 1
+  fi
+  BACKUP_PARENT="$(dirname "$BACKUP_DIR")"
+  if [ ! -d "$BACKUP_PARENT" ]; then
+    echo "❌ Error: backup parent must already exist: $BACKUP_PARENT"
+    exit 1
+  fi
+  BACKUP_PARENT_ABS="$(cd -P "$BACKUP_PARENT" && pwd)"
+  BACKUP_DIR_ABS="$BACKUP_PARENT_ABS/$(basename "$BACKUP_DIR")"
+  case "$BACKUP_DIR_ABS" in
+    "$TARGET_DIR_ABS"|"$TARGET_DIR_ABS/skills"|"$TARGET_DIR_ABS/skills/"*|\
+    "$TARGET_DIR_ABS/docs/spec-agents"|"$TARGET_DIR_ABS/docs/spec-agents/"*|\
+    "$TARGET_DIR_ABS/.spec-agents/doctrine"|"$TARGET_DIR_ABS/.spec-agents/doctrine/"*)
+      echo "❌ Error: backup must be outside doctrine paths: $BACKUP_DIR_ABS"
+      exit 1
+      ;;
+    "$REPO_ROOT"|"$REPO_ROOT/"*)
+      echo "❌ Error: backup must not write into the SPEC-AGENTS source repository."
+      exit 1
+      ;;
+  esac
+fi
+
+if [ -d "$TARGET_DIR/.phrase" ]; then
+  HAS_LEGACY=true
+else
+  for legacy_pattern in spec_* plan_* task_* change_* issue_*; do
+    if [ -e "$TARGET_DIR/$legacy_pattern" ]; then
+      HAS_LEGACY=true
+      break
+    fi
+  done
+fi
+
+# Interactive mode: ask only when copy/link was not specified.
+if [ "$USE_LINK" == false ] && [ -t 0 ]; then
+  echo ""
+  echo "📋 Select installation mode:"
+  echo "   [1] Copy files (default) - Independent, can customize locally"
+  echo "   [2] Symbolic link - Auto-sync with updates, saves space"
+  echo ""
+  read -p "   Choice (1/2): " choice
+  if [ "$choice" == "2" ]; then
+    USE_LINK=true
+  fi
+fi
+
+install_file() {
+  local source_file="$1"
+  local target_file="$2"
+
+  [ -f "$source_file" ] || return 0
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    echo "   ⚠️  Keeping existing file: $target_file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$target_file")"
+
+  if [ "$USE_LINK" == true ]; then
+    ln -s "$source_file" "$target_file"
+  else
+    cp "$source_file" "$target_file"
+  fi
+}
+
+install_template() {
+  local source_file="$1"
+  local target_file="$2"
+
+  [ -f "$source_file" ] || return 0
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    echo "   ⚠️  Keeping existing file: $target_file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$target_file")"
+  # Always copy. A symlink would let the managed project write back into the
+  # SPEC-AGENTS source repository.
+  cp "$source_file" "$target_file"
+}
+
+install_dir_contents() {
+  local source_dir="$1"
+  local target_dir="$2"
+
+  [ -d "$source_dir" ] || return 0
+  mkdir -p "$target_dir"
+  for item in "$source_dir"/*; do
+    if [ -e "$item" ]; then
+      local basename_item
+      local target_item
+      basename_item=$(basename "$item")
+      target_item="$target_dir/$basename_item"
+      if [ -e "$target_item" ] || [ -L "$target_item" ]; then
+        continue
+      fi
+      if [ "$USE_LINK" == true ]; then
+        ln -s "$item" "$target_item"
+      else
+        cp -R "$item" "$target_dir/"
+      fi
+    fi
+  done
+}
+
+install_namespaced_skill() {
+  local action="$1"
+  local source_dir="$DOCTRINE_ROOT/skills/$action"
+  local target_dir="$TARGET_DIR/.spec-agents/doctrine/skills/$action"
+
+  [ -d "$source_dir" ] || return 0
+  if [ -e "$target_dir" ] || [ -L "$target_dir" ]; then
+    return 0
+  fi
+  mkdir -p "$(dirname "$target_dir")"
+  if [ "$USE_LINK" == true ]; then
+    ln -s "$source_dir" "$target_dir"
+  else
+    cp -R "$source_dir" "$target_dir"
+  fi
+}
+
+install_agent() {
+  if [ "$LANG" == "en" ]; then
+    install_file "$DOCTRINE_ROOT/AGENTS_en.md" "$TARGET_DIR/AGENTS.md"
+    echo "   🌐 Language: English"
+  else
+    install_file "$DOCTRINE_ROOT/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+    echo "   🌐 Language: Chinese"
+  fi
+}
+
+install_namespaced_doctrine() {
+  local doctrine="$TARGET_DIR/.spec-agents/doctrine"
+  local integration_line='Read `.spec-agents/doctrine/AGENTS.md`.'
+
+  if [ -e "$TARGET_DIR/AGENTS.md" ] || [ -L "$TARGET_DIR/AGENTS.md" ]; then
+    if [ -f "$TARGET_DIR/AGENTS.md" ] &&
+       grep -Fxq "$integration_line" "$TARGET_DIR/AGENTS.md"; then
+      echo "   🔗 Existing AGENTS.md integration reference found."
+    else
+      INTEGRATION_REQUIRED=true
+      echo "   ⚠️  Integration required: add this exact line to $TARGET_DIR/AGENTS.md: Read \`.spec-agents/doctrine/AGENTS.md\`."
+    fi
+  else
+    # This adapter is installer-owned but must never link back to the source
+    # repository, even when the Doctrine payload uses --link.
+    install_template "$REPO_ROOT/templates/AGENTS-adapter.md" "$TARGET_DIR/AGENTS.md"
+    ADAPTER_CREATED=true
+  fi
+
+  mkdir -p "$doctrine"
+  if [ "$LANG" == "en" ]; then
+    install_file "$DOCTRINE_ROOT/AGENTS_en.md" "$doctrine/AGENTS.md"
+    echo "   🌐 Language: English"
+  else
+    install_file "$DOCTRINE_ROOT/AGENTS.md" "$doctrine/AGENTS.md"
+    echo "   🌐 Language: Chinese"
+  fi
+  install_file "$DOCTRINE_ROOT/START.md" "$doctrine/START.md"
+  install_file "$DOCTRINE_ROOT/UPGRADE.md" "$doctrine/UPGRADE.md"
+  install_file "$DOCTRINE_ROOT/bin/spec-agents" "$doctrine/bin/spec-agents"
+  local doc action
+  for doc in "${NAMESPACED_DOCTRINE_DOCS[@]}"; do
+    install_file "$DOCTRINE_ROOT/docs/$doc" "$doctrine/docs/$doc"
+  done
+  for action in "${NAMESPACED_DOCTRINE_ACTIONS[@]}"; do
+    install_namespaced_skill "$action"
+  done
+}
+
+sha256_file() {
+  local path="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$path" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$path" | awk '{print $1}'
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "$path" | awk '{print $NF}'
+  else
+    echo "❌ Error: replace-doctrine needs shasum, sha256sum, or openssl." >&2
+    return 1
+  fi
+}
+
+cutover_error() {
+  echo "❌ Error: invalid Upgrade cutover receipt: $1" >&2
+  echo "   Run the current upstream .spec-agents/doctrine/UPGRADE.md review and confirm its report before retrying." >&2
+  return 1
+}
+
+validate_cutover_receipt() {
+  local receipt_parent receipt_abs expected_receipt report_path
+  local receipt_format receipt_target receipt_backup receipt_hash
+  local receipt_unresolved receipt_decision actual_hash
+
+  if [ ! -f "$CUTOVER_FILE" ] || [ -L "$CUTOVER_FILE" ]; then
+    cutover_error "receipt must be a regular non-symlink file: $CUTOVER_FILE"
+    return 1
+  fi
+  receipt_parent="$(dirname "$CUTOVER_FILE")"
+  if [ ! -d "$receipt_parent" ]; then
+    cutover_error "parent directory does not exist: $receipt_parent"
+    return 1
+  fi
+  receipt_abs="$(cd -P "$receipt_parent" && pwd -P)/$(basename "$CUTOVER_FILE")"
+  expected_receipt="$TARGET_DIR_ABS/.spec-agents/scratch/upgrade-review/CUTOVER.tsv"
+  if [ "$receipt_abs" != "$expected_receipt" ]; then
+    cutover_error "receipt must be $expected_receipt"
+    return 1
+  fi
+
+  if ! awk -F '\t' '
+    BEGIN {
+      required["format"] = 1
+      required["target"] = 1
+      required["backup_dir"] = 1
+      required["report_sha256"] = 1
+      required["unresolved_count"] = 1
+      required["decision"] = 1
+    }
+    NF != 2 || !($1 in required) || seen[$1]++ { invalid = 1 }
+    END {
+      if (NR != 6) invalid = 1
+      for (key in required) if (seen[key] != 1) invalid = 1
+      exit invalid
+    }
+  ' "$receipt_abs"; then
+    cutover_error "expected exactly six unique two-column rows with no unknown keys"
+    return 1
+  fi
+
+  receipt_format="$(awk -F '\t' '$1 == "format" { print $2 }' "$receipt_abs")"
+  receipt_target="$(awk -F '\t' '$1 == "target" { print $2 }' "$receipt_abs")"
+  receipt_backup="$(awk -F '\t' '$1 == "backup_dir" { print $2 }' "$receipt_abs")"
+  receipt_hash="$(awk -F '\t' '$1 == "report_sha256" { print $2 }' "$receipt_abs")"
+  receipt_unresolved="$(awk -F '\t' '$1 == "unresolved_count" { print $2 }' "$receipt_abs")"
+  receipt_decision="$(awk -F '\t' '$1 == "decision" { print $2 }' "$receipt_abs")"
+
+  if [ "$receipt_format" != "spec-agents-cutover-v1" ]; then
+    cutover_error "format must be spec-agents-cutover-v1"
+    return 1
+  fi
+  if [ "$receipt_target" != "$TARGET_DIR_ABS" ]; then
+    cutover_error "target does not match the canonical invocation target"
+    return 1
+  fi
+  if [ "$receipt_backup" != "$BACKUP_DIR_ABS" ]; then
+    cutover_error "backup_dir does not match the canonical invocation backup"
+    return 1
+  fi
+  if [ "$receipt_unresolved" != "0" ]; then
+    cutover_error "unresolved_count must be the literal 0"
+    return 1
+  fi
+  if [ "$receipt_decision" != "confirmed" ]; then
+    cutover_error "decision must be confirmed"
+    return 1
+  fi
+  case "$receipt_hash" in
+    *[!0-9a-f]*|'')
+      cutover_error "report_sha256 must be a lowercase SHA-256 digest"
+      return 1
+      ;;
+  esac
+  if [ "${#receipt_hash}" -ne 64 ]; then
+    cutover_error "report_sha256 must be a 64-character SHA-256 digest"
+    return 1
+  fi
+
+  report_path="$TARGET_DIR_ABS/.spec-agents/scratch/upgrade-review/REPORT.md"
+  if [ ! -f "$report_path" ] || [ -L "$report_path" ]; then
+    cutover_error "confirmed report must be a regular non-symlink file: $report_path"
+    return 1
+  fi
+  actual_hash="$(sha256_file "$report_path")" || return 1
+  if [ "$actual_hash" != "$receipt_hash" ]; then
+    cutover_error "REPORT.md no longer matches report_sha256"
+    return 1
+  fi
+}
+
+write_doctrine_manifest() {
+  local backup_root="$1" output="$2"
+  local manifest_tmp item rel digest target
+  manifest_tmp="$(mktemp "${TMPDIR:-/tmp}/spec-agents-doctrine-manifest.XXXXXX")"
+  (
+    cd "$backup_root"
+    find . -mindepth 1 ! -name '*DOCTRINE-MANIFEST.tsv' | LC_ALL=C sort |
+      while IFS= read -r item; do
+        rel="${item#./}"
+        if [ -L "$item" ]; then
+          target="$(readlink "$item")"
+          printf 'link\t-\t%s\t%s\n' "$rel" "$target"
+        elif [ -d "$item" ]; then
+          printf 'directory\t-\t%s\t-\n' "$rel"
+        elif [ -f "$item" ]; then
+          digest="$(sha256_file "$item")"
+          printf 'file\t%s\t%s\t-\n' "$digest" "$rel"
+        else
+          printf 'other\t-\t%s\t-\n' "$rel"
+        fi
+      done
+  ) > "$manifest_tmp"
+  mv "$manifest_tmp" "$output"
+}
+
+backup_installed_doctrine() {
+  local rel
+  local -a existing_paths=()
+
+  mkdir "$BACKUP_DIR_ABS" "$BACKUP_DIR_ABS/old" "$BACKUP_DIR_ABS/new"
+  for rel in "${REPLACEMENT_OLD_PATHS[@]}"; do
+    if [ -e "$TARGET_DIR_ABS/$rel" ] || [ -L "$TARGET_DIR_ABS/$rel" ]; then
+      existing_paths+=("$rel")
+    fi
+  done
+
+  if [ "${#existing_paths[@]}" -gt 0 ]; then
+    (
+      set -o pipefail
+      (cd "$TARGET_DIR_ABS" && tar -cf - "${existing_paths[@]}") |
+        (cd "$BACKUP_DIR_ABS/old" && tar -xf -)
+    )
+  fi
+  if [ -e "$TARGET_DIR_ABS/.spec-agents/doctrine" ] ||
+     [ -L "$TARGET_DIR_ABS/.spec-agents/doctrine" ]; then
+    (
+      set -o pipefail
+      (cd "$TARGET_DIR_ABS/.spec-agents" && tar -cf - doctrine) |
+        (cd "$BACKUP_DIR_ABS/new" && tar -xf -)
+    )
+  fi
+  write_doctrine_manifest "$BACKUP_DIR_ABS/old" "$BACKUP_DIR_ABS/OLD-DOCTRINE-MANIFEST.tsv"
+  write_doctrine_manifest "$BACKUP_DIR_ABS/new" "$BACKUP_DIR_ABS/NEW-DOCTRINE-MANIFEST.tsv"
+  write_doctrine_manifest "$BACKUP_DIR_ABS" "$BACKUP_DIR_ABS/DOCTRINE-MANIFEST.tsv"
+}
+
+remove_installed_doctrine() {
+  local rel target
+  for rel in "${REPLACEMENT_OLD_PATHS[@]}"; do
+    target="$TARGET_DIR_ABS/$rel"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      rm -rf -- "$target"
+    fi
+  done
+  target="$TARGET_DIR_ABS/.spec-agents/doctrine"
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    rm -rf -- "$target"
+  fi
+}
+
+replacement_failed() {
+  local code=$?
+  echo "" >&2
+  echo "❌ Doctrine replacement failed during $REPLACEMENT_PHASE." >&2
+  if [ -n "${BACKUP_DIR_ABS:-}" ] && [ -d "$BACKUP_DIR_ABS" ]; then
+    echo "   Recovery material: $BACKUP_DIR_ABS" >&2
+  fi
+  echo "   Success was not recorded. Inspect the target and backup before retrying." >&2
+  exit "$code"
+}
+
+# Doctrine only. Everything installed here is identical in every managed
+# project. This repository's own state -- .spec-agents/state/STATUS.md,
+# ROADMAP.md, .spec-agents/state/EVIDENCE.md, .spec-agents/archive/,
+# research/, bin/, docs/adr, docs/protocols, docs/runbooks, docs/lessons -- is
+# Instance and is never installed. Use this explicit
+# allowlist, not directory enumeration: enumerating docs/ is what previously
+# leaked this repository's own runbooks and lessons into managed projects.
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  validate_cutover_receipt
+fi
+
+echo "   📦 Installing SPEC-AGENTS doctrine..."
+
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  REPLACEMENT_PHASE="backup"
+  trap replacement_failed ERR
+  backup_installed_doctrine
+  REPLACEMENT_PHASE="replacement"
+  remove_installed_doctrine
+fi
+
+install_namespaced_doctrine
+
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  REPLACEMENT_PHASE=""
+  trap - ERR
+  echo "   🛟 Previous doctrine backup: $BACKUP_DIR_ABS"
+  echo "      Manifest: $BACKUP_DIR_ABS/DOCTRINE-MANIFEST.tsv"
+fi
+
+if [ "$HAS_LEGACY" == true ]; then
+  echo ""
+  echo "   ⚠️  Existing retired SPEC-AGENTS material detected."
+  echo "      Do not continue ordinary work or trust an installed upgrade prompt."
+  echo "      Run the current upstream .spec-agents/doctrine/UPGRADE.md review against $TARGET_DIR."
+fi
+
+if [ "$USE_LINK" == true ]; then
+  echo ""
+  echo "   ⚠️  Note: Using symbolic links. Changes to source files will affect this project."
+  echo "      Source: $REPO_ROOT"
+fi
+
+echo ""
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  echo "✅ Doctrine replacement complete."
+  echo "   Continue the confirmed Upgrade: reset retired state, run .spec-agents/doctrine/START.md,"
+  echo "   and wait for the user to accept that result before ordinary work."
+else
+  if [ "$INTEGRATION_REQUIRED" == true ]; then
+    echo "⚠️  Doctrine installed; add the integration line above and rerun the installer."
+  else
+    echo "✨ Done! Spec-AGENTS is ready."
+  fi
+fi
+if [ "$REPLACE_DOCTRINE" == false ]; then
+  echo "   Installed (framework doctrine, identical in every project):"
+  echo "   - $TARGET_DIR/.spec-agents/doctrine/"
+  if [ "$ADAPTER_CREATED" == true ]; then
+    echo "   - $TARGET_DIR/AGENTS.md (copied root adapter)"
+  else
+    echo "   - $TARGET_DIR/AGENTS.md (existing project entry retained)"
+  fi
+else
+  echo "   Installed (framework doctrine, identical in every project):"
+  echo "   - $TARGET_DIR/.spec-agents/doctrine/"
+  echo "   - $TARGET_DIR/AGENTS.md (copied root adapter or existing project entry retained)"
+  echo "   - CONTEXT.md was not touched; it belongs to the project Instance"
+fi
+echo ""
+echo "   Not installed. These belong to your project and are created when needed:"
+echo "   - $TARGET_DIR/.spec-agents/state/      Project Kernel, State, and Evidence"
+echo "   - $TARGET_DIR/.spec-agents/specs/      confirmed SPECs and Slices"
+echo "   - $TARGET_DIR/.spec-agents/scratch/    reports awaiting confirmation"
+echo "   - $TARGET_DIR/.spec-agents/archive/    retired workflow material"
+echo "   - docs/adr, docs/protocols, docs/runbooks, docs/lessons"
+echo ""
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  echo "   Next: continue the confirmed steps in the current upstream .spec-agents/doctrine/UPGRADE.md."
+elif [ "$INTEGRATION_REQUIRED" == false ]; then
+  echo "   If your project already has a context entry point such as docs/HANDOFF.md,"
+  echo "   keep it; the namespaced Doctrine does not create a CONTEXT.md."
+  echo ""
+  echo "   To start, tell your AI Agent: 'Read .spec-agents/doctrine/START.md and execute the start review.'"
+fi

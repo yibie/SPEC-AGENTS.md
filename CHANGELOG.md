@@ -1,5 +1,163 @@
 # Changelog
 
+## [Unreleased]
+
+### Upgrade — confirmed cutover gate
+
+**Breaking.** The old
+`spec-agents replace-doctrine <path> <backup-dir> [lang] [--link|-l]` call is
+rejected. Existing-project automation must complete the current upstream
+`.spec-agents/doctrine/UPGRADE.md` review and call:
+
+```text
+spec-agents replace-doctrine <path> <backup-dir> \
+  --cutover <path>/.spec-agents/scratch/upgrade-review/CUTOVER.tsv [lang] [--link|-l]
+```
+
+- After exact user confirmation, Upgrade keeps an immutable confirmed-report
+  snapshot and writes a six-row receipt binding its SHA-256, canonical target,
+  canonical absent backup, zero unresolved rows, and confirmed decision.
+- Replacement validates that receipt and the active report before creating the
+  backup. There is no compatibility or force bypass for a direct call.
+- Replacement success reports doctrine completion and the remaining reset/
+  `.spec-agents/doctrine/START.md` work; it no longer claims the project is ready. Ordinary `init` and
+  `install` arguments and readiness output are unchanged, and they reject the
+  replacement-only `--cutover` option.
+- Workflow commands now recognise native `.jj/` and complete modern no-VCS
+  roots in addition to existing `.spec-agents/specs/` and Git roots. They do not initialize
+  version control, and partial/retired-only roots still refuse.
+- `tests/upgrade-reset-smoke.sh` now completes User decision, receipt,
+  replacement, reset, simulated accepted fresh START, and Completion result in
+  ten named groups, while preserving the previous guard and recovery matrix.
+- Recorded as `docs/adr/0012-upgrade-cutover-gate.md`.
+
+### Source Doctrine and Instance cutover
+
+**Breaking.** The source checkout now dogfoods the complete namespaced layout.
+
+- The complete source Doctrine now lives under `.spec-agents/doctrine/`, with
+  root `AGENTS.md` reduced to the same adapter emitted for managed projects.
+- Source development uses `.spec-agents/doctrine/bin/spec-agents`; project
+  Instance records now live under `.spec-agents/state/`,
+  `.spec-agents/specs/`, `.spec-agents/scratch/`, and `.spec-agents/archive/`.
+  Root `STATUS.md`, `EVIDENCE.md`, `.scratch/`, and `archive/` are absent and
+  are not runtime fallbacks.
+- The tracked legacy `.phrase/` tree is preserved at
+  `.spec-agents/archive/legacy-phrase/`; root `.phrase/` is absent from the
+  active source layout.
+- Final independent verification is recorded as `E-20260901-002`; ADR 0013
+  is accepted and canonical State has no active SPEC after the cutover.
+
+### Upgrade — salvage, reset, and start clean
+
+**Breaking.** Existing-project upgrade no longer translates an old workflow
+lifecycle into current SPEC-AGENTS state.
+
+- `.spec-agents/doctrine/UPGRADE.md` now has one path: inspect, classify every relevant path in an
+  exact preservation manifest, stop for user confirmation, keep the retired
+  material recoverable, replace doctrine, and run a fresh START.
+- `.spec-agents/doctrine/START.md` reports `upgrade-needed` for every active retired-marker family.
+  Generation labels such as v2, v3, phase-shaped, or pre-split are report
+  evidence only; they no longer select migration engines.
+- Receipt-gated `spec-agents replace-doctrine` is the only installer operation
+  allowed to overwrite doctrine. It backs up and replaces the old-root
+  Doctrine allowlist and never touches project Instance data.
+- Old KERNEL, STATUS, EVIDENCE, SPEC, Slice, phase, task, blocker, and
+  completion state are not inherited. Preserved knowledge remains a candidate;
+  current intent re-enters `plan` and `capture` as new work.
+- `tests/upgrade-reset-smoke.sh` covers report-only reconnaissance, complete
+  Instance hashes, exact archive and doctrine manifests, stale-doctrine
+  removal, five marker families, accepted fresh-START completion, project-root
+  discovery, and recovery/refusal paths in ten named groups.
+- Recorded as `docs/adr/0010-upgrade-rebootstrap.md`.
+
+## [4.2.0] — 2026-08-29
+
+**Breaking.** Everything since v4.1.0, released as one version. The intermediate
+numbers 4.2.0 through 4.5.0 appeared in this file during development and were
+never tagged or released; they are folded in below as sections.
+
+The six actions now have gates that refuse, a SPEC has a lifecycle with a
+terminal state that only `learn` writes, and a semantic change is declared in
+the SPEC before the code and checked against that declaration when it closes.
+
+### Kernel delta — declare the change before the code
+
+**Breaking.** The Kernel delta is declared before the code.
+
+- A SPEC whose Change crosses the Change Boundary declares its proposed Kernel
+  delta in `## Model delta`, with a machine-readable `kernel_delta:`
+  frontmatter field (`none`, or `add | revise | supersede | retire` entries).
+  `do` implements against it; `learn` promotes exactly it or stops.
+- Absent field reads as `none` — a named legacy default, zero back-fill.
+  `capture` makes the field mandatory on new SPECs and refuses to drop a
+  `plan` round's `kernel_promotion`.
+- `gate do` refuses entries without a Model delta section and an empty field;
+  `check-state` requires a verified SPEC's entries to resolve to Kernel
+  provenance where a `KERNEL.md` exists. `tests/kernel-delta-check.sh` (seventeen fixtures) covers
+  the seams.
+- Recorded as `docs/adr/0009-kernel-delta-declaration.md`.
+
+### SPEC lifecycle — a finished SPEC is a defined state
+
+**Breaking.** SPEC gets a lifecycle, and `learn` closes both levels.
+
+- `docs/spec-agents/WORKFLOW.md` gives SPEC a lifecycle line —
+  `draft → confirmed → in-progress → revised → verified → superseded` — and a
+  terminal edge. `verified` had been enforced by the CLI and defined nowhere.
+- `learn` is the only action that writes a terminal state: a slice's
+  `evidence_ref` and `done` together after `check`, and a SPEC's `verified`
+  when every slice is `done`, the Evidence is appended, and the SPEC leaves
+  `STATUS.md` in the same act. `do` leaves a finished slice at `doing`.
+- The CLI's two terminal-state refusals cite the Lifecycle line and
+  `skills/learn/SKILL.md`. Logic unchanged.
+- A SPEC with no slices reaches `verified` only when the Evidence names each
+  of its deliverables as verified; nothing is read as vacuously true. Found
+  while classifying three SPECs that had sat at `confirmed` with zero slices
+  for eleven days; all three are now `verified` on named evidence.
+- Recorded as `docs/adr/0008-spec-lifecycle.md`.
+
+### Gates — the six actions can refuse
+
+**Breaking.** The six actions get gates.
+
+- `spec-agents gate <action> [target]` checks an action's mechanical
+  preconditions and refuses with the reason and the document that states it.
+  `transition` changes a slice's state only after verifying the invariants for
+  that state. `check-state`, `status`, and `ready` report.
+- The CLI does not print skill prose. `skills/<action>/SKILL.md` stays the
+  single authority for what an action means; the gate says only whether it may
+  begin.
+- `AGENTS.md` points at the tool and the skills instead of explaining the
+  workflow. Without the tool, the skills are read directly and the gates checked
+  by hand — the workflow degrades, it does not disappear.
+- Bash, no new dependency. A managed project still installs nothing.
+- Five SPECs had every slice `done` while their own status said otherwise.
+  Repaired. Reaching that number took four attempts, three of which produced
+  confident wrong answers — recorded as the actual case for the tool.
+- Recorded as `docs/adr/0007-workflow-cli.md`.
+
+### Checkable authority — the map is verified, and the payload gains an executable
+
+The authority map becomes checkable, and the payload gains its first executable.
+
+- Nothing read `KERNEL.md`. The authority map and everything added around it the
+  previous two days were enforced only by an agent honoring a sentence.
+- `Architecture boundaries` entries take one fixed line, with an authority state:
+  `owned`, `source-backed`, or `derived`. A `derived` rule has no write path and
+  persisting it is the defect — the state that makes "derived state persisted
+  twice" expressible, borrowed from `gura105/operational-ontology`.
+- `docs/spec-agents/check-kernel.sh` ships with the doctrine and verifies the
+  map's *form*: entries parse, paths exist, `derived` carries no second site, a
+  second site names an equivalence test that exists. It does not check that the
+  map is complete or true.
+- The Kernel stays human-written Markdown. One section gains a fixed line; no
+  other structure is machine-required, so the standing invariant against formal
+  schemas is intact.
+- `tests/doctrine-check.sh` enforces three things that had depended on someone
+  remembering: the 400-line mandatory read ceiling, ADR pointer resolution, and
+  no stale CHANGELOG citations.
+
 ## [4.1.0] — 2026-08-24
 
 **Breaking.** Everything since v4.0.4, released as one version. The intermediate
