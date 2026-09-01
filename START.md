@@ -9,9 +9,10 @@ Run it with:
 Read START.md and execute the start review.
 ```
 
-`start` is a bootstrap entry, not a seventh action. Its job is to inspect,
-record the first stable project Kernel, report what remains uncertain, and hand
-the project to `plan`. The normal loop remains:
+`start` is a bootstrap entry, not a seventh action. It inspects the active
+project, bootstraps a modern project's first stable Kernel when possible,
+reports uncertainty, and hands off to `plan`, UPGRADE, or installation. The
+normal loop remains:
 
 ```text
 plan → capture → arrange → do → check → learn
@@ -24,14 +25,18 @@ Read `AGENTS.md`, `docs/spec-agents/WORKFLOW.md`, `CONTEXT.md`, and
 Read `KERNEL.md` when it exists; it is the project's semantic model, not a
 replacement for `docs/spec-agents/WORKFLOW.md`.
 Read `EVIDENCE.md` only when the current state or a failed assumption needs it.
-Read `UPGRADE.md` when legacy markers are present. Do not load the entire
-history tree by default.
+When retired workflow markers are active, use the current upstream
+`UPGRADE.md`; an installed copy may itself be stale. Do not load the entire
+history tree by default, and do not read `archive/` unless the user explicitly
+requests history or regression comparison.
 
-Missing `KERNEL.md` is a bootstrap condition, not permission to skip the
-project's stable semantics. If the code exposes enough directly confirmed
-concepts, relations, actions, or invariants, create the first `KERNEL.md`
-before writing the report. Do not invent unknowns and do not overwrite an
-existing Kernel.
+Missing `KERNEL.md` in a modern project is a bootstrap condition, not
+permission to skip the project's stable semantics. If the code exposes enough
+directly confirmed concepts, relations, actions, or invariants, create the
+first `KERNEL.md` before writing the report. Do not invent unknowns and do not
+overwrite an existing Kernel. An `upgrade-needed` project does not bootstrap or
+re-scan a Kernel before reset; its old workflow state belongs in the upgrade
+preservation manifest, followed by a fresh START.
 
 ## 2. Classify the project state
 
@@ -39,14 +44,14 @@ Use this routing order:
 
 | State | Evidence | Route |
 | --- | --- | --- |
-| `legacy` | v2/v3 markers such as `.phrase/`, `spec_*`, `plan_*`, or `task_*` | `UPGRADE.md` |
-| `mixed` | legacy markers and modern root documents both exist | `UPGRADE.md` with the conflict called out |
-| `modern` | modern root documents exist and no legacy markers are active | `plan` after the Kernel bootstrap/report |
+| `upgrade-needed` | active retired state: `.phrase/`; old spec/plan/task/change/issue bundles; phase-shaped records; tracked `.scratch/*/SPEC.md`; or a reported doctrine-generation conflict | current upstream `UPGRADE.md` |
+| `modern` | current entry documents exist and no retired workflow markers are active | `plan` after the Kernel bootstrap/report |
 | `missing-entry` | `START.md` exists but modern root documents are missing | installation guidance, then rerun `start` |
 | `blocked` | state or ownership cannot be established safely | stop at the report and ask the user |
 
 Do not use a filename alone as proof of project behavior. Record the paths and
-the facts they support.
+the facts they support. A marker under `archive/` or explicit history does not
+make the active project `upgrade-needed`.
 
 Also record the version-control marker without changing it:
 
@@ -57,6 +62,8 @@ Also record the version-control marker without changing it:
 
 Record the Kernel marker separately:
 
+- `upgrade-needed`: record any existing Kernel as preservation input; do not
+  create, modify, or re-scan it before upgrade;
 - existing `KERNEL.md`: this is a **re-scan** — see below;
 - absent `KERNEL.md` with stable code facts: create `KERNEL.md` version `K1`;
 - absent `KERNEL.md` without stable facts: report `kernel-unavailable` and stop;
@@ -88,6 +95,10 @@ decision.
 
 ## 3. Reconstruct a bounded project picture
 
+For `upgrade-needed`, stop this scan after recording the active markers,
+ownership evidence, version-control state, and route. Do not duplicate
+UPGRADE's preservation scan or read retired history into a temporary Kernel.
+
 Inspect only the area relevant to the current project entry. Record findings
 as `confirmed`, `inferred`, or `unknown`:
 
@@ -105,8 +116,8 @@ does not include inferred or unknown claims.
 
 ## 4. Bootstrap the Kernel and write the report
 
-When `KERNEL.md` is absent and the scan has enough confirmed facts, create it
-with this minimum shape:
+When the project is modern, `KERNEL.md` is absent, and the scan has enough
+confirmed facts, create it with this minimum shape:
 
 ```markdown
 # Project Kernel
@@ -251,11 +262,11 @@ Create or update `.scratch/start/REPORT.md` with:
 ```
 
 Before confirmation, the only project-specific writes allowed are the report
-and a new `KERNEL.md` created by the bounded bootstrap above. Do not overwrite
-an existing Kernel, change application code, dependencies, configuration,
-repository history, or legacy files. Ask the user to confirm, revise, or reject
-the candidate additions and route; the confirmed K1 remains the project's
-initial stable floor.
+and, for a modern project only, a new `KERNEL.md` created by the bounded
+bootstrap above. Do not overwrite an existing Kernel, change application code,
+dependencies, configuration, repository history, or retired workflow files.
+Ask the user to confirm, revise, or reject the candidate additions and route;
+the confirmed K1 remains the modern project's initial stable floor.
 
 ## 5. Continue only after confirmation
 
@@ -263,9 +274,9 @@ Record the user's decision in the report, then follow exactly one route:
 
 - `modern`: enter `plan` to review or extend K1 before the first requested
   change. Do not jump directly to `do`.
-- `legacy` or `mixed`: read and execute `UPGRADE.md`. Do not create a second
-  migration process in the Start prompt; preserve the bootstrapped K1 while
-  the upgrade reconciles legacy knowledge.
+- `upgrade-needed`: read and execute the current upstream `UPGRADE.md`. Do not
+  bootstrap or preserve old execution state here; upgrade saves confirmed
+  candidates, resets the active workflow, replaces doctrine, and reruns START.
 - `missing-entry`: ask the user to run `spec-agents init/install`, then rerun
   `start`; preserve a newly created K1 if the scan had enough confirmed facts.
 - `blocked`: keep the report, state the blocker, and wait for user direction.
@@ -274,5 +285,6 @@ Record the user's decision in the report, then follow exactly one route:
 Kernel status/version, evidence, user decision, selected route, and next
 permitted action. On a re-scan it must also contain the difference report, and
 `KERNEL.md` must be unchanged. A project with enough stable facts must also have an enacted
-`KERNEL.md` version `K1`; this does not claim that the project is fully
-migrated or that application work is complete.
+`KERNEL.md` version `K1`; this does not claim that application work is complete.
+An `upgrade-needed` first pass completes at the confirmed handoff to UPGRADE,
+without a Kernel write; the post-reset START owns the new K1.

@@ -5,7 +5,7 @@ One SPEC is active.
 ### authority-order
 
 spec: `.specs/authority-order/SPEC.md`
-scope: `AGENTS.md`, `AGENTS_en.md`, `docs/spec-agents/single-authority.md`, `docs/spec-agents/knowledge-promotion.md`, `docs/adr/`
+scope: the Document authority and owner-table sections in `AGENTS.md` and `AGENTS_en.md`; `docs/spec-agents/single-authority.md`, `docs/spec-agents/knowledge-promotion.md`, `docs/adr/0011-authority-order.md`
 slices: not yet arranged
 blockers: none — `kernel-delta-declaration` closed (`E-20260829-020`)
 next: `arrange`
@@ -57,14 +57,6 @@ that runs at the same time needs its own working copy — see
 None recorded.
 
 ## Next permitted action
-
-One follow-up is open, not started:
-
-Run `UPGRADE.md` against one real project installed before today's changes. It
-now carries four migration sections — pre-split layout, phase-shaped layout,
-SPECs under `.scratch/`, and locally modified doctrine — and none of them has
-been run against a real project. Record where each classification step is wrong
-before relying on it.
 
 `spec_ref` is written two ways across `.specs/` — relative to the repository
 root in recent slices, relative to the slice in older ones. The checker accepts

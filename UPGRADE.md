@@ -1,290 +1,230 @@
-# SPEC-AGENTS Upgrade Prompt
+# SPEC-AGENTS Upgrade Review
 
-Run this prompt after `START.md` routes a project with v2 or v3 material here,
-or after installing the modern SPEC-AGENTS entry points directly:
+Use the current upstream copy of this prompt for an existing project that has
+retired SPEC-AGENTS workflow material. Do not install over the project first: an
+installed `UPGRADE.md` may itself be stale.
 
-```text
-Read UPGRADE.md and execute the upgrade review.
-```
-
-This is a cognition-preserving migration. The upgrade has two gates:
+Run it with the existing project as the target:
 
 ```text
-reconnaissance → user confirmation → cutover → verification
+Read the current upstream UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-Do not change application code during this upgrade. Do not promote an inferred
-architecture rule as fact. Keep the old material recoverable until the user
-confirms the candidate model.
+Upgrade does not translate an old workflow into the current workflow. It saves
+only information the user says may still matter, moves retired state out of the
+active read path, replaces doctrine through the installer, and ends at a fresh
+START:
 
-## 1. Read the modern entry points
+```text
+inspect → preservation manifest → user confirmation → cutover receipt
+        → doctrine replacement → retired-state reset → fresh START
+        → completion result
+```
 
-Read `AGENTS.md`, `docs/spec-agents/WORKFLOW.md`, `CONTEXT.md`, `KERNEL.md`,
-`STATUS.md`, and `EVIDENCE.md` when they exist. Read a root `ROADMAP.md` only
-if the project has one: it is retired material to be migrated, not a current
-entry point. Treat a missing root document as an upgrade
-finding, not as a reason to invent content. If `START.md` already created a
-`KERNEL.md` K1, preserve its confirmed sections and use this review to
-reconcile legacy material around it.
+It is an existing-project bootstrap entry, not a seventh action. Do not modify
+application code, dependencies, configuration, tests, credentials, or version
+history during this review.
 
-Inspect only the minimum legacy context needed to classify the project:
+## 1. Inspect without changing the project
 
-- v2 indicators: `.phrase/phases/` or `spec_*`, `plan_*`, `task_*`,
-  `change_*`, `issue_*` records;
-- v3 indicators: `.phrase/decision.md`, `roadmap.md`, `current.md`,
-  `evidence.md`;
-- both sets: classify as `mixed` and preserve both histories.
+Read the current upstream `AGENTS.md` and
+`docs/spec-agents/WORKFLOW.md` for the workflow contract. Treat doctrine
+already installed in the target as upgrade input, not as current authority.
 
-Record the classification and source paths before interpreting their meaning.
+Read only enough target material to identify active workflow state, project
+facts, and ownership:
 
-If the project contains `.jj/`, inspect `jj log`, `jj status`, and the relevant
-`jj diff` before relying on Git commit history. Record JJ Change IDs and
-bookmarks as version-control evidence, while keeping the workflow `Change`
-concept separate. If `.jj/` is absent, use the project's existing Git history;
-do not initialize JJ during upgrade unless the user makes that a separate,
-explicit choice.
+- application entry points, tests, configuration, and the relevant recent
+  version-control history;
+- root `KERNEL.md`, `CONTEXT.md`, `STATUS.md`, `EVIDENCE.md`, `ROADMAP.md`, and
+  project knowledge records when they exist;
+- `.specs/`, tracked `.scratch/<feature>/SPEC.md` trees, `.phrase/`, and old
+  `spec_*`, `plan_*`, `task_*`, `change_*`, or `issue_*` bundles;
+- phase-shaped STATUS, ROADMAP, or AGENTS content;
+- installed doctrine: `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`, and
+  `docs/spec-agents/`.
 
-### Pre-split SPEC-AGENTS layout
+These names are search leads, not proof. Read the content and cite the line,
+code path, test, or commit that establishes what each item is. A project-owned
+ADR, handoff note, or context document is not retired workflow material merely
+because an older installation used the same filename.
 
-A project installed before the framework namespace split carries framework
-material under project-owned names. Recognise it by all of these together:
+If `.jj/` exists, use JJ for local history and status. Otherwise preserve the
+project's existing Git workflow. Do not initialize JJ, create a bookmark, push,
+or modify history during upgrade.
 
-- root `CONTEXT.md` opens with the SPEC-AGENTS workflow model — `Change`,
-  `Plan`, `SPEC`, `Slice`, `Evidence`, `Knowledge Classes` — rather than the
-  project's own vocabulary;
-- root `STATUS.md` or `ROADMAP.md` names phases, tasks, or file paths that do
-  not exist in this project — check each named path before believing it;
-- root `EVIDENCE.md` records experiments that belong to the framework rather
-  than to this project;
-- a record under `docs/runbooks/` or `docs/lessons/` cites an Evidence ID that
-  root `EVIDENCE.md` does not contain, or a directory this project does not
-  have;
-- `docs/spec-agents/` is absent.
+## 2. Build one preservation manifest
 
-Two of these can be a coincidence. A filename is never proof on its own — a
-project may legitimately own `CONTEXT.md`, `STATUS.md`, and `EVIDENCE.md`. Read the content and record the paths and the facts that support
-the classification.
-
-When the layout matches, report it and stop for the user. Do not delete
-anything. Present:
-
-1. which root files hold framework material and which hold project material,
-   quoting the line that decides each one;
-2. whether the project had its own `CONTEXT.md` or another context entry point
-   such as `docs/HANDOFF.md`, and where it went — version history usually still
-   has it;
-3. whether the project already has a work index of its own, and whether
-   adopting `STATUS.md` would duplicate it;
-4. the proposed disposition of each file, for the user to approve, reject, or
-   change one at a time.
-
-After confirmation, reinstall the modern entry points to obtain
-`docs/spec-agents/`, then apply the confirmed disposition. Framework leftovers
-are removed only for files the user classified as framework material. Project
-files are never removed by this review, and a conflict between an installed
-document and a project instruction — for example a handoff note that forbids a
-second index of in-flight work — is a question for the user, not something the
-upgrade decides.
-
-### Phase-shaped SPEC-AGENTS layout
-
-A project installed before `Phase` was retired carries a phase model that no
-longer exists. Recognise it by:
-
-- a root `ROADMAP.md`;
-- `STATUS.md` with a `**Phase**:` header, closed phase sections, or
-  `taskNNN` lines;
-- `AGENTS.md` with a "Phase and task discipline" section.
-
-This is not a legacy v2/v3 project and does not need the full reconstruction
-below. Reinstall the modern entry points, then present this conversion for the
-user to approve:
-
-1. Each open `taskNNN` becomes a Slice under the SPEC it belongs to, at
-   `.specs/<feature>/issues/NN-<slug>.md`. A task with no SPEC needs a `plan`
-   pass before it becomes work — do not invent a SPEC to hold it.
-2. `STATUS.md` is rewritten to list only active SPECs, their blockers, and the
-   next permitted action. Closed phase sections move to `archive/`.
-3. `ROADMAP.md` moves to `archive/`. Its future-intent entries are not migrated
-   anywhere: the repository no longer records intent ahead of work. Show the
-   user what is being dropped and let them decide what still matters.
-4. Phase results already recorded in `EVIDENCE.md` stay where they are. Do not
-   re-record them.
-
-Nothing is deleted. If the project's phases encode something the SPEC model
-cannot hold, stop and ask rather than forcing the conversion.
-
-### SPECs under `.scratch/`
-
-A project installed before durable work contracts were separated from scratch
-keeps its SPECs and slices at `.scratch/<feature>/`. Recognise it by a
-`.scratch/<feature>/SPEC.md` that exists and is tracked in version control.
-
-Reinstall the modern entry points, then present this move for the user to
-approve:
-
-1. Every `.scratch/<feature>/` directory containing a `SPEC.md` moves to
-   `.specs/<feature>/`. Use the project's version-control move command so
-   history follows: `jj` records the rename automatically, `git mv` otherwise.
-2. `.scratch/start/REPORT.md` and `.scratch/upgrade-review/REPORT.md` stay
-   where they are. They are one-shot reports, not contracts.
-3. Recommend that the project ignore `.scratch/` in version control. Do not
-   edit the project's `.gitignore` — say what you recommend and let the user
-   decide.
-
-Nothing is moved or deleted before the user approves. If a `.scratch/` entry is
-neither a SPEC directory nor a known report, report it and ask rather than
-guessing which of the two it is.
-
-### Locally modified doctrine
-
-Installed doctrine is identical in every project and is written only by the
-installer: `AGENTS.md`, `START.md`, `UPGRADE.md`, `skills/`, and
-`docs/spec-agents/`. A project that edited any of them locally has a change
-that the next install silently reverts and that no other project can see.
-
-Detect it by comparing each installed file against the upstream copy in the
-SPEC-AGENTS repository. Report every difference with the file, the lines, and
-what the local version does differently.
-
-Do not revert anything. A local edit is evidence that someone needed something
-the doctrine did not provide, and reverting it destroys that evidence. Present
-each difference to the user with three routes and let them choose per file:
-
-1. the need is general — take it upstream as a `plan` in the SPEC-AGENTS
-   repository, then reinstall;
-2. the need is local and belongs elsewhere — move it into this project's own
-   `CONTEXT.md`, a Protocol, or a Runbook, where the installer will not touch
-   it;
-3. the edit is obsolete — discard it, with the user saying so explicitly.
-
-If a slice in this project's `.specs/` has installed doctrine in its scope,
-report that too: the slice belongs upstream, not here, and `arrange` should
-have refused it.
-
-## 2. Reconstruct recent project history
-
-For v2, inspect the most recent active phase and its related SPEC, plan, task,
-change, and issue records. For v3, inspect the current phase, roadmap,
-decision framework, and evidence deltas. For mixed projects, compare the two
-records and call out conflicts.
-
-Produce a short, cited account of:
-
-- what the project recently completed;
-- what the legacy project's current phase was trying to achieve;
-- which decisions still appear durable;
-- which plans or tasks are stale;
-- unresolved blockers, failed assumptions, and verification results;
-- facts that cannot be established from the repository.
-
-Use file paths and commit references as evidence. Do not turn a filename into a
-fact about current behavior.
-
-## 3. Scan the code architecture
-
-Inspect the current codebase before proposing the modern model. Use the
-repository's existing language and boundaries:
-
-- identify entry points, modules, packages, services, and storage boundaries;
-- trace the main callers and data flows for the work being reconstructed;
-- identify concepts, identities, relations, lifecycles, invariants, and Action
-  Contracts visible in code;
-- compare the code structure with the legacy SPEC claims;
-- label every finding `confirmed`, `inferred`, or `unknown` and cite the code
-  path that supports it.
-
-Keep this scan bounded to the project area the upgrade actually concerns. Do
-not refactor, format, add dependencies, or fix unrelated findings.
-
-## 4. Write the candidate report and stop
-
-Create `.scratch/upgrade-review/REPORT.md` with these sections:
+Create `.scratch/upgrade-review/REPORT.md`. Before user confirmation this is the
+only permitted project write. The report contains:
 
 ```markdown
 # Upgrade Review
 
-## Source classification
-## Recent history
-## Current code architecture
-## Candidate KERNEL changes
-## Candidate CONTEXT changes
-## Candidate STATUS changes
-## Evidence to preserve
+## Current project facts
+## Retired workflow markers
+## Preservation manifest
+## Candidate knowledge
+## Current user intent
 ## Conflicts and unknowns
-## Proposed archive plan
+## Proposed archive and doctrine backup
 ## Verification plan
 ## Questions for the user
+## User decision
+## Completion result
 ```
 
-The report is a proposal. Keep existing root documents and legacy files
-unchanged at this stage. Show the user the report and ask whether the candidate
-concepts, boundaries, current state, and archive plan are correct.
+List every relevant path exactly once in the preservation manifest:
 
-Stop here until the user confirms. If the user rejects or revises the report,
-update the report and ask again; do not enter cutover.
+| Disposition | Meaning |
+| --- | --- |
+| `candidate` | Extract decision-relevant content and its source into the report; archive the old record. It is not current knowledge. |
+| `archive-only` | Keep only for rollback or explicit history; never read by default. |
+| `keep-active` | Project-owned material outside the retired workflow; leave byte-identical. |
+| `unresolved` | Ownership or truth is unclear; cutover must stop. |
 
-## 5. Cut over only after confirmation
+For each row record the source path, path type, evidence for the disposition,
+proposed archive destination, and how its count and content hash will be
+checked. Separately list:
 
-After explicit confirmation, use the six actions:
+- each candidate concept, identity, relation, lifecycle rule, invariant,
+  Action Contract, decision, Protocol, Runbook, or Lesson, with its exact old
+  source and whether current code supports, contradicts, or cannot establish it;
+- each still-current user request that may need a new `plan` and `capture` after
+  START;
+- every old lifecycle claim (`doing`, `done`, phase, task, blocker, completed
+  SPEC) as non-transferable state.
+
+For a clean START, old SPEC-AGENTS state documents cannot remain active.
+`KERNEL.md`, `STATUS.md`, `EVIDENCE.md`, `.specs/`, phase/roadmap records, and
+tracked scratch SPECs must be `candidate`, `archive-only`, or `unresolved` when
+they belong to the retired workflow. A genuinely project-owned document may be
+`keep-active`, but the report must show why it is independent of that workflow.
+
+Source-generation labels such as v2, v3, pre-split, or phase-shaped may be
+recorded as evidence. They never select different conversion instructions.
+
+## 3. Stop for an exact user decision
+
+Show the report and ask the user to confirm or revise all of these together:
+
+1. candidate content worth reviewing after START;
+2. the disposition of every path;
+3. the archive root and doctrine-backup directory;
+4. current intent to recapture later;
+5. conflicts and unknowns.
+
+Do not infer approval from the user's request to upgrade. Before explicit
+confirmation, do not archive, move, delete, reinstall, rewrite root documents,
+or run `replace-doctrine`.
+
+Any `unresolved` row blocks cutover. A disagreement about a `keep-active` path
+blocks only when the reset would otherwise touch it.
+
+## 4. Bind the confirmed cutover
+
+Only after explicit confirmation, create the confirmed archive root and the
+doctrine-backup parent. Use a timestamped archive root such as:
 
 ```text
-plan → capture → arrange → do → check → learn
+archive/spec-agents-upgrade/<timestamp>/
 ```
 
-Then:
+Copy the confirmed report byte-for-byte to:
 
-1. Merge confirmed project concepts, identities, relations, lifecycles,
-   invariants, and Action Contracts into `KERNEL.md`; keep SPEC-AGENTS workflow
-   semantics in `docs/spec-agents/WORKFLOW.md`. Preserve a Start-created K1
-   unless the user
-   explicitly confirms a `revise` or `reject` decision.
-2. Record the active work in `STATUS.md`: one entry per active SPEC, with its
-   scope, blockers, and next permitted action. Do not create a `ROADMAP.md` and
-   do not record future intent.
-3. Record only decision-relevant history, verification, blockers, rejected
-   paths, and next-step facts in `EVIDENCE.md`.
-4. Preserve existing confirmed root content. When a root document conflicts
-   with the report, stop and ask the user instead of overwriting it.
-5. Move the complete `.phrase` tree to a timestamped directory under
-   `archive/legacy-v2/`, `archive/legacy-v3/`, or `archive/legacy-mixed/`.
-   Archive identified legacy `spec_*`, `plan_*`, `task_*`, `change_*`, and
-   `issue_*` files outside `.phrase` alongside it. Leave unrelated application
-   files in place.
-6. Write `MIGRATION.md` at the project root with the source classification,
-   report path, archive path, confirmed decisions, unresolved questions, and
-   verification result.
+```text
+archive/spec-agents-upgrade/<timestamp>/CONFIRMED-REPORT.md
+```
 
-## 6. Verify the cutover
+Verify that this immutable copy and the active `REPORT.md` have the same
+SHA-256. Then create `.scratch/upgrade-review/CUTOVER.tsv` with exactly these
+six tab-separated rows and no others:
 
-Before declaring the upgrade complete, prove:
+```text
+format	spec-agents-cutover-v1
+target	<canonical project path>
+backup_dir	<canonical absent doctrine-backup path>
+report_sha256	<SHA-256 of the confirmed REPORT.md>
+unresolved_count	0
+decision	confirmed
+```
 
-- the confirmed root documents contain the preserved project cognition;
-- `STATUS.md` identifies the active SPECs and the next permitted action, and
-  contains no closed section;
-- `EVIDENCE.md` contains the migration facts and their sources;
-- the legacy material is recoverable under `archive/` and is no longer in the
-  default read path;
-- no application code, dependencies, configuration, or tests changed unless
-  the user explicitly approved a separate task;
-- the six action validators and the project's relevant checks pass.
+The receipt binds one confirmed report to one target and backup; it is not a
+second manifest. If the report or either path changes, stop, show the revision,
+obtain confirmation again, refresh `CONFIRMED-REPORT.md`, and write a new
+receipt. Do not create the receipt, archive root, or backup parent before the
+user confirms the report.
 
-If any proof is missing, report the blocker and keep the migration open.
+## 5. Perform the recoverable reset
 
-## Completion report
+In this order:
 
-Report:
+1. Record pre-cutover hashes for every `keep-active` path and the application
+   files named in the verification plan.
+2. Run the current upstream installer while the recognised retired marker is
+   still on the active path:
 
-- source classification: v2, v3, or mixed;
-- recent history recovered;
-- architecture findings confirmed by the user;
-- root documents updated;
-- archive path;
-- verification commands and results;
-- remaining unknowns or blockers;
-- next permitted action.
+   ```text
+   spec-agents replace-doctrine <project> <backup-dir> \
+     --cutover <project>/.scratch/upgrade-review/CUTOVER.tsv [lang] [--link|-l]
+   ```
 
-`UPGRADE.md` is an entry prompt, not a replacement for the living root model.
-After completion, ordinary work follows `AGENTS.md` and the six action skills.
-`START.md` remains the general project bootstrap entry; it routes legacy and
-mixed projects to this Prompt instead of duplicating its migration flow.
+   This command backs up and replaces only `AGENTS.md`, `START.md`,
+   `UPGRADE.md`, `skills/`, and `docs/spec-agents/`. It never replaces
+   `CONTEXT.md` or another Instance path. It validates the receipt before
+   creating the backup directory, and reports doctrine completion rather than
+   project readiness.
+3. Move every confirmed `candidate` and `archive-only` path to its exact
+   archive destination using the project's version-control move operation when
+   available. Do not move an unlisted path or the newly installed doctrine;
+   its old content is already in the doctrine backup.
+4. Write the retired-state archive manifest with source path, destination path,
+   type, count, and content hash. Prove every source/destination pair.
+5. Verify that retired markers are absent from the active read path, every
+   `keep-active` and application hash is unchanged, the archive and doctrine
+   manifests replay, and no command printed success after a failure.
+
+If any move, hash, backup, or installation step fails, stop. Report the exact
+archive and doctrine-backup paths and restore or retry only after the user
+chooses. Do not continue into START from a partial reset.
+
+The archive remains recoverable until the user accepts the fresh START result.
+Permanent deletion is a later explicit choice, not part of this cutover.
+
+## 6. Run a fresh START
+
+Execute the newly installed `START.md`. The active project must now classify as
+`modern`; archived material is not a default input. With old workflow state
+removed, START builds a new K1 only from current code, tests, configuration, and
+retained project-owned documents under its confirmed-only rule.
+
+Do not preload candidate knowledge into K1. After START writes its report, show
+the candidate list beside the new scan:
+
+- a candidate directly supported by current evidence may be confirmed through
+  START or routed through `plan` when it revises the new floor;
+- a contradicted, unsupported, or rejected candidate stays out;
+- a still-current request enters `plan` and, when needed, a new `capture`;
+- no old status, completion claim, dependency, Evidence ID, SPEC revision, or
+  Slice state is copied.
+
+The six actions resume after the user confirms the fresh START route. They do
+not participate in translating the retired workflow.
+
+## 7. Complete the review
+
+Fill `## User decision` and `## Completion result` in the existing report with:
+
+- confirmed disposition and candidate decisions;
+- archive and doctrine-backup paths;
+- manifest replay results;
+- unchanged application and `keep-active` hashes;
+- the fresh START report path and ProjectState;
+- candidates accepted, rejected, or still unresolved;
+- current intent handed to `plan`;
+- remaining blockers and the next permitted action.
+
+Upgrade is complete only when the project has current doctrine, no retired
+workflow material on the active read path, a user-accepted fresh START result,
+and no inherited work state. The report and archive are migration aids, not a
+second source of current truth.

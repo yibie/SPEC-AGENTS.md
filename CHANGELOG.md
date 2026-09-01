@@ -1,5 +1,59 @@
 # Changelog
 
+## [Unreleased]
+
+### Upgrade — confirmed cutover gate
+
+**Breaking.** The old
+`spec-agents replace-doctrine <path> <backup-dir> [lang] [--link|-l]` call is
+rejected. Existing-project automation must complete the current upstream
+UPGRADE review and call:
+
+```text
+spec-agents replace-doctrine <path> <backup-dir> \
+  --cutover <path>/.scratch/upgrade-review/CUTOVER.tsv [lang] [--link|-l]
+```
+
+- After exact user confirmation, Upgrade keeps an immutable confirmed-report
+  snapshot and writes a six-row receipt binding its SHA-256, canonical target,
+  canonical absent backup, zero unresolved rows, and confirmed decision.
+- Replacement validates that receipt and the active report before creating the
+  backup. There is no compatibility or force bypass for a direct call.
+- Replacement success reports doctrine completion and the remaining reset/
+  START work; it no longer claims the project is ready. Ordinary `init` and
+  `install` arguments and readiness output are unchanged, and they reject the
+  replacement-only `--cutover` option.
+- Workflow commands now recognise native `.jj/` and complete modern no-VCS
+  roots in addition to existing `.specs/` and Git roots. They do not initialize
+  version control, and partial/retired-only roots still refuse.
+- `tests/upgrade-reset-smoke.sh` now completes User decision, receipt,
+  replacement, reset, simulated accepted fresh START, and Completion result in
+  ten named groups, while preserving the previous guard and recovery matrix.
+- Recorded as `docs/adr/0012-upgrade-cutover-gate.md`.
+
+### Upgrade — salvage, reset, and start clean
+
+**Breaking.** Existing-project upgrade no longer translates an old workflow
+lifecycle into current SPEC-AGENTS state.
+
+- `UPGRADE.md` now has one path: inspect, classify every relevant path in an
+  exact preservation manifest, stop for user confirmation, keep the retired
+  material recoverable, replace doctrine, and run a fresh START.
+- START reports `upgrade-needed` for every active retired-marker family.
+  Generation labels such as v2, v3, phase-shaped, or pre-split are report
+  evidence only; they no longer select migration engines.
+- Receipt-gated `spec-agents replace-doctrine` is the only installer operation
+  allowed to overwrite doctrine. It backs up and replaces the five doctrine
+  paths and never touches project Instance data.
+- Old KERNEL, STATUS, EVIDENCE, SPEC, Slice, phase, task, blocker, and
+  completion state are not inherited. Preserved knowledge remains a candidate;
+  current intent re-enters `plan` and `capture` as new work.
+- `tests/upgrade-reset-smoke.sh` covers report-only reconnaissance, complete
+  Instance hashes, exact archive and doctrine manifests, stale-doctrine
+  removal, five marker families, accepted fresh-START completion, project-root
+  discovery, and recovery/refusal paths in ten named groups.
+- Recorded as `docs/adr/0010-upgrade-rebootstrap.md`.
+
 ## [4.2.0] — 2026-08-29
 
 **Breaking.** Everything since v4.1.0, released as one version. The intermediate

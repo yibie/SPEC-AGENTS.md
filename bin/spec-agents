@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eE
 
 # Spec-AGENTS CLI
 # 自动定位仓库根目录（即脚本所在目录的上一级）
@@ -21,15 +21,26 @@ TARGET_DIR="${2:-.}"
 LANG="${3:-cn}"
 USE_LINK=false
 HAS_LEGACY=false
+REPLACE_DOCTRINE=false
+BACKUP_DIR=""
+CUTOVER_FILE=""
+REPLACEMENT_PHASE=""
+DOCTRINE_PATHS=(AGENTS.md START.md UPGRADE.md skills docs/spec-agents)
 
 for arg in "$@"; do
   case "$arg" in
     --link|-l)
       USE_LINK=true
       ;;
+    --cutover)
+      if [ "$COMMAND" != "replace-doctrine" ]; then
+        echo "❌ Error: --cutover is valid only with replace-doctrine."
+        exit 1
+      fi
+      ;;
     --legacy)
       echo "❌ Error: --legacy is no longer an installation mode."
-      echo "   Install the modern entry points, then read UPGRADE.md."
+      echo "   Run the current upstream UPGRADE.md review against the existing project."
       exit 1
       ;;
   esac
@@ -41,6 +52,8 @@ show_help() {
   echo "Usage:"
   echo "  spec-agents init [lang] [--link|-l]           Initialize current directory"
   echo "  spec-agents install <path> [lang] [--link|-l] Install modern layout"
+  echo "  spec-agents replace-doctrine <path> <backup-dir> --cutover <CUTOVER.tsv> [lang] [--link|-l]"
+  echo "                                                Recoverably replace doctrine"
   echo ""
   echo "Workflow gates (these refuse; they do not explain — the skills do):"
   echo "  spec-agents status                    active SPECs, slice states, drift"
@@ -53,8 +66,11 @@ show_help() {
   echo "  lang: cn (default) | en"
   echo "  --link, -l: Use symbolic links instead of copying files"
   echo ""
-  echo "For an existing v2/v3 project, install the modern entry points and read"
-  echo "UPGRADE.md. The upgrade review is performed by an Agent with user confirmation."
+  echo "For an existing project with retired SPEC-AGENTS state, run the current"
+  echo "upstream UPGRADE.md review before replacing installed doctrine."
+  echo "replace-doctrine is destructive only to the doctrine allowlist and requires"
+  echo "an explicit confirmed CUTOVER receipt plus an absent backup directory."
+  echo "It never replaces project Instance data."
   echo "The installer emits framework doctrine only. It never writes your project's"
   echo "STATUS.md, ROADMAP.md, EVIDENCE.md, KERNEL.md, or docs/ knowledge classes."
   echo ""
@@ -70,14 +86,26 @@ show_help() {
 # checked before state changes.
 # ---------------------------------------------------------------------------
 
+has_complete_modern_entry() {
+  local d="$1"
+  [ -f "$d/AGENTS.md" ] &&
+    [ -f "$d/START.md" ] &&
+    [ -f "$d/docs/spec-agents/WORKFLOW.md" ] &&
+    [ -f "$d/skills/plan/SKILL.md" ]
+}
+
 project_root() {
   local d
   d="$(pwd -P)"
   while [ "$d" != "/" ]; do
-    if [ -d "$d/.specs" ] || [ -d "$d/.git" ]; then echo "$d"; return 0; fi
+    if [ -d "$d/.specs" ] || [ -d "$d/.git" ] || [ -d "$d/.jj" ] ||
+       has_complete_modern_entry "$d"; then
+      echo "$d"
+      return 0
+    fi
     d="$(dirname "$d")"
   done
-  echo "❌ Not inside a project (no .specs/ or .git/ above $(pwd))." >&2
+  echo "❌ Not inside a project (no .specs/, .git/, .jj/, or complete modern entry above $(pwd))." >&2
   return 1
 }
 
@@ -471,9 +499,55 @@ elif [ "$COMMAND" == "install" ]; then
   else
     LANG="${3:-cn}"
   fi
+elif [ "$COMMAND" == "replace-doctrine" ]; then
+  if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+    echo "❌ Error: replace-doctrine needs a target path and an absent backup directory."
+    exit 1
+  fi
+  TARGET_DIR="$2"
+  BACKUP_DIR="$3"
+  REPLACE_DOCTRINE=true
+  LANG="cn"
+  CUTOVER_SEEN=false
+  LANG_SEEN=false
+  shift 3
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --cutover)
+        if [ "$CUTOVER_SEEN" == true ] || [ "$#" -lt 2 ]; then
+          echo "❌ Error: replace-doctrine requires exactly one --cutover <CUTOVER.tsv>."
+          exit 1
+        fi
+        CUTOVER_FILE="$2"
+        CUTOVER_SEEN=true
+        shift 2
+        ;;
+      --link|-l)
+        shift
+        ;;
+      cn|en)
+        if [ "$LANG_SEEN" == true ]; then
+          echo "❌ Error: replace-doctrine accepts at most one language: cn or en."
+          exit 1
+        fi
+        LANG="$1"
+        LANG_SEEN=true
+        shift
+        ;;
+      *)
+        echo "❌ Error: unknown replace-doctrine argument: $1"
+        exit 1
+        ;;
+    esac
+  done
+  if [ "$CUTOVER_SEEN" != true ] || [ -z "$CUTOVER_FILE" ]; then
+    echo "❌ Error: replace-doctrine requires --cutover <CUTOVER.tsv>."
+    echo "   Run the current upstream UPGRADE.md review and confirm its report first."
+    exit 1
+  fi
 elif [ "$COMMAND" == "upgrade" ]; then
   echo "❌ Error: Upgrade is Prompt-driven, not an installer operation."
-  echo "   Install the modern entry points, then read UPGRADE.md."
+  echo "   Run the current upstream UPGRADE.md review against the existing project."
   exit 1
 else
   echo "❌ Unknown command: $COMMAND"
@@ -485,16 +559,95 @@ echo "🚀 Initializing Spec-AGENTS v4..."
 echo "   📂 Source: $REPO_ROOT"
 echo "   🎯 Target: $TARGET_DIR"
 
-if [ ! -d "$TARGET_DIR" ]; then
+if [ "$REPLACE_DOCTRINE" == true ] && [ ! -d "$TARGET_DIR" ]; then
+  echo "❌ Error: replace-doctrine requires an existing target directory: $TARGET_DIR"
+  exit 1
+elif [ ! -d "$TARGET_DIR" ]; then
   echo "   ⚠️  Target directory does not exist. Creating..."
   mkdir -p "$TARGET_DIR"
 fi
 
-TARGET_DIR_ABS="$(cd "$TARGET_DIR" && pwd)"
+TARGET_DIR_ABS="$(cd -P "$TARGET_DIR" && pwd -P)"
 if [ "$TARGET_DIR_ABS" = "$REPO_ROOT" ]; then
   echo "❌ Error: Refusing to install into the Spec-AGENTS source repository itself."
   echo "   Please provide a separate project directory, not $REPO_ROOT"
   exit 1
+fi
+
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  if [ "$TARGET_DIR_ABS" = "/" ]; then
+    echo "❌ Error: refusing to replace doctrine at the filesystem root."
+    exit 1
+  fi
+  if [ -n "${HOME:-}" ] && [ -d "$HOME" ]; then
+    USER_HOME_ABS="$(cd -P "$HOME" && pwd -P)"
+    if [ "$TARGET_DIR_ABS" = "$USER_HOME_ABS" ]; then
+      echo "❌ Error: refusing to replace doctrine at the user home directory."
+      exit 1
+    fi
+  fi
+
+  REPLACEMENT_MARKERS=0
+  for marker in START.md UPGRADE.md .phrase skills/plan/SKILL.md docs/spec-agents/WORKFLOW.md; do
+    if [ -e "$TARGET_DIR_ABS/$marker" ] || [ -L "$TARGET_DIR_ABS/$marker" ]; then
+      REPLACEMENT_MARKERS=$((REPLACEMENT_MARKERS + 1))
+    fi
+  done
+  if [ -f "$TARGET_DIR_ABS/AGENTS.md" ] &&
+     grep -qE 'SPEC-AGENTS|Spec-AGENTS' "$TARGET_DIR_ABS/AGENTS.md"; then
+    REPLACEMENT_MARKERS=$((REPLACEMENT_MARKERS + 1))
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ]; then
+    for retired_path in "$TARGET_DIR_ABS"/spec_* "$TARGET_DIR_ABS"/plan_* \
+                        "$TARGET_DIR_ABS"/task_* "$TARGET_DIR_ABS"/change_* \
+                        "$TARGET_DIR_ABS"/issue_*; do
+      if [ -e "$retired_path" ] || [ -L "$retired_path" ]; then
+        REPLACEMENT_MARKERS=1
+        break
+      fi
+    done
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -d "$TARGET_DIR_ABS/.scratch" ] &&
+     [ -n "$(find "$TARGET_DIR_ABS/.scratch" -mindepth 2 -name SPEC.md -print -quit)" ]; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -f "$TARGET_DIR_ABS/STATUS.md" ] &&
+     grep -qE '^\*\*Phase\*\*:|task[0-9]+' "$TARGET_DIR_ABS/STATUS.md"; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -eq 0 ] && [ -f "$TARGET_DIR_ABS/CONTEXT.md" ] &&
+     grep -q '^### Change$' "$TARGET_DIR_ABS/CONTEXT.md" &&
+     grep -q '^### Plan$' "$TARGET_DIR_ABS/CONTEXT.md"; then
+    REPLACEMENT_MARKERS=1
+  fi
+  if [ "$REPLACEMENT_MARKERS" -lt 1 ]; then
+    echo "❌ Error: target is not recognizably a SPEC-AGENTS project."
+    echo "   Need at least one active doctrine or retired-workflow marker."
+    exit 1
+  fi
+
+  if [ -e "$BACKUP_DIR" ] || [ -L "$BACKUP_DIR" ]; then
+    echo "❌ Error: backup path already exists: $BACKUP_DIR"
+    exit 1
+  fi
+  BACKUP_PARENT="$(dirname "$BACKUP_DIR")"
+  if [ ! -d "$BACKUP_PARENT" ]; then
+    echo "❌ Error: backup parent must already exist: $BACKUP_PARENT"
+    exit 1
+  fi
+  BACKUP_PARENT_ABS="$(cd -P "$BACKUP_PARENT" && pwd)"
+  BACKUP_DIR_ABS="$BACKUP_PARENT_ABS/$(basename "$BACKUP_DIR")"
+  case "$BACKUP_DIR_ABS" in
+    "$TARGET_DIR_ABS"|"$TARGET_DIR_ABS/skills"|"$TARGET_DIR_ABS/skills/"*|\
+    "$TARGET_DIR_ABS/docs/spec-agents"|"$TARGET_DIR_ABS/docs/spec-agents/"*)
+      echo "❌ Error: backup must be outside doctrine paths: $BACKUP_DIR_ABS"
+      exit 1
+      ;;
+    "$REPO_ROOT"|"$REPO_ROOT/"*)
+      echo "❌ Error: backup must not write into the SPEC-AGENTS source repository."
+      exit 1
+      ;;
+  esac
 fi
 
 if [ -d "$TARGET_DIR/.phrase" ]; then
@@ -588,25 +741,226 @@ install_agent() {
   fi
 }
 
+sha256_file() {
+  local path="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$path" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$path" | awk '{print $1}'
+  elif command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "$path" | awk '{print $NF}'
+  else
+    echo "❌ Error: replace-doctrine needs shasum, sha256sum, or openssl." >&2
+    return 1
+  fi
+}
+
+cutover_error() {
+  echo "❌ Error: invalid Upgrade cutover receipt: $1" >&2
+  echo "   Run the current upstream UPGRADE.md review and confirm its report before retrying." >&2
+  return 1
+}
+
+validate_cutover_receipt() {
+  local receipt_parent receipt_abs expected_receipt report_path
+  local receipt_format receipt_target receipt_backup receipt_hash
+  local receipt_unresolved receipt_decision actual_hash
+
+  if [ ! -f "$CUTOVER_FILE" ] || [ -L "$CUTOVER_FILE" ]; then
+    cutover_error "receipt must be a regular non-symlink file: $CUTOVER_FILE"
+    return 1
+  fi
+  receipt_parent="$(dirname "$CUTOVER_FILE")"
+  if [ ! -d "$receipt_parent" ]; then
+    cutover_error "parent directory does not exist: $receipt_parent"
+    return 1
+  fi
+  receipt_abs="$(cd -P "$receipt_parent" && pwd -P)/$(basename "$CUTOVER_FILE")"
+  expected_receipt="$TARGET_DIR_ABS/.scratch/upgrade-review/CUTOVER.tsv"
+  if [ "$receipt_abs" != "$expected_receipt" ]; then
+    cutover_error "receipt must be $expected_receipt"
+    return 1
+  fi
+
+  if ! awk -F '\t' '
+    BEGIN {
+      required["format"] = 1
+      required["target"] = 1
+      required["backup_dir"] = 1
+      required["report_sha256"] = 1
+      required["unresolved_count"] = 1
+      required["decision"] = 1
+    }
+    NF != 2 || !($1 in required) || seen[$1]++ { invalid = 1 }
+    END {
+      if (NR != 6) invalid = 1
+      for (key in required) if (seen[key] != 1) invalid = 1
+      exit invalid
+    }
+  ' "$receipt_abs"; then
+    cutover_error "expected exactly six unique two-column rows with no unknown keys"
+    return 1
+  fi
+
+  receipt_format="$(awk -F '\t' '$1 == "format" { print $2 }' "$receipt_abs")"
+  receipt_target="$(awk -F '\t' '$1 == "target" { print $2 }' "$receipt_abs")"
+  receipt_backup="$(awk -F '\t' '$1 == "backup_dir" { print $2 }' "$receipt_abs")"
+  receipt_hash="$(awk -F '\t' '$1 == "report_sha256" { print $2 }' "$receipt_abs")"
+  receipt_unresolved="$(awk -F '\t' '$1 == "unresolved_count" { print $2 }' "$receipt_abs")"
+  receipt_decision="$(awk -F '\t' '$1 == "decision" { print $2 }' "$receipt_abs")"
+
+  if [ "$receipt_format" != "spec-agents-cutover-v1" ]; then
+    cutover_error "format must be spec-agents-cutover-v1"
+    return 1
+  fi
+  if [ "$receipt_target" != "$TARGET_DIR_ABS" ]; then
+    cutover_error "target does not match the canonical invocation target"
+    return 1
+  fi
+  if [ "$receipt_backup" != "$BACKUP_DIR_ABS" ]; then
+    cutover_error "backup_dir does not match the canonical invocation backup"
+    return 1
+  fi
+  if [ "$receipt_unresolved" != "0" ]; then
+    cutover_error "unresolved_count must be the literal 0"
+    return 1
+  fi
+  if [ "$receipt_decision" != "confirmed" ]; then
+    cutover_error "decision must be confirmed"
+    return 1
+  fi
+  case "$receipt_hash" in
+    *[!0-9a-f]*|'')
+      cutover_error "report_sha256 must be a lowercase SHA-256 digest"
+      return 1
+      ;;
+  esac
+  if [ "${#receipt_hash}" -ne 64 ]; then
+    cutover_error "report_sha256 must be a 64-character SHA-256 digest"
+    return 1
+  fi
+
+  report_path="$TARGET_DIR_ABS/.scratch/upgrade-review/REPORT.md"
+  if [ ! -f "$report_path" ] || [ -L "$report_path" ]; then
+    cutover_error "confirmed report must be a regular non-symlink file: $report_path"
+    return 1
+  fi
+  actual_hash="$(sha256_file "$report_path")" || return 1
+  if [ "$actual_hash" != "$receipt_hash" ]; then
+    cutover_error "REPORT.md no longer matches report_sha256"
+    return 1
+  fi
+}
+
+write_doctrine_manifest() {
+  local backup_root="$1"
+  local manifest_tmp item rel digest target
+  manifest_tmp="$(mktemp "${TMPDIR:-/tmp}/spec-agents-doctrine-manifest.XXXXXX")"
+  (
+    cd "$backup_root"
+    find . -mindepth 1 ! -path './DOCTRINE-MANIFEST.tsv' | LC_ALL=C sort |
+      while IFS= read -r item; do
+        rel="${item#./}"
+        if [ -L "$item" ]; then
+          target="$(readlink "$item")"
+          printf 'link\t-\t%s\t%s\n' "$rel" "$target"
+        elif [ -d "$item" ]; then
+          printf 'directory\t-\t%s\t-\n' "$rel"
+        elif [ -f "$item" ]; then
+          digest="$(sha256_file "$item")"
+          printf 'file\t%s\t%s\t-\n' "$digest" "$rel"
+        else
+          printf 'other\t-\t%s\t-\n' "$rel"
+        fi
+      done
+  ) > "$manifest_tmp"
+  mv "$manifest_tmp" "$backup_root/DOCTRINE-MANIFEST.tsv"
+}
+
+backup_installed_doctrine() {
+  local rel
+  local -a existing_paths=()
+
+  mkdir "$BACKUP_DIR_ABS"
+  for rel in "${DOCTRINE_PATHS[@]}"; do
+    if [ -e "$TARGET_DIR_ABS/$rel" ] || [ -L "$TARGET_DIR_ABS/$rel" ]; then
+      existing_paths+=("$rel")
+    fi
+  done
+
+  if [ "${#existing_paths[@]}" -gt 0 ]; then
+    (
+      set -o pipefail
+      (cd "$TARGET_DIR_ABS" && tar -cf - "${existing_paths[@]}") |
+        (cd "$BACKUP_DIR_ABS" && tar -xf -)
+    )
+  fi
+  write_doctrine_manifest "$BACKUP_DIR_ABS"
+}
+
+remove_installed_doctrine() {
+  local rel target
+  for rel in "${DOCTRINE_PATHS[@]}"; do
+    target="$TARGET_DIR_ABS/$rel"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      rm -rf -- "$target"
+    fi
+  done
+}
+
+replacement_failed() {
+  local code=$?
+  echo "" >&2
+  echo "❌ Doctrine replacement failed during $REPLACEMENT_PHASE." >&2
+  if [ -n "${BACKUP_DIR_ABS:-}" ] && [ -d "$BACKUP_DIR_ABS" ]; then
+    echo "   Recovery material: $BACKUP_DIR_ABS" >&2
+  fi
+  echo "   Success was not recorded. Inspect the target and backup before retrying." >&2
+  exit "$code"
+}
+
 # Doctrine only. Everything installed here is identical in every managed
 # project. This repository's own state -- STATUS.md, ROADMAP.md, EVIDENCE.md,
 # archive/, research/, bin/, docs/adr, docs/protocols, docs/runbooks,
 # docs/lessons -- is Instance and is never installed. Use this explicit
 # allowlist, not directory enumeration: enumerating docs/ is what previously
 # leaked this repository's own runbooks and lessons into managed projects.
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  validate_cutover_receipt
+fi
+
 echo "   📦 Installing SPEC-AGENTS doctrine..."
+
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  REPLACEMENT_PHASE="backup"
+  trap replacement_failed ERR
+  backup_installed_doctrine
+  REPLACEMENT_PHASE="replacement"
+  remove_installed_doctrine
+fi
+
 install_agent
 for file_name in START.md UPGRADE.md; do
   install_file "$REPO_ROOT/$file_name" "$TARGET_DIR/$file_name"
 done
-install_template "$REPO_ROOT/templates/CONTEXT.md" "$TARGET_DIR/CONTEXT.md"
+if [ "$REPLACE_DOCTRINE" == false ]; then
+  install_template "$REPO_ROOT/templates/CONTEXT.md" "$TARGET_DIR/CONTEXT.md"
+fi
 install_dir_contents "$REPO_ROOT/docs/spec-agents" "$TARGET_DIR/docs/spec-agents"
 install_dir_contents "$REPO_ROOT/skills" "$TARGET_DIR/skills"
 
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  REPLACEMENT_PHASE=""
+  trap - ERR
+  echo "   🛟 Previous doctrine backup: $BACKUP_DIR_ABS"
+  echo "      Manifest: $BACKUP_DIR_ABS/DOCTRINE-MANIFEST.tsv"
+fi
+
 if [ "$HAS_LEGACY" == true ]; then
   echo ""
-  echo "   ⚠️  Existing legacy SPEC material detected."
-  echo "      Read $TARGET_DIR/UPGRADE.md before ordinary work."
+  echo "   ⚠️  Existing retired SPEC-AGENTS material detected."
+  echo "      Do not continue ordinary work or trust an installed upgrade prompt."
+  echo "      Run the current upstream UPGRADE.md review against $TARGET_DIR."
 fi
 
 if [ "$USE_LINK" == true ]; then
@@ -616,14 +970,24 @@ if [ "$USE_LINK" == true ]; then
 fi
 
 echo ""
-echo "✨ Done! Spec-AGENTS is ready."
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  echo "✅ Doctrine replacement complete."
+  echo "   Continue the confirmed Upgrade: reset retired state, run fresh START,"
+  echo "   and wait for the user to accept that result before ordinary work."
+else
+  echo "✨ Done! Spec-AGENTS is ready."
+fi
 echo "   Installed (framework doctrine, identical in every project):"
 echo "   - $TARGET_DIR/AGENTS.md"
 echo "   - $TARGET_DIR/START.md"
 echo "   - $TARGET_DIR/UPGRADE.md"
 echo "   - $TARGET_DIR/docs/spec-agents/"
 echo "   - $TARGET_DIR/skills/{plan,capture,arrange,do,check,learn}"
-echo "   - $TARGET_DIR/CONTEXT.md (empty skeleton; this file belongs to your project)"
+if [ "$REPLACE_DOCTRINE" == false ]; then
+  echo "   - $TARGET_DIR/CONTEXT.md (empty skeleton; this file belongs to your project)"
+else
+  echo "   - CONTEXT.md was not touched; it belongs to the project Instance"
+fi
 echo ""
 echo "   Not installed. These belong to your project and are created when needed:"
 echo "   - KERNEL.md      by the first Start scan, from confirmed project facts"
@@ -631,7 +995,11 @@ echo "   - STATUS.md      by 'learn', when there is real state to record"
 echo "   - EVIDENCE.md    by 'learn', on the first verified observation"
 echo "   - docs/adr, docs/protocols, docs/runbooks, docs/lessons"
 echo ""
-echo "   If your project already has a context entry point such as docs/HANDOFF.md,"
-echo "   keep it and delete or redirect the CONTEXT.md skeleton. Do not run two."
-echo ""
-echo "   To start, tell your AI Agent: 'Read START.md and execute the start review.'"
+if [ "$REPLACE_DOCTRINE" == true ]; then
+  echo "   Next: continue the confirmed steps in the current upstream UPGRADE.md."
+else
+  echo "   If your project already has a context entry point such as docs/HANDOFF.md,"
+  echo "   keep it and delete or redirect the CONTEXT.md skeleton. Do not run two."
+  echo ""
+  echo "   To start, tell your AI Agent: 'Read START.md and execute the start review.'"
+fi

@@ -42,8 +42,8 @@ record under `docs/adr/`, `docs/protocols/`, `docs/runbooks/`, or
 `docs/lessons/` when the intent points at it. Read `archive/` and the legacy
 `.phrase/` tree only for explicit history or regression comparison.
 
-If `.phrase/` or legacy `spec_*`/`plan_*` markers exist, read `UPGRADE.md`
-before ordinary work.
+If active retired markers exist — `.phrase/`, old bundles, phase-shaped records,
+or tracked scratch SPECs — read current upstream `UPGRADE.md` before ordinary work.
 
 ## Start entry
 
@@ -135,9 +135,9 @@ fields, the reachability rule, and the parallel-work constraints are defined in
   required `plan` confirmation. The only bootstrap exception is an absent
   `KERNEL.md` created by `START.md` from directly confirmed facts as `K1`.
 
-## Legacy upgrade
+## Existing-project upgrade
 
-Existing v2 and v3 projects use the root `UPGRADE.md` Prompt, which reconstructs
-history, scans the architecture, and asks the user to confirm before archiving
-anything. The installer never infers or archives project knowledge. Old
-`.phrase/commands/` files are historical material only.
+Use the current upstream `UPGRADE.md` to extract user-approved candidate
+knowledge, archive confirmed retired paths, replace doctrine recoverably, and
+run a fresh START. No old work state is inherited. The installer never infers
+or archives project knowledge. Old `.phrase/commands/` files are history only.

@@ -23,10 +23,19 @@ SPEC-AGENTS 的语义 Change；文档中使用限定词 `JJ Change` 避免混淆
 项目接入 SPEC-AGENTS 的入口 Prompt：检查项目状态、生成可供用户确认的
 StartReport、路由到 `UPGRADE`／安装／`plan`。不是第七个 action。
 
+### Upgrade
+
+An existing-project bootstrap entry that extracts user-approved candidate knowledge,
+moves retired workflow material out of the active read path, replaces installed doctrine
+through an explicit recoverable installer operation, and hands the project to a fresh START.
+Upgrade does not translate old execution state into current state and is not a seventh action.
+
 ### ProjectState
 
-Start 对项目入口材料、legacy 痕迹、版本管理标记、近期历史和代码架构做出的
-有证据边界的分类：`modern`、`legacy`、`mixed`、`missing-entry` 或 `blocked`。
+Start classifies the active project as `modern`, `upgrade-needed`, `missing-entry`, or
+`blocked`. `upgrade-needed` means retired SPEC-AGENTS workflow material is active or the
+installed doctrine cannot safely establish the current entry contract. Source-generation
+labels are evidence in the report, not runtime states and not selectors for separate migration engines.
 
 ### KernelStatus
 
@@ -219,8 +228,8 @@ SPEC 取代——两者不是同义词。
 - 第一次 `start` 在 `KERNEL.md` 缺失且有直接确认事实时建立 `K1`，只写
   confirmed 内容。其余情况 `start` 在用户确认前只能写
   `.scratch/start/REPORT.md`。
-- `start` 不是第七个 action；确认后的现代项目必须进入 `plan`，legacy/mixed
-  项目必须路由到 `UPGRADE.md`，不能绕过六动作或复制迁移流程。
+- `start` 不是第七个 action；确认后的现代项目必须进入 `plan`；
+  `upgrade-needed` 项目进入 `UPGRADE.md`，清场后重新 START，不继承旧工作状态。
 - `StartReport` 必须区分 confirmed、inferred 和 unknown；未确认的候选认知
   不能进入 `KERNEL.md` 的 enacted sections 或默认上下文。
 - 已有 `KERNEL.md` 时，`start` 只能报告冲突或陈旧，不得静默覆盖；首次 K1
@@ -237,10 +246,12 @@ Action Contract，或改变 Protocol、Runbook、Lesson 的适用范围、约束
 方式，都是语义变化；即使代码 diff 很小，也必须走 `plan`。
 语义变化必须在 `do` 开始前于 SPEC 的 `## Model delta` / `kernel_delta:` 中声明。
 
-## Legacy Upgrade Boundary
+## Upgrade Boundary
 
-v2 静态 SPEC 和 v3 `.phrase` 都是历史输入状态，不是现代 workflow 的
-兼容运行模式。新项目只使用 root documents 和六个 action skills；旧项目
-先读取 `UPGRADE.md`，由 Agent 重建历史、扫描代码架构并请求用户确认，再
-由六动作流程提炼语义和归档。升级不删除历史资料，也不把旧 task bundle
-机械提升为当前模型或状态；安装器只提供入口，不执行语义迁移。
+Retired workflow material is historical input, never a compatibility runtime and never a source of current
+execution state. Upgrade first produces an exact preservation manifest and stops for user confirmation.
+Confirmation writes a cutover receipt that binds the canonical target and backup to the confirmed report hash
+and records zero unresolved rows; doctrine replacement refuses before any write unless that receipt matches the
+invocation and report. Confirmed cutover keeps an immutable copy of the approved report, keeps retired material
+recoverable, removes it from the active read path, replaces only installer-owned doctrine, and ends at a fresh START.
+Preserved knowledge remains candidate until the current project and the user confirm it; active intent is planned and captured again. Application code and unclassified project-owned documents do not change.

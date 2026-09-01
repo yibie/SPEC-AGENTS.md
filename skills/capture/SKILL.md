@@ -78,4 +78,4 @@ context_refs:
 ## 完成条件
 
 SPEC 状态、未改变的契约、边界、Action Contracts、验证入口和 out-of-scope 齐全，并能让一个新上下文不依赖本次对话继续工作。
-若已确认的 `plan` 结果记录了 `kernel_promotion` 且不为 `none`，而 `kernel_delta` 为空或为 `none`，`capture` 必须停下、报告并不得完成，以防止重现 E-20260821-006 的决定丢失。
+若已确认的 `plan` 结果记录了 `kernel_promotion` 且不为 `none`，而 `kernel_delta` 为空或为 `none`，`capture` 必须停下、报告并不得完成，以防止重现 upstream SPEC-AGENTS Evidence `E-20260821-006` 记录的决定丢失。

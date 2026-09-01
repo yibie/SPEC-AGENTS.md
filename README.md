@@ -106,22 +106,20 @@ into your project. If your project already has a context entry point
 such as `docs/HANDOFF.md`, keep it and delete or redirect the `CONTEXT.md`
 skeleton rather than maintaining two.
 
-For an existing v2 or v3 project, install the modern entry points first:
-
-```bash
-spec-agents install ../old-project cn
-```
-
-Then run the upgrade Prompt:
+For an existing project with retired SPEC-AGENTS state, do not install over it
+first. Run the current upstream upgrade Prompt from this checkout:
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-The Prompt reconstructs recent history, scans the code architecture, asks the
-user to confirm the candidate project cognition, and only then archives the old
-`.phrase/` tree. The installer itself does not move, delete, or summarize old
-project material.
+The Prompt produces an exact preservation manifest and stops for confirmation.
+Only then does it bind the confirmed report, canonical target, absent backup,
+and zero unresolved rows in `CUTOVER.tsv`. The recoverable
+`replace-doctrine --cutover ...` operation validates that receipt before any
+write, after which Upgrade archives approved retired state and runs a fresh
+START. Candidate knowledge is reviewed against the new scan; old work status
+is never inherited.
 
 ## Start a project
 
@@ -131,13 +129,13 @@ After installing the modern entry points, start with:
 Read START.md and execute the start review.
 ```
 
-`START.md` reconstructs a bounded project picture and, on the first run, writes
-an absent `KERNEL.md` version `K1` from directly confirmed project facts before
-writing the review report. It waits for user confirmation about candidate
-extensions, then routes a modern project to `plan`, a legacy or mixed project
-to `UPGRADE.md`, and a project missing modern entry points to installation
-guidance. It never overwrites an existing Kernel, modifies application code, or
-initializes JJ automatically.
+`START.md` reconstructs a bounded project picture and, for a modern project on
+the first run, writes an absent `KERNEL.md` version `K1` from directly confirmed
+project facts before writing the review report. It waits for user confirmation about candidate
+extensions, then routes a modern project to `plan`, an `upgrade-needed` project
+to the current upstream `UPGRADE.md`, and a project missing modern entry points
+to installation guidance. It never overwrites an existing Kernel, modifies
+application code, or initializes JJ automatically.
 
 ## Quick Start
 
@@ -196,7 +194,7 @@ initializes JJ automatically. If the user chooses colocated JJ, follow the
 | --- | --- | --- | --- |
 | v2 | Static SPEC document chain | `spec_*`, `plan_*`, `task_*`, `change_*`, and `issue_*` | Static abstractions are explicit, but context and maintenance costs are high, and old plans become noise. |
 | v3 | EDPP, evidence-driven phases | `.phrase/decision.md`, `roadmap.md`, `current.md`, and `evidence.md` | Dynamic evolution is lighter, but phase knowledge is not reliably promoted into a durable semantic model. |
-| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and verified Evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; legacy projects use `UPGRADE.md` to reconstruct cognition instead of a mechanical compatibility mode. |
+| v4 | Living SPEC: stable model plus dynamic evidence | Root semantic documents, `docs/adr/`, `docs/protocols/`, and verified Evidence | `plan` gates semantic changes and `learn` promotes verified knowledge; existing projects salvage candidate knowledge, reset retired state, and run a fresh START. |
 
 v4 is therefore not a file rename or a compatibility wrapper around v2/v3. It
 adds an explicit bridge from stable abstraction to dynamic state, evidence, and
@@ -387,23 +385,28 @@ general superiority. Full records remain in [`research/`](research/README.md).
 ```text
 spec-agents init [cn|en] [--link]       # install into the current directory
 spec-agents install <path> [cn|en] [--link]
+spec-agents replace-doctrine <path> <backup-dir> --cutover <CUTOVER.tsv> [cn|en] [--link]
 spec-agents --help
 ```
 
 Copy mode is the default. `--link` keeps symbolic links to this SPEC-AGENTS
 checkout, so source updates affect linked projects. Existing files are kept;
-the installer does not overwrite a project's local decisions.
+ordinary install does not overwrite a project's local decisions.
 
-For a v2/v3 project, do not look for a migration subcommand. Install the modern
-layout, then explicitly ask the Agent to run the review:
+For an existing project, run the current upstream review before replacing
+anything:
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-The review reports its reconstruction and architecture scan first, then waits
-for the user's confirmation before changing root documents or archiving legacy
-material.
+The review extracts candidate knowledge, classifies every relevant path, and
+waits for confirmation. Only then does it write a six-row CUTOVER receipt.
+`replace-doctrine` requires that receipt and validates the confirmed report,
+canonical target and backup, and zero unresolved rows before it backs up and
+replaces the installer-owned allowlist. Doctrine replacement is not project
+readiness: Upgrade must still retire the confirmed old state and complete a
+fresh, user-accepted START instead of translating old state.
 
 ## Default Read Rule
 
@@ -484,15 +487,14 @@ must run at the same time gets its own working copy: `jj workspace add` in a
 project with `.jj/`, `git worktree add` otherwise. See
 [`docs/spec-agents/parallel-work.md`](docs/spec-agents/parallel-work.md).
 
-## Migration From v2/v3
+## Existing-project reset
 
-For an existing project, install the modern entry points and read `UPGRADE.md`.
-Use a `plan` pass to decide what should be promoted. Keep project ontology in
-`KERNEL.md`, project context in `CONTEXT.md`, workflow semantics in
-`docs/spec-agents/WORKFLOW.md` or `docs/adr/`, stable
-interfaces in `docs/protocols/`, current state in `STATUS.md`, and
-decision-relevant facts in `EVIDENCE.md`. Archive obsolete material instead of
-mechanically copying it into the default context.
+Use the current upstream `UPGRADE.md`, not a possibly stale installed copy.
+Preserve decision-relevant content as candidates, archive the approved old
+records, recoverably replace doctrine, and run START again. Review candidates
+against current code after START; recapture still-current intent as new work.
+Do not copy an old KERNEL, STATUS, Evidence ID, SPEC revision, or Slice status
+into the new workflow.
 
 The old `.phrase/commands/` instructions are archived history, not a second
 default workflow.
@@ -567,7 +569,7 @@ plan / SPEC / Slice → JJ Change → bookmark → Git remote
 | --- | --- | --- | --- |
 | v2 | 静态 SPEC 文档链 | `spec_*`、`plan_*`、`task_*`、`change_*`、`issue_*` | 静态抽象较完整，但读取和维护成本高，旧计划容易变成噪音。 |
 | v3 | EDPP 证据驱动阶段 | `.phrase/decision.md`、`roadmap.md`、`current.md`、`evidence.md` | 动态演进更轻，但阶段知识没有稳定沉淀到对应的长期语义抽象。 |
-| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与已验证 Evidence | 用 `plan` 控制语义变化，用 `learn` 将经过验证的知识提升到长期边界；旧项目通过 `UPGRADE.md` 重建认知，不做机械兼容。 |
+| v4 | Living SPEC：稳定模型 + 动态证据 | 根目录语义文件、`docs/adr/`、`docs/protocols/` 与已验证 Evidence | 用 `plan` 控制语义变化，用 `learn` 提升已验证知识；已有项目先抢救候选知识、清理旧状态，再重新 START。 |
 
 因此，v4 不是简单把 v2 或 v3 换一套文件名，而是补上“静态抽象—动态状态—
 证据—代码”的演进桥接：大原则保持稳定，当前工作可以在明确边界内修改。
@@ -762,16 +764,20 @@ STATUS.md
 `archive/`、`docs/adr/`、`docs/protocols/`、`docs/runbooks/`、`docs/lessons/`
 属于 Instance，永远不会安装到别的项目。
 
-### v2/v3 项目升级
+### 已有项目重启
 
-旧项目先安装新版入口，再让 Agent 读取 `UPGRADE.md` 并执行升级审查：
+不要先把新版覆盖安装到旧项目。让 Agent 从当前 SPEC-AGENTS 源码读取最新
+`UPGRADE.md`，以旧项目为目标执行审查：
 
 ```text
-Read UPGRADE.md and execute the upgrade review.
+Read the current upstream UPGRADE.md and execute the upgrade review against <project>.
 ```
 
-升级由 Agent 重建近期历史、扫描代码架构并请求用户确认；安装器不会自动
-移动、删除或总结旧项目材料。
+升级先列出值得保留的候选知识和每条旧记录的去向；得到确认后写入绑定报告哈希、
+规范化项目路径、备份路径和零 unresolved 项的 `CUTOVER.tsv`。只有回执校验通过，
+`replace-doctrine` 才会备份并替换 doctrine；这时项目还不能说 ready，仍需归档旧
+状态并重新执行一次经用户确认的干净 START。旧的 doing/done、Phase、STATUS、
+SPEC 和 Slice 状态都不继承；仍然有效的需求重新进入 `plan`/`capture`。
 
 ### start 启动入口
 
@@ -783,7 +789,7 @@ Read START.md and execute the start review.
 
 `START.md` 会检查项目状态、版本管理标记、近期历史和代码架构，生成
 `.scratch/start/REPORT.md`，并等待用户确认。现代项目确认后进入 `plan`；
-v2/v3 或混合项目转交 `UPGRADE.md`；缺少现代入口的项目只得到安装指引。
+`upgrade-needed` 项目转交当前上游 `UPGRADE.md`；缺少现代入口的项目只得到安装指引。
 它不会自动修改应用代码、覆盖项目认知或初始化 JJ。
 
 ## 中文说明（历史 v3 参考）
@@ -902,9 +908,10 @@ taskNNN [ ] goal:<可观察结果> | scope:<文件或区域> | verify:<证明方
 
 ## 从 v2 迁移（历史 v3 记录）
 
-以下步骤只记录旧版 v3 的做法，不是当前迁移指引。现在的 v2/v3 项目应先
-安装新版入口，再执行 `Read UPGRADE.md and execute the upgrade review.`；
-不要手动把遗留内容移动到 `.phrase/archive/`。
+以下步骤只记录旧版 v3 的做法，不是当前迁移指引。现在的已有项目应执行
+`Read the current upstream UPGRADE.md and execute the upgrade review against
+<project>.`；不要先覆盖安装，也不要手动把遗留内容移动到
+`.phrase/archive/`。
 
 已有项目迁移时：
 

@@ -2331,3 +2331,683 @@ SPEC `verified` and remove its `STATUS.md` entry in one act.
 
 - `E-20260829-020`, `E-20260829-016`.
 - `.specs/kernel-delta-declaration/SPEC.md` r2; `docs/adr/0009-kernel-delta-declaration.md`.
+
+## 2026-08-31 — recoverable doctrine replacement fixture (E-20260831-001)
+
+### Observation
+
+Slice 02 of `.specs/salvage-reset-start/SPEC.md` added the explicit
+`replace-doctrine <path> <backup-dir> [lang] [--link|-l]` installer operation.
+The operation accepts only an existing recognisable SPEC-AGENTS target, refuses
+the source repository, filesystem root, user home, an existing backup path, and
+targets with fewer than two workflow markers. It backs up the fixed doctrine
+allowlist with a path/type/SHA-256 manifest, removes that allowlist, installs the
+current copy or links, and leaves `CONTEXT.md` and every other Instance path
+outside the operation.
+
+The same-context check found one blocker in the first implementation: fixed
+child paths were still unsafe when the target itself was a broad or unrelated
+directory. The implementation returned to `do`; the broad-root and two-marker
+guards were added, and the full fixture set was rerun. A second observed
+environment boundary was that neither `shasum` nor `sha256sum` existed here;
+the passing manifests use the `openssl dgst -sha256` fallback.
+
+### Interpretation
+
+Doctrine replacement now has an explicit destructive boundary and a recovery
+artifact instead of relying on ordinary install's keep-existing behaviour. The
+fixtures establish the command contract in disposable projects; they do not
+establish that the full salvage/reset upgrade is safe on a real project. That
+claim still depends on slices 01 and 03 and on a later field run.
+
+The command lives only in `bin/spec-agents`, the existing installer authority.
+No second removal or backup implementation was added to UPGRADE. This is the
+Action Contract already declared by the confirmed SPEC, not an undeclared
+workflow change.
+
+### Recommended next action
+
+Close slice 02. Complete the upgrade entry/model slice, then run the combined
+reset-to-fresh-START fixtures before promoting the new Upgrade Boundary.
+
+### Verification
+
+- `/tmp/spec-agents-replace-doctrine-guarded.pMyUad`: copy and link
+  replacement pass; stale doctrine is absent; five representative Instance
+  paths are hash-identical; an unrelated directory refuses.
+- All 40 entries in that fixture's `DOCTRINE-MANIFEST.tsv` replay against the
+  backup with matching type, link target, or SHA-256.
+- `/tmp/spec-agents-replace-failure-guarded.3x5DY6`: a forced post-backup
+  install failure exits nonzero, prints the recovery path and no success line;
+  the old four-path doctrine bundle restores into a separate directory.
+- `/tmp/spec-agents-installer-regression.8MkWKg`: fresh, repeated, link,
+  absent-Instance, executable-checker, and source-refusal assertions pass.
+- `bash -n bin/spec-agents`, `tests/doctrine-check.sh` (389/400),
+  `spec-agents check-state`, help-output assertions, manifest replay, and
+  `git diff --check`: pass. `shellcheck` is unavailable in this environment.
+- Git-only comparison basis: source HEAD at the start of this work was
+  `eed62941726024543112bb1336f9ac7aa026cda2`; the working tree is uncommitted.
+
+### References
+
+- `.specs/salvage-reset-start/SPEC.md` r1, slice 02.
+- `bin/spec-agents`; `docs/adr/0001-framework-namespace-split.md`.
+
+## 2026-08-31 — one retired marker is sufficient before reset (E-20260831-002)
+
+### Observation
+
+The integration pass for slice 01 contradicted one guard recorded in
+E-20260831-001. That implementation required two active SPEC-AGENTS markers
+before `replace-doctrine` would run. The new entry contract deliberately says
+not to install current doctrine over an old project first; a genuine v3-shaped
+project may therefore have only `.phrase/`. Moving that marker before doctrine
+replacement made the target unrecognisable, while leaving it in place still
+failed the two-marker threshold.
+
+Slice 02 was marked stale and rerun. UPGRADE now calls `replace-doctrine` while
+the confirmed retired marker remains active, then moves retired state. The CLI
+requires one strong active doctrine or retired-workflow marker. Filesystem root,
+user home, the source repository, an existing backup, and a zero-marker target
+remain refusals.
+
+### Interpretation
+
+Recognition is a guard against a broad mistaken target, not a migration-source
+classifier. Requiring two markers encoded an unsupported assumption about old
+install layouts and made the clean-entry design unreachable. One strong marker,
+plus explicit target and backup paths and the broad-root refusals, keeps the
+guard in its proper role.
+
+E-20260831-001 remains accurate for the first accepted fixture and its observed
+two-marker implementation, but its general statement of that threshold is
+superseded by this integration result.
+
+### Recommended next action
+
+Close slice 02 on this correction. Finish checking the entry/model slice, then
+exercise the combined preservation-manifest, archive, doctrine replacement,
+and fresh-START path in slice 03.
+
+### Verification
+
+- `/tmp/spec-agents-pure-retired.sno8Rh`: a target containing only
+  `.phrase/current.md` as its SPEC-AGENTS marker accepts replacement before the
+  marker moves; the doctrine manifest is valid and empty because no old
+  doctrine existed; current doctrine is installed; `CONTEXT.md` stays absent;
+  the application hash is unchanged; the marker then moves under `archive/`.
+- A zero-marker directory in the same fixture refuses and names the one-marker
+  requirement.
+- The earlier modified-doctrine, link, manifest replay, broad-root code guards,
+  forced-failure, restoration, ordinary-install regression, syntax, doctrine,
+  state, and whitespace checks remain unchanged from E-20260831-001.
+- `tests/doctrine-check.sh` (400/400), `spec-agents check-state`,
+  `bash -n bin/spec-agents`, and `git diff --check`: pass.
+
+### References
+
+- E-20260831-001.
+- `.specs/salvage-reset-start/SPEC.md` r1, slices 01 and 02.
+- `UPGRADE.md`; `bin/spec-agents`.
+
+## 2026-08-31 — every declared retired-marker family reaches replacement (E-20260831-003)
+
+### Observation
+
+E-20260831-002 proved that one `.phrase/` marker was sufficient, then described
+the guard as accepting one strong retired marker generally. The slice 01 entry
+matrix checked the other declared families and found that the implementation
+did not yet recognise a root `spec_*` bundle, a tracked
+`.scratch/<feature>/SPEC.md`, phase-shaped STATUS, or a pre-split workflow
+CONTEXT unless some modern doctrine marker also existed.
+
+Slice 02 was made stale again. The guard now recognises those four shapes as
+evidence that the explicit replacement target is a SPEC-AGENTS project. They
+all reach the same backup-and-replace operation; none selects a conversion
+algorithm. The zero-marker, broad-root, source-target, and backup-path refusals
+are unchanged.
+
+### Interpretation
+
+Entry reachability has to be checked across every marker family named by START,
+UPGRADE, and the installer. Testing one representative was insufficient because
+the guard implemented its own finite list. This is still recognition for a
+destructive boundary, not preservation classification: UPGRADE and the user
+own the disposition decision.
+
+### Recommended next action
+
+Close slice 02 on this corrected matrix and complete slice 01's check. Slice 03
+should retain the matrix as an executable regression instead of relying on this
+one-shot fixture.
+
+### Verification
+
+- `/tmp/spec-agents-retired-marker-matrix.du4OWv`: four isolated targets —
+  root bundle, tracked scratch SPEC, phase STATUS, and pre-split CONTEXT — each
+  accepts `replace-doctrine`, installs current START and Workflow, writes its
+  doctrine manifest, and preserves the application hash; a zero-marker target
+  refuses.
+- `/tmp/spec-agents-pure-retired.sno8Rh`: `.phrase`-only target remains green.
+- The modified-modern, copy/link, 40-entry manifest replay, forced failure,
+  restoration, normal install, broad-root code guards, source refusal, syntax,
+  doctrine, state, and whitespace results from E-20260831-001/-002 remain
+  unchanged.
+- `tests/doctrine-check.sh` (400/400), `spec-agents check-state`,
+  `bash -n bin/spec-agents`, and `git diff --check`: pass.
+
+### References
+
+- E-20260831-001, E-20260831-002.
+- `.specs/salvage-reset-start/SPEC.md` r1, slices 01 and 02.
+- `START.md`; `UPGRADE.md`; `bin/spec-agents`.
+
+## 2026-08-31 — upgrade conversion is replaced by reset and fresh START (E-20260831-004)
+
+### Observation
+
+Slice 01 replaced the live version-specific conversion path across the two
+AGENTS entry documents, START, UPGRADE, Workflow, README, and CLI entry
+messages. ProjectState now has `modern`, `upgrade-needed`, `missing-entry`, and
+`blocked`. An upgrade-needed START pass records markers and ownership but does
+not bootstrap or re-scan a Kernel; it hands off to the current upstream prompt.
+
+UPGRADE now writes one preservation report with `candidate`, `archive-only`,
+`keep-active`, and `unresolved` dispositions and stops for exact confirmation.
+Cutover replaces doctrine recoverably while a recognised marker remains,
+archives only approved retired state, proves hashes, and runs START again. It
+never translates old KERNEL, STATUS, Evidence IDs, SPEC/Slice lifecycle, phases,
+tasks, blockers, or completion claims into current state.
+
+The same-context implementation/check loop found two missing consumers — CLI
+refusal text and the AGENTS existing-project sections — and one ordering defect:
+moving a sole retired marker before doctrine replacement made the installer
+guard unreachable. The consumers and order were corrected. E-20260831-002/-003
+record the corresponding guard corrections without rewriting prior Evidence.
+
+### Interpretation
+
+Upgrade is now a re-bootstrap boundary rather than a compatibility runtime or a
+state migration engine. The only semantic source is Workflow; entry documents
+route to it, and `bin/spec-agents` remains the only implementation of doctrine
+replacement. Preserved material is deliberately below current authority until
+the fresh project and user confirm it.
+
+This is doctrine and disposable static/installer evidence, not a successful
+real-project cutover. The combined reset and fresh-START behaviour still needs
+the persistent slice 03 fixture before the boundary can be promoted or the SPEC
+closed.
+
+### Recommended next action
+
+Close slice 01. Make slice 03 ready and encode the complete report-only,
+confirmed reset, recovery, no-inherited-state, and fresh-START matrix as a
+repeatable test.
+
+### Verification
+
+- The enacted Upgrade, ProjectState, and Upgrade Boundary paragraphs equal the
+  SPEC Model delta after whitespace normalisation; the Legacy Upgrade Boundary
+  heading is absent.
+- `/tmp/spec-agents-entry-docs.OSaJlV`: fresh installed AGENTS, START, UPGRADE,
+  and Workflow files are byte-identical to source; all installed relative
+  Markdown links resolve.
+- Retired install-over phrases and legacy/mixed ProjectState values are absent
+  from live doctrine, README guidance, and CLI messages. Historical SPEC,
+  Evidence, archive, and research records were not rewritten.
+- AGENTS/AGENTS_en entry blocks are identical. Their scopes were separated by
+  section from active `authority-order`; no file-level compatibility branch was
+  created.
+- `tests/doctrine-check.sh` passes at 400/400; `spec-agents check-state`,
+  `docs/spec-agents/check-kernel.sh .`, `bash -n bin/spec-agents`, static route
+  assertions, installed-reference assertions, and `git diff --check`: pass.
+- Git-only comparison basis: source HEAD at the start of this work was
+  `eed62941726024543112bb1336f9ac7aa026cda2`; working tree remains uncommitted.
+
+### References
+
+- `.specs/salvage-reset-start/SPEC.md` r1, slice 01.
+- E-20260831-001, E-20260831-002, E-20260831-003.
+- `AGENTS.md`; `AGENTS_en.md`; `START.md`; `UPGRADE.md`;
+  `docs/spec-agents/WORKFLOW.md`; `README.md`; `bin/spec-agents`.
+
+## 2026-08-31 — reset reaches a clean START input without inherited state (E-20260831-005)
+
+### Observation
+
+`tests/upgrade-reset-smoke.sh` now executes eight named assertion groups. Its
+fixture first writes only `.scratch/upgrade-review/REPORT.md` and proves every
+pre-existing path's type and content unchanged. After the simulated user
+confirmation, `replace-doctrine` produces a replayable doctrine manifest and
+leaves every Instance path byte-identical; the cutover then reproduces the
+retired paths under the archive with the same path, type, and SHA-256 content.
+
+The active result contains current doctrine and unchanged project files but no
+old KERNEL, STATUS, EVIDENCE, ROADMAP, SPEC, Slice, tracked scratch SPEC, or
+`.phrase` state. Candidate knowledge and current intent remain in the review
+report only. Separate fixtures prove that each declared marker family reaches
+the one replacement operation and that zero-marker, existing-backup,
+source-repository, and forced post-backup failures never print completion.
+
+### Interpretation
+
+The repeatable fixture closes the disposable-evidence gap for Slice 03. It
+proves that reset can produce an input eligible for the current START contract;
+it does not execute an AI START review and does not establish safety across
+arbitrary real repositories. The Slice adds verification only: Upgrade and
+ProjectState remain authoritative in Workflow, the procedural entry remains in
+UPGRADE, and replacement remains implemented once in `bin/spec-agents`.
+
+The older installer Runbook's leakage assertion still fails on
+`skills/capture/SKILL.md:81`, whose unlabelled `E-20260821-006` citation was
+already present at source HEAD `eed62941726024543112bb1336f9ac7aa026cda2`.
+All other Runbook assertions pass in the retained fixture. This is a recorded
+baseline reference-label defect, not a regression caused by this Slice.
+
+### Recommended next action
+
+Close Slice 03. Keep Slice 04 blocked until `authority-order` releases its
+declared `docs/adr/` scope; then update the installer Runbook, write the
+superseding ADR, rerun the final tree, and close the SPEC. Test one confirmed
+upgrade against a real disposable project copy before making a general
+real-project safety claim. Route the pre-existing capture citation through its
+own bounded correction rather than expanding this verification Slice.
+
+### Verification
+
+- `bash -n tests/upgrade-reset-smoke.sh`; `tests/upgrade-reset-smoke.sh`: 8/8.
+- The replacement fixture compares complete Instance manifests immediately
+  before and after doctrine replacement, then compares the retired-state
+  source and archive manifests independently.
+- Full regression: `tests/doctrine-check.sh` (400/400),
+  `tests/kernel-delta-check.sh` (17/17), `spec-agents check-state`,
+  `docs/spec-agents/check-kernel.sh .`, and `git diff --check`: pass.
+- `/tmp/spec-agents-installer-smoke.gu7kG8`: repeated copy install, link
+  install, absent-Instance, executable checker, relative-link, source refusal,
+  and source/payload byte comparisons pass. Only the pre-existing leakage-label
+  assertion above fails.
+- Same-context `check`, Git-only basis
+  `eed62941726024543112bb1336f9ac7aa026cda2`: contract, engineering, and
+  reference-integrity axes found no Slice 03 regression. No ontology impact:
+  no concept, identity, relationship, lifecycle, invariant, or Action Contract
+  was added, changed, or retired by the test Slice.
+
+### References
+
+- `.specs/salvage-reset-start/SPEC.md` r1, slice 03.
+- E-20260831-001, E-20260831-002, E-20260831-003, E-20260831-004.
+- `tests/upgrade-reset-smoke.sh`; `docs/runbooks/installer-smoke.md`.
+
+## 2026-08-31 — upgrade is promoted as salvage, reset, and re-bootstrap (E-20260831-006)
+
+### Observation
+
+The final tree has one existing-project upgrade route. UPGRADE produces an
+exact four-way preservation manifest and stops for confirmation; confirmed
+cutover backs up and replaces only doctrine, archives approved retired state,
+and hands the active project to a fresh START. Workflow exposes Upgrade,
+revises ProjectState to `modern | upgrade-needed | missing-entry | blocked`,
+adds Upgrade Boundary, and no longer contains Legacy Upgrade Boundary. The
+three enacted paragraphs equal the SPEC r2 Model delta after whitespace
+normalisation.
+
+`docs/adr/0010-upgrade-rebootstrap.md` records the breaking decision and
+supersedes the mechanical, prompt-conversion, and phase-to-current-state
+instructions without editing the historical records. The installer Runbook now
+requires the persistent eight-group replacement fixture and records report-only
+reconnaissance, backup, unchanged Instance data, stale-doctrine removal, exact
+archive recovery, refusal, and failure recovery. The pre-existing unlabelled
+capture citation from E-20260831-005 was corrected to identify its upstream
+source; the Runbook leakage assertion now passes without changing capture
+behaviour.
+
+The active-scope conflict reported by E-20260831-005 was an over-broad directory
+claim, not a shared file. After the user approved the next step, SPEC r2
+reserved `docs/adr/0010-upgrade-rebootstrap.md` for this work and STATUS
+reserved `docs/adr/0011-authority-order.md` for the older unexecuted work. No
+product semantic, Kernel delta, or Slice decomposition changed.
+
+### Interpretation
+
+Upgrade is a re-bootstrap boundary, not a compatibility runtime or a migration
+engine. Old records remain recoverable but carry no current lifecycle authority;
+still-relevant knowledge and intent must be confirmed against the current
+project. The single implementation of doctrine replacement remains
+`bin/spec-agents`; Workflow is the semantic authority, UPGRADE is the entry
+procedure, and the ADR and Runbook are decision and operational records rather
+than duplicate implementations.
+
+The repository can now close the SPEC on repeatable disposable evidence. That
+evidence proves file boundaries, recovery, and eligibility for a clean START.
+It does not execute an AI START review and does not prove that arbitrary real
+repositories are generally safe to cut over.
+
+### Recommended next action
+
+Use the new path on a reviewed disposable copy when a real existing project is
+chosen: run the current upstream UPGRADE prompt, inspect its report with the
+user, retain the archive and doctrine backup through START acceptance, and
+record any classification error as new evidence. Do not restore version-
+specific conversion branches in response to a single historical layout.
+
+### Verification
+
+- `tests/upgrade-reset-smoke.sh`: 8/8, including complete Instance manifests,
+  exact retired-state and doctrine manifests, five marker families, four
+  refusal/failure paths, recovery material, and no false completion output.
+- `tests/doctrine-check.sh`: 400/400; every ADR pointer resolves and CHANGELOG
+  has no stale citation. `tests/kernel-delta-check.sh`: 17/17.
+- `spec-agents check-state`, `docs/spec-agents/check-kernel.sh .`, shell syntax
+  for the installer and tests, and `git diff --check`: pass.
+- `/tmp/spec-agents-final-smoke.SDKcbV`: two copy installs, one link install,
+  absent-Instance checks, executable Kernel checker, leakage assertion,
+  relative Markdown references, source-repository refusal, and byte-identical
+  installed doctrine all pass.
+- The Upgrade, ProjectState, and Upgrade Boundary paragraphs match SPEC r2;
+  the retired heading is absent. Accepted ADR 0001–0004 hashes remain
+  `255ab9684882a5cd8b91a728c35b7832dc8d9f5d`,
+  `fa3b5612ba569da2282a1c2301bab64c452eaa42`,
+  `fcec10ded5797e20b2d96c585cc5593682839918`, and
+  `5d053d98d16a63acb19e9a5a44bb456b2b4e2a4e` respectively.
+- Same-context final `check`, Git-only comparison basis
+  `eed62941726024543112bb1336f9ac7aa026cda2`: contract, engineering, and
+  reference-integrity axes pass. Ontology impact is exactly the four declared
+  entries—add Upgrade, revise ProjectState, retire Legacy Upgrade Boundary,
+  add Upgrade Boundary—with no undeclared concept, identity, relation,
+  lifecycle, invariant, or Action Contract change.
+
+### References
+
+- `.specs/salvage-reset-start/SPEC.md` r2 and slices 01–04.
+- E-20260831-001, E-20260831-002, E-20260831-003, E-20260831-004,
+  E-20260831-005.
+- `docs/adr/0010-upgrade-rebootstrap.md`;
+  `docs/runbooks/installer-smoke.md`; `tests/upgrade-reset-smoke.sh`.
+
+## 2026-08-31 — confirmed receipt gates doctrine replacement (E-20260831-007)
+
+### Observation
+
+`replace-doctrine` now requires the target's regular, non-symlink
+`.scratch/upgrade-review/CUTOVER.tsv`. Before creating the doctrine backup it
+requires exactly six unique two-column rows, the v1 format, canonical target
+and absent backup paths, the current regular REPORT's SHA-256, literal zero
+unresolved rows, and a confirmed decision. Missing, moved, malformed,
+duplicated, unknown, stale, or mismatched receipt data refuses before the
+backup path exists.
+
+UPGRADE now gives the executable order: report, exact confirmation, immutable
+`CONFIRMED-REPORT.md` plus CUTOVER, doctrine replacement, retired-state reset,
+fresh START, and Completion result. Replacement success names doctrine
+completion and the remaining Upgrade work; only ordinary init/install prints
+`Spec-AGENTS is ready`. `--cutover` is rejected outside replacement.
+
+The same-context implementation/check loop found two unsafe output seams before
+acceptance. Replacement inherited ordinary-install advice to delete a CONTEXT
+skeleton even though its CONTEXT may be project-owned, and ordinary install
+silently ignored `--cutover`. Both now refuse or route precisely. Final-component
+symlinks for CUTOVER or REPORT are also rejected so canonical containment is
+not only lexical.
+
+### Interpretation
+
+The receipt turns the confirmed-report precondition into an executable input;
+it does not authenticate who made the decision. Workflow remains the semantic
+authority, UPGRADE specifies the human/Agent procedure, and the CLI is the one
+enforcement point. README only describes that interface. The enacted Upgrade
+Boundary equals the confirmed SPEC Model delta after whitespace normalisation.
+
+This closes the replacement gate, not the whole upgrade feature. The persistent
+fixture still uses the retired no-receipt syntax and deliberately fails at that
+new gate until Slice 03 rewrites it. Root discovery remains unchanged until
+Slice 02. No ADR, Runbook, or general real-project safety claim is promoted by
+this observation.
+
+### Recommended next action
+
+Close Slice 01 and execute ready Slice 02. Make workflow project discovery
+accept native JJ and complete modern no-VCS roots without weakening partial or
+arbitrary-directory refusal. Then use Slice 03 to turn these disposable probes
+into the persistent complete-lifecycle fixture.
+
+### Verification
+
+- `spec-agents-cutover.fT8ExN`: missing receipt; target, backup, hash,
+  unresolved, and decision mismatch; duplicate and unknown rows; changed
+  report; valid copy/link replacement; Instance hash preservation; and ordinary
+  install readiness.
+- `spec-agents-cutover-failure.0BRxjQ`: forced post-backup failure retained its
+  doctrine manifest and recovery path, source/root guards remained pre-write,
+  and no completion line was printed.
+- `spec-agents-cutover-symlink.93O2k3`: CUTOVER and REPORT final-component
+  symlinks refused before backup; valid replacement gave no CONTEXT deletion
+  advice. `spec-agents-cutover-option.5IToru`: init/install rejected
+  `--cutover` without creating a target and valid install remained ready.
+- The documented receipt parses as exactly six tab-separated rows. UPGRADE's
+  diagram, headings, and command have the declared order; the CLI validation
+  call precedes the backup call.
+- `bash -n bin/spec-agents`, `tests/doctrine-check.sh` (400/400),
+  `tests/kernel-delta-check.sh`, `spec-agents check-state`, Model-delta equality,
+  and `git diff --check`: pass. The old persistent fixture exits at the expected
+  missing-receipt gate and is assigned to Slice 03.
+- Same-context check, Git-only basis: contract, engineering, authority landing,
+  and reference-integrity axes pass after the two returned fixes. Ontology
+  impact is exactly the confirmed Upgrade Boundary and Action Contract revision;
+  no undeclared concept, identity, relation, lifecycle, or invariant changed.
+
+### References
+
+- `.specs/upgrade-cutover-gate/SPEC.md` r1, Slice 01.
+- `UPGRADE.md`; `docs/spec-agents/WORKFLOW.md`; `bin/spec-agents`; `README.md`.
+- E-20260831-006.
+
+## 2026-08-31 — workflow commands recognize every supported project root (E-20260831-008)
+
+### Observation
+
+The workflow CLI's nearest-ancestor search now accepts `.specs/`, `.git/`,
+native `.jj/`, or the complete modern entry set `AGENTS.md`, `START.md`,
+`docs/spec-agents/WORKFLOW.md`, and `skills/plan/SKILL.md`. The complete set is
+one strong marker; a lone familiar file, a three-of-four partial install, an
+arbitrary directory, and a retired-only parent remain outside a workflow root.
+The refusal message names all four accepted marker forms.
+
+`status`, `check-state`, and `gate plan` run from both the root and a nested
+directory of modern no-VCS and native-JJ fixtures. Existing `.specs` and Git
+fixtures retain the same nested lookup. A fixture with an invalid parent
+`.specs` tree and a nearer complete modern child returns `No SPECs.`, proving
+the child wins rather than merely proving that some ancestor is accepted.
+
+### Interpretation
+
+The CLI now agrees with START's supported version-control states and the
+installed modern entry contract. Root discovery remains a single seam in
+`bin/spec-agents`; START classifies projects but does not duplicate the CLI
+lookup. Doctrine replacement has its own target guard and was not changed.
+
+This is read-only root recognition, not VCS setup. None of the fixtures gained
+`.git`, `.jj`, or `.specs`; the native-JJ fixture remained native JJ and the
+no-VCS fixture remained without version control. The result is bounded to the
+four confirmed strong markers and does not classify retired state as current.
+
+### Recommended next action
+
+Close Slice 02 and execute ready Slice 03. Move the receipt, root-discovery,
+immutable-report, retired-state, and accepted-START assertions into the
+persistent upgrade fixture so the complete lifecycle is reproducible in one
+command.
+
+### Verification
+
+- `spec-agents-project-root.pFGqsV`: root/nested `status`, `check-state`, and
+  `gate plan` pass for `.specs`, Git, native JJ, and complete modern no-VCS
+  roots; nearest modern child selection and all four refusal classes pass.
+- Marker assertions after the commands prove the no-VCS and native-JJ fixtures
+  gained no `.specs` or second VCS.
+- `bash -n bin/spec-agents`, `tests/doctrine-check.sh` (400/400),
+  `tests/kernel-delta-check.sh`, `spec-agents check-state`, and
+  `git diff --check`: pass.
+- Same-context check, Git-only basis: contract, engineering, single-authority,
+  and reference-integrity axes pass. The only Action Contract impact is the
+  project-discovery extension already confirmed in the SPEC; no ProjectState,
+  concept, identity, relation, lifecycle, or invariant changed.
+
+### References
+
+- `.specs/upgrade-cutover-gate/SPEC.md` r1, Slice 02.
+- `bin/spec-agents`; `START.md`; `docs/spec-agents/jj-change-management.md`.
+- E-20260831-007.
+
+## 2026-08-31 — complete Upgrade lifecycle is a persistent fixture (E-20260831-009)
+
+### Observation
+
+`tests/upgrade-reset-smoke.sh` now executes ten named groups and asserts that
+the final line is exactly `upgrade reset smoke: 10/10`. The main project begins
+with retired doctrine, `.phrase`, phase/task state, old KERNEL/EVIDENCE/STATUS,
+a durable old SPEC/Slice, a tracked scratch SPEC, current project files, and no
+VCS. Before confirmation only the complete Upgrade report is new; all original
+path types and hashes remain identical and neither archive nor CUTOVER exists.
+
+After User decision is filled, the fixture copies immutable
+`CONFIRMED-REPORT.md`, binds its hash and canonical paths in CUTOVER, and proves
+missing location/format/key, duplicate/unknown key, target/backup/hash mismatch,
+non-zero unresolved count, non-confirmed decision, and changed REPORT all
+refuse before backup while protected manifests remain identical. A valid
+receipt reaches doctrine backup/replacement, exact retired-state archive, and
+a modern no-VCS root. The simulated fresh START accepts the current app entry,
+rejects the unsupported legacy invariant, routes current intent to `plan`, and
+fills Completion result with actual paths and no pending field. The confirmed
+snapshot remains equal to the receipt after the active report changes.
+
+The same executable retains five retired-marker link fixtures, existing
+replacement guards, forced post-backup failure and replayable recovery,
+ordinary-install readiness, and the `.specs`/Git/native-JJ/modern-entry root
+matrix with partial/arbitrary/retired-only refusal. Replacement and failure
+outputs make no project-readiness claim.
+
+### Interpretation
+
+The persistent fixture now proves the process relationships that the earlier
+file-only test left implicit: confirmation precedes the receipt, the receipt
+precedes replacement, reset precedes fresh START, and Completion follows user
+acceptance. It also proves that the active report may evolve after cutover
+without destroying the immutable artifact named by the receipt.
+
+This is still a deterministic simulation of the Prompt, including a
+fixture-authored K1 and Start Report. It does not prove that an AI will classify
+every real project correctly, that the decision came from a particular human,
+or that arbitrary repositories are safe. Those limits remain part of the
+contract rather than being hidden by 10/10.
+
+### Recommended next action
+
+Close Slice 03 and run the final learn-owned Slice 04: record ADR 0012, update
+the installer Runbook and breaking migration note, rerun the final tree, then
+close the SPEC and remove its STATUS section.
+
+### Verification
+
+- `tests/upgrade-reset-smoke.sh`: ten named groups plus exact final 10/10;
+  repeated clean runs pass. `spec-agents-upgrade-reset.tkV0sR` is a retained
+  passing fixture from the implementation loop.
+- The report table has every required column, 16 unique relevant paths, one
+  allowed disposition per row, complete evidence/destination/check cells, and
+  no unresolved row. Forced-failure doctrine recovery replays its manifest.
+- `spec-agents-installer-smoke.QktGTE`: repeated copy, link, source/payload
+  equality, absent Instance, executable checker, leakage, installed Markdown
+  links, and source refusal pass.
+- `bash -n` for installer and fixture, `tests/doctrine-check.sh` (400/400),
+  `tests/kernel-delta-check.sh`, `spec-agents check-state`, shipped Kernel
+  check, and `git diff --check`: pass.
+- Same-context check, Git-only basis: contract, engineering, `authority: n/a`,
+  and reference-integrity axes pass. No concept, identity, relation, lifecycle,
+  invariant, or Action Contract changed in this verification-only Slice.
+
+### References
+
+- `.specs/upgrade-cutover-gate/SPEC.md` r1, Slice 03.
+- `tests/upgrade-reset-smoke.sh`; `UPGRADE.md`; `START.md`; `bin/spec-agents`.
+- E-20260831-007, E-20260831-008.
+
+## 2026-08-31 — Upgrade cutover boundary is executable and closed (E-20260831-010)
+
+### Observation
+
+The final tree has one receipt-gated existing-project path. UPGRADE writes only
+REPORT before confirmation; the confirmed phase creates an immutable report
+snapshot and a six-row CUTOVER; `replace-doctrine` validates the exact regular
+receipt, canonical invocation paths, current report hash, zero unresolved rows,
+and confirmed decision before backup. Its success describes doctrine, recovery,
+and remaining Upgrade work rather than project readiness. Ordinary install
+retains its existing readiness result and rejects the replacement-only option.
+
+Workflow commands now recognise `.specs`, Git, native JJ, and the complete
+modern entry without initializing history or accepting partial/retired-only
+roots. `tests/upgrade-reset-smoke.sh` executes all of these boundaries with the
+report, refusal, copy/link replacement, retired archive, failure recovery,
+simulated accepted START, candidate decisions, Completion result, immutable
+snapshot, and project-root matrix in ten named groups.
+
+ADR 0012 records the breaking receipt requirement and supersedes only ADR
+0010's unguarded replacement invocation. ADR 0010 itself and ADRs 0001–0004
+remain byte-identical. The installer Runbook now gives the confirmed-input,
+validation, reset/completion, root-discovery, and retry assertions. CHANGELOG
+gives the old-call migration and states ordinary-install compatibility.
+
+### Interpretation
+
+The strongest Upgrade precondition is no longer dependent only on Agent
+obedience: one exact confirmed artifact must match the destructive invocation.
+The immutable snapshot preserves what was approved while the active report
+records what completed. Workflow remains the semantic authority; ADR 0012
+records why, the Runbook records how to reproduce it, and the CLI remains the
+single enforcement point.
+
+The receipt cannot authenticate the person who confirmed it. The fixture is a
+deterministic Prompt simulation with a fixture-authored K1 and Start Report; it
+cannot prove that an AI will classify every real project correctly or establish
+general real-project safety. Those limits are part of ADR 0012 and the Runbook,
+not exceptions hidden behind the passing count.
+
+### Recommended next action
+
+For a real upgrade, first run this flow against a reviewed disposable project
+copy. Keep CUTOVER, the immutable confirmed report, doctrine backup, and retired
+archive until the user accepts fresh START. Migrate any old automation to the
+explicit `--cutover` syntax; do not add a compatibility or force bypass.
+
+The `upgrade-cutover-gate` SPEC is complete and should not remain in STATUS.
+The unrelated `authority-order` work and its reserved ADR 0011 scope remain
+unchanged.
+
+### Verification
+
+- `tests/upgrade-reset-smoke.sh`: ten numbered groups and exact final
+  `upgrade reset smoke: 10/10`; the report has 16 unique complete manifest rows,
+  no unresolved path, confirmed snapshot/receipt equality, and no pending final
+  decision/result.
+- `spec-agents-final-installer.O39IS4`: repeated copy install, link install,
+  source/payload equality, absent Instance, executable checker, leakage,
+  relative Markdown links, and source refusal pass.
+- `tests/doctrine-check.sh`: 400/400, ADR pointers and CHANGELOG citations pass.
+  `tests/kernel-delta-check.sh`, `spec-agents check-state`, shipped Kernel check,
+  shell syntax, installed-reference checks, Model-delta equality, and
+  `git diff --check`: pass.
+- `git hash-object` remains
+  `255ab9684882a5cd8b91a728c35b7832dc8d9f5d` (ADR 0001),
+  `fa3b5612ba569da2282a1c2301bab64c452eaa42` (ADR 0002),
+  `fcec10ded5797e20b2d96c585cc5593682839918` (ADR 0003),
+  `5d053d98d16a63acb19e9a5a44bb456b2b4e2a4e` (ADR 0004), and
+  `3f2bb35365a707af0badbaf843b6a6f36a1fb162` (ADR 0010).
+- Same-context final check, Git-only basis: contract, engineering,
+  single-authority, and reference-integrity axes pass. Ontology impact is
+  exactly the confirmed Upgrade Boundary and Action Contract revision; no
+  undeclared concept, identity, relation, lifecycle, or invariant changed.
+
+### References
+
+- `.specs/upgrade-cutover-gate/SPEC.md` r1 and Slices 01–04.
+- E-20260831-007, E-20260831-008, E-20260831-009.
+- `docs/adr/0012-upgrade-cutover-gate.md`;
+  `docs/runbooks/installer-smoke.md`; `tests/upgrade-reset-smoke.sh`.
